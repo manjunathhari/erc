@@ -8,8 +8,9 @@ This repository holds the Engram engine, ported from `manjunathhari/Engram` (mai
 - **P2, learning from sentences** (eight more files in `engram_knowledge/`), from the same commit. It uses P1; P1 uses nothing from P2.
 - **P3 to P5, state over time** (seven more files in `engram_knowledge/`), from main's state engine rather than the separate P3, P4 and P5 packages, which do the same work under other names. They use P1 and P2; neither uses them.
 - **P6, learning from use** (`engram_p6/`, and the feedback bridge `engram_knowledge/feedback.py`), from the same commit, still in shadow mode: it learns scores, but search does not read them.
+- **P7, carrying learned intelligence between installations** (`engram_p7/`), from the seven P7.1 to P7.7 packages of the consolidated bundle, joined into one package.
 
-P7 and ERC are not included yet.
+ERC is not included yet.
 
 This is a research prototype. Do not put patient or other personal information in it: it has no access control or deletion.
 
@@ -27,6 +28,7 @@ This uses the design that passed the LoCoMo final test and the LongMemEval test:
 
 - `engram_knowledge/`: the knowledge layers (P1 to P5). See below.
 - `engram_p6/`: learning from use (P6).
+- `engram_p7/`: carrying learned intelligence between installations (P7).
 
 - `engram.py`: the memory system.
 - `vps_kit.py`, `bench.py`, `final_config.json`: the test kit, run on the server next to Gemma.
@@ -152,3 +154,14 @@ P3 to P5 keep only the decision table, `state_reviews`, which is part of P1's sc
 - **Feedback and learning from use** (`engram_knowledge/feedback.py`, `engram_p6/`): feedback goes into P6.1's event log only, without free text. P6 learns bounded scores from it, but nothing in search reads them yet (shadow mode). Deleting a sentence removes feedback and scores that point at it. P6 data is not part of the knowledge export; P6.6 has its own.
 
 P6 writes its name into `engram_layers` whenever it creates its event or score tables. A memory holding P6 data therefore refuses a deletion unless P6 is loaded, so feedback can never outlive the sentence or fact it points at. Only the event log and the scores hold sentence or fact references; policy versions and saved bundles do not. P6's tests run on made-up data; it has not been measured on real use.
+
+## Carrying learned intelligence (P7)
+
+P7 moves what P6 has learned, never memories, facts or conversations: only context-level scores, as a checksummed package.
+
+- **P7.1** packages a saved P6 bundle (`IntelligenceExporter`); **P7.2** turns it into portable context priors (`ContextPolicyTransfer`); **P7.3** checks it against the destination and never activates anything (`ModelCompatibilityValidator`); **P7.4** stages, activates, rolls back or deactivates it on the destination (`IntelligenceRestorer`); **P7.5** is a test harness for the whole move; **P7.6** applies an inherited prior with the destination's own scores, reordering candidates only (`DestinationIntelligenceAdapter`); **P7.7** compares rankings (`RetrievalBenchmark`).
+- **First run on real data** (`tests/test_p7_end_to_end.py`): scores learned from real feedback in one memory, carried into a second and used there. The package holds no names, facts or sentence references; the destination's own sentences are unchanged; its P7 tables hold no sentence or fact references, so P7 needs no forget step; a prior for one context is not given to another. P7.3 passes with two warnings: the retrieval configuration is not applied, and the context key scheme is not verified.
+- **What it does to search:** an inherited prior alone lifts every candidate by the same factor, so it changes no order. Order changes only when the destination has learned scores of its own. Nothing in search reads P7 yet.
+- **One fix:** P7.1 and P7.4 set `row_factory` on the connection they are given, which is the engine's own, so after a restore every engine query returned named rows instead of tuples. They now read through `engram_p7/_rows.py`, which names columns per query and leaves the connection alone; a test checks this.
+- The P7.5 and P7.6 tests loaded neighbouring stages by file path from the separate packages, including copies of P6; they now import from `engram_p7` and this repository's `engram_p6`. Their checks are unchanged.
+
