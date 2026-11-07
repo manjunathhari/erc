@@ -6,8 +6,9 @@ This repository holds the Engram engine, ported from `manjunathhari/Engram` (mai
 
 - **P1, the knowledge store** (`engram_knowledge/`, `engram_records.py`), taken from the same commit.
 - **P2, learning from sentences** (eight more files in `engram_knowledge/`), from the same commit. It uses P1; P1 uses nothing from P2.
+- **P3 to P5, state over time** (seven more files in `engram_knowledge/`), from main's state engine rather than the separate P3, P4 and P5 packages, which do the same work under other names. They use P1 and P2; neither uses them.
 
-P3 to P7 and ERC are not included yet.
+P6, P7 and ERC are not included yet.
 
 This is a research prototype. Do not put patient or other personal information in it: it has no access control or deletion.
 
@@ -23,7 +24,7 @@ This uses the design that passed the LoCoMo final test and the LongMemEval test:
 
 ## Layout
 
-- `engram_knowledge/`: the knowledge layers (P1 and P2). See below.
+- `engram_knowledge/`: the knowledge layers (P1 to P5). See below.
 
 - `engram.py`: the memory system.
 - `vps_kit.py`, `bench.py`, `final_config.json`: the test kit, run on the server next to Gemma.
@@ -125,4 +126,21 @@ These rules read words and cannot understand meaning, so accepted facts can stil
 
 - **Sentence pipeline** (`engram_knowledge/interpreter.py`, `learning.py`, `candidate.py`, `learning_queue.py`, from P2.1 to P2.3 with fixes): each stored message is split into sentences, each is labelled and judged (learn, review, ignore, or kept as said by the assistant), and kept sentences become envelopes tied to their sid and place in the message. Review envelopes join P1's one review queue. Nothing here writes a fact: that needs extraction (who, what and which), which is not built yet. On 200 held-out sentences labelled blind it agrees with the labels 146 times, against 78 for the original package; it still learns some small talk and sends too little to review (`results/p2_gate`).
 
-P2 keeps no tables of its own: its review envelopes sit in P1's review queue, which P1's delete step clears, so P2 needs no open or forget step. `tests/test_p2_pipeline.py` comes with P3, because one of its checks reads the state engine; it passes against main's state engine. `feedback.py` (P2.5) comes with P6, whose event log it writes to.
+P2 keeps no tables of its own: its review envelopes sit in P1's review queue, which P1's delete step clears, so P2 needs no open or forget step. `feedback.py` (P2.5) comes with P6, whose event log it writes to.
+
+## Temporal state and knowledge retrieval
+
+`StateEngine` works out what is true of an entity, now and at any past date, from the stored facts each time. The state is never stored, so the facts and their sentences stay the only source of truth. The old `world_state` in `engram.py` is unchanged.
+
+- A later value from the same speaker ends the earlier one. A different value from another speaker is a conflict with both kept, until one speaker updates or a person settles it.
+- A correction marks the old fact superseded and keeps its evidence. A plan never becomes a state.
+- An unstated date stays unknown; the date the sentence was said is shown separately as `first_said`.
+- If a newer statement is waiting for review, the answer says so, because it may be out of date.
+
+`KnowledgeRetriever` sits beside ordinary memory. Its router sends a question to the records, to `ChatMemory.find`, or to both, using fixed word rules, and every returned fact carries its original sentences. `context_for` does not use it, so answers do not change.
+
+## Decisions (P5)
+
+- **Decisions** (`StateEngine.settle`, from P5): a person's decision about two facts is recorded with reviewer, reason and the state before and after. An end date is never guessed. Version 3 of the store adds this table.
+
+P3 to P5 keep only the decision table, `state_reviews`, which is part of P1's schema; P1's delete step removes a decision that quotes an erased fact, so these layers need no open or forget step. `kit_tools/knowledge_eval.py` is not brought over yet, because it reads an earlier research result that this repository does not hold.
