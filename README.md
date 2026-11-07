@@ -5,8 +5,9 @@ A layered memory architecture modelled on how the brain separates storage from r
 This repository holds the Engram engine, ported from `manjunathhari/Engram` (main at `ee68079`), with its layers added around it one at a time. The engine's code is unchanged apart from the two layer steps described under "How layers attach". Each layer depends on the engine; the engine imports no layer. Layers so far:
 
 - **P1, the knowledge store** (`engram_knowledge/`, `engram_records.py`), taken from the same commit.
+- **P2, learning from sentences** (eight more files in `engram_knowledge/`), from the same commit. It uses P1; P1 uses nothing from P2.
 
-P2 to P7 and ERC are not included yet.
+P3 to P7 and ERC are not included yet.
 
 This is a research prototype. Do not put patient or other personal information in it: it has no access control or deletion.
 
@@ -22,7 +23,7 @@ This uses the design that passed the LoCoMo final test and the LongMemEval test:
 
 ## Layout
 
-- `engram_knowledge/`: the knowledge layer (P1). See below.
+- `engram_knowledge/`: the knowledge layers (P1 and P2). See below.
 
 - `engram.py`: the memory system.
 - `vps_kit.py`, `bench.py`, `final_config.json`: the test kit, run on the server next to Gemma.
@@ -85,7 +86,7 @@ The engine has two steps a layer can join, in `engram_chat.py`: `add_open_step(l
 
 A layer also writes its name into the `engram_layers` table. If a memory holds a layer's data and that layer is not loaded, `forget_sentence` refuses and changes nothing, so a sentence can never be deleted while what rests on it stays. `tests/test_layers.py` checks this, and that the engine alone loads no layer and creates no layer tables.
 
-Changes from the original, so the engine stays apart: the engine's three direct calls into the knowledge store became these steps; the knowledge store's delete step no longer clears P6 feedback and scores (P6 is not a layer here yet; it will add its own step); and `engram_knowledge/__init__.py` names only P1's parts. `state_reviews`, the decision table used by P5, stays in P1's version 2 schema, unchanged.
+Changes from the original, so the engine stays apart: the engine's three direct calls into the knowledge store became these steps; the knowledge store's delete step no longer clears P6 feedback and scores (P6 is not a layer here yet; it will add its own step); and `engram_knowledge/__init__.py` names only P1's parts. `state_reviews`, the decision table used by P5, stays in P1's schema (version 3), unchanged.
 
 ## Knowledge records
 
@@ -108,3 +109,20 @@ The knowledge store lives in `engram_knowledge/`: `models.py` (the records), `sc
 - **Time:** `valid_from` and `valid_to` say when it was true; `recorded_at` says when Engram learned it.
 - **Version check:** a database whose knowledge records are a different version is refused before anything in it changes.
 - **Deletion:** if a source sentence is deleted, a fact with another supporting sentence is marked `needs_review`. A fact with no support left is `invalidated` and its content erased. Aliases from that sentence go too, and an entity nothing uses any more is removed.
+
+## Entity resolution and fact validation
+
+`engram_knowledge/` decides which entity a statement refers to and whether a candidate fact may be stored. Fixed rules decide; a language model can only propose. `engram_facts.py` is unchanged, and these records are not used by search or answers.
+
+- **Accepted** goes to the knowledge store. **Uncertain** waits in the review queue, where it is not treated as knowledge. **Rejected** is not saved.
+- **Names:** exact name or stated alias. "I" means the speaker. He, she and they are never guessed, and a similar name goes to review instead of being merged.
+- **Checks:** the sentence holding the object must exist, contain its words, and use a word for that kind of fact. Possible negation, questions, hypotheticals, things said by the assistant, things reported by someone else and dates not in the source all go to review.
+- **Deletion:** deleting a source sentence removes any review item that cites it.
+
+These rules read words and cannot understand meaning, so accepted facts can still be wrong.
+
+## Learning from sentences (P2)
+
+- **Sentence pipeline** (`engram_knowledge/interpreter.py`, `learning.py`, `candidate.py`, `learning_queue.py`, from P2.1 to P2.3 with fixes): each stored message is split into sentences, each is labelled and judged (learn, review, ignore, or kept as said by the assistant), and kept sentences become envelopes tied to their sid and place in the message. Review envelopes join P1's one review queue. Nothing here writes a fact: that needs extraction (who, what and which), which is not built yet. On 200 held-out sentences labelled blind it agrees with the labels 146 times, against 78 for the original package; it still learns some small talk and sends too little to review (`results/p2_gate`).
+
+P2 keeps no tables of its own: its review envelopes sit in P1's review queue, which P1's delete step clears, so P2 needs no open or forget step. `tests/test_p2_pipeline.py` comes with P3, because one of its checks reads the state engine; it passes against main's state engine. `feedback.py` (P2.5) comes with P6, whose event log it writes to.
