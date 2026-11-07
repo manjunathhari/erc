@@ -9,8 +9,7 @@ This repository holds the Engram engine, ported from `manjunathhari/Engram` (mai
 - **P3 to P5, state over time** (seven more files in `engram_knowledge/`), from main's state engine rather than the separate P3, P4 and P5 packages, which do the same work under other names. They use P1 and P2; neither uses them.
 - **P6, learning from use** (`engram_p6/`, and the feedback bridge `engram_knowledge/feedback.py`), from the same commit, still in shadow mode: it learns scores, but search does not read them.
 - **P7, carrying learned intelligence between installations** (`engram_p7/`), from the seven P7.1 to P7.7 packages of the consolidated bundle, joined into one package.
-
-ERC is not included yet.
+- **ERC, the reasoning core** (`engram_erc/`), ERC-1.9 unchanged, and **the overlay that connects it** (`erc_overlay/`), which reads P1 to P5 and stores nothing.
 
 This is a research prototype. Do not put patient or other personal information in it: it has no access control or deletion.
 
@@ -29,6 +28,8 @@ This uses the design that passed the LoCoMo final test and the LongMemEval test:
 - `engram_knowledge/`: the knowledge layers (P1 to P5). See below.
 - `engram_p6/`: learning from use (P6).
 - `engram_p7/`: carrying learned intelligence between installations (P7).
+- `engram_erc/`: the reasoning core, ERC-1.9 (standard library only; its own README).
+- `erc_overlay/`: ERC over the knowledge layers.
 
 - `engram.py`: the memory system.
 - `vps_kit.py`, `bench.py`, `final_config.json`: the test kit, run on the server next to Gemma.
@@ -164,4 +165,20 @@ P7 moves what P6 has learned, never memories, facts or conversations: only conte
 - **What it does to search:** an inherited prior alone lifts every candidate by the same factor, so it changes no order. Order changes only when the destination has learned scores of its own. Nothing in search reads P7 yet.
 - **One fix:** P7.1 and P7.4 set `row_factory` on the connection they are given, which is the engine's own, so after a restore every engine query returned named rows instead of tuples. They now read through `engram_p7/_rows.py`, which names columns per query and leaves the connection alone; a test checks this.
 - The P7.5 and P7.6 tests loaded neighbouring stages by file path from the separate packages, including copies of P6; they now import from `engram_p7` and this repository's `engram_p6`. Their checks are unchanged.
+
+## Reasoning (ERC overlay)
+
+```python
+from erc_overlay import Reasoner
+reasoner = Reasoner(KnowledgeBase(memory.db))
+reasoning = reasoner.reason("Asha", ruleset=rules, as_of=when)   # rules: an engram_erc RuleSet, or None for checks only
+print("\n".join(reasoner.explain(reasoning)))
+```
+
+`engram_erc/` is ERC-1.9 as delivered, with its 85 tests. It depends on nothing here. `erc_overlay/` is the only code that connects it:
+
+- **`knowledge.py`** turns one entity's facts, and the facts about the entities they name, into an ERC request. Each fact takes its span from the state engine's own periods, so a conflict in P1 is a definite contradiction in ERC and a value replaced by the same speaker is history; a period still open is closed one day after `as_of`. Facts that start after `as_of` are left out. A text object becomes an entity id only when exactly one entity has that name. Stated facts are assertions, inferred ones hypotheses, and plans are left out. P1's single-valued slots are ERC's functional predicates. Each source sentence is one piece of evidence. The request id is a digest of the facts and rules used, so each result id is distinct.
+- **`reasoner.py`** runs ERC's strategy and its evidence-aware evaluation, and `explain()` gives the result in plain lines with the original sentences under each conclusion.
+- **Nothing is stored.** The overlay writes nothing to the database, so it needs no open or forget step: after a sentence is deleted, the next `reason()` does not see it. It leaves the engine's search results and connection as they were. `tests/test_erc_overlay.py` checks all of this, and the gaps found when ERC-1.9 was first fed real facts: `as_of` ignored, a P1 conflict seen only as a potential contradiction, text objects not joining their entities, and result ids that did not change with the rule set.
+- **Not covered yet:** conclusions ERC derives carry no dates of their own, so a contradiction involving one stays potential; ERC applies only rules it is given, and none are written for real use; the overlay is not connected to Gemma or to answers, so nothing a user sees changes. ERC 2 is being developed separately and is not included.
 
