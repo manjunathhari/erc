@@ -37,9 +37,10 @@ def add_open_step(layer: str, step) -> None:
     OPEN_STEPS[layer] = step
 
 
-def add_forget_step(layer: str, step) -> None:
-    """step(db, sid) runs inside the deletion, before it is committed, so the sentence and what rests on it go together."""
-    FORGET_STEPS[layer] = step
+def add_forget_step(layer: str, step, order: int = 50) -> None:
+    """step(db, sid) runs inside the deletion, before it is committed, so the sentence and what rests on it go together.
+    Steps run by order, lowest first, so a layer that reads what an inner layer erased runs after it."""
+    FORGET_STEPS[layer] = (order, step)
 
 
 def stem(w: str) -> str:
@@ -482,7 +483,7 @@ class ChatMemory:
         fids = [r[0] for r in self.db.execute("SELECT fact FROM fact_sources WHERE sid=?", (sid,)).fetchall()]
         for fid in fids: self._drop_facts("fact=?", (fid,))
         self._fact_vectors = None
-        for layer in layers: FORGET_STEPS[layer](self.db, sid)
+        for layer in sorted(layers, key=lambda name: (FORGET_STEPS[name][0], name)): FORGET_STEPS[layer][1](self.db, sid)
         n = self.db.execute("DELETE FROM sentences WHERE sid=?", (sid,)).rowcount
         self.db.execute("DELETE FROM words_index WHERE rowid=?", (sid,))
         self.db.commit()

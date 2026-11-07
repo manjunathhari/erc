@@ -73,4 +73,4 @@ def forget_sentence(db, sid: int) -> dict:
     return dict(needs_review=review, invalidated=invalid)
 
 
-engram_chat.add_forget_step("knowledge", forget_sentence)
+engram_chat.add_forget_step("knowledge", forget_sentence, order=10)

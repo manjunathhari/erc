@@ -7,8 +7,9 @@ This repository holds the Engram engine, ported from `manjunathhari/Engram` (mai
 - **P1, the knowledge store** (`engram_knowledge/`, `engram_records.py`), taken from the same commit.
 - **P2, learning from sentences** (eight more files in `engram_knowledge/`), from the same commit. It uses P1; P1 uses nothing from P2.
 - **P3 to P5, state over time** (seven more files in `engram_knowledge/`), from main's state engine rather than the separate P3, P4 and P5 packages, which do the same work under other names. They use P1 and P2; neither uses them.
+- **P6, learning from use** (`engram_p6/`, and the feedback bridge `engram_knowledge/feedback.py`), from the same commit, still in shadow mode: it learns scores, but search does not read them.
 
-P6, P7 and ERC are not included yet.
+P7 and ERC are not included yet.
 
 This is a research prototype. Do not put patient or other personal information in it: it has no access control or deletion.
 
@@ -25,6 +26,7 @@ This uses the design that passed the LoCoMo final test and the LongMemEval test:
 ## Layout
 
 - `engram_knowledge/`: the knowledge layers (P1 to P5). See below.
+- `engram_p6/`: learning from use (P6).
 
 - `engram.py`: the memory system.
 - `vps_kit.py`, `bench.py`, `final_config.json`: the test kit, run on the server next to Gemma.
@@ -83,11 +85,11 @@ The baseline is in `tests/fixtures/retrieval_baseline.json`. If you deliberately
 
 ## How layers attach
 
-The engine has two steps a layer can join, in `engram_chat.py`: `add_open_step(layer, step)` runs when a memory opens, and `add_forget_step(layer, step)` runs inside `forget_sentence`, before the commit, so a sentence and what rests on it are deleted together. The knowledge layer joins both when it is imported.
+The engine has two steps a layer can join, in `engram_chat.py`: `add_open_step(layer, step)` runs when a memory opens, and `add_forget_step(layer, step)` runs inside `forget_sentence`, before the commit, so a sentence and what rests on it are deleted together. The knowledge layer joins both when it is imported. Delete steps run in a stated order, lowest first: the knowledge layer at 10, P6 at 60, so P6 sees which facts the knowledge layer has just erased.
 
 A layer also writes its name into the `engram_layers` table. If a memory holds a layer's data and that layer is not loaded, `forget_sentence` refuses and changes nothing, so a sentence can never be deleted while what rests on it stays. `tests/test_layers.py` checks this, and that the engine alone loads no layer and creates no layer tables.
 
-Changes from the original, so the engine stays apart: the engine's three direct calls into the knowledge store became these steps; the knowledge store's delete step no longer clears P6 feedback and scores (P6 is not a layer here yet; it will add its own step); and `engram_knowledge/__init__.py` names only P1's parts. `state_reviews`, the decision table used by P5, stays in P1's schema (version 3), unchanged.
+Changes from the original, so the engine stays apart: the engine's three direct calls into the knowledge store became these steps; clearing P6 feedback and scores moved from the knowledge store's delete step into P6's own (`engram_p6/forget.py`), which clears what points at the deleted sentence and at every erased fact; `feedback.forget_refs` still names the same function; and `engram_knowledge/__init__.py` names only P1's parts. `state_reviews`, the decision table used by P5, stays in P1's schema (version 3), unchanged.
 
 ## Knowledge records
 
@@ -126,7 +128,7 @@ These rules read words and cannot understand meaning, so accepted facts can stil
 
 - **Sentence pipeline** (`engram_knowledge/interpreter.py`, `learning.py`, `candidate.py`, `learning_queue.py`, from P2.1 to P2.3 with fixes): each stored message is split into sentences, each is labelled and judged (learn, review, ignore, or kept as said by the assistant), and kept sentences become envelopes tied to their sid and place in the message. Review envelopes join P1's one review queue. Nothing here writes a fact: that needs extraction (who, what and which), which is not built yet. On 200 held-out sentences labelled blind it agrees with the labels 146 times, against 78 for the original package; it still learns some small talk and sends too little to review (`results/p2_gate`).
 
-P2 keeps no tables of its own: its review envelopes sit in P1's review queue, which P1's delete step clears, so P2 needs no open or forget step. `feedback.py` (P2.5) comes with P6, whose event log it writes to.
+P2 keeps no tables of its own: its review envelopes sit in P1's review queue, which P1's delete step clears, so P2 needs no open or forget step. `feedback.py` (P2.5) belongs to the P6 layer, since it writes to P6's event log.
 
 ## Temporal state and knowledge retrieval
 
@@ -144,3 +146,9 @@ P2 keeps no tables of its own: its review envelopes sit in P1's review queue, wh
 - **Decisions** (`StateEngine.settle`, from P5): a person's decision about two facts is recorded with reviewer, reason and the state before and after. An end date is never guessed. Version 3 of the store adds this table.
 
 P3 to P5 keep only the decision table, `state_reviews`, which is part of P1's schema; P1's delete step removes a decision that quotes an erased fact, so these layers need no open or forget step. `kit_tools/knowledge_eval.py` is not brought over yet, because it reads an earlier research result that this repository does not hold.
+
+## Learning from use (P6)
+
+- **Feedback and learning from use** (`engram_knowledge/feedback.py`, `engram_p6/`): feedback goes into P6.1's event log only, without free text. P6 learns bounded scores from it, but nothing in search reads them yet (shadow mode). Deleting a sentence removes feedback and scores that point at it. P6 data is not part of the knowledge export; P6.6 has its own.
+
+P6 writes its name into `engram_layers` whenever it creates its event or score tables. A memory holding P6 data therefore refuses a deletion unless P6 is loaded, so feedback can never outlive the sentence or fact it points at. Only the event log and the scores hold sentence or fact references; policy versions and saved bundles do not. P6's tests run on made-up data; it has not been measured on real use.
