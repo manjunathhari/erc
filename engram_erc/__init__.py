@@ -99,3 +99,73 @@ __all__ += [
     "TraceLearningReport", "learn_reasoning_traces",
 ]
 __version__ = "0.1.9"
+
+from .improvement import (
+    ProposalKind, ReviewDisposition, ImprovementPolicy, ImprovementProposal,
+    ProposalReport, ProposalReview, ProposalReviewLedger,
+    generate_improvement_proposals,
+)
+__all__ += [
+    "ProposalKind", "ReviewDisposition", "ImprovementPolicy",
+    "ImprovementProposal", "ProposalReport", "ProposalReview",
+    "ProposalReviewLedger", "generate_improvement_proposals",
+]
+__version__ = "0.2.0"
+
+from .counterfactual import (
+    ConclusionSignature, RegressionCase, CaseComparisonStatus, CaseReplay,
+    RegressionSummary, CounterfactualReport, run_counterfactual_suite,
+)
+__all__ += [
+    "ConclusionSignature", "RegressionCase", "CaseComparisonStatus",
+    "CaseReplay", "RegressionSummary", "CounterfactualReport",
+    "run_counterfactual_suite",
+]
+__version__ = "0.2.1"
+
+from .generalization import (
+    DatasetSplit, ValidationVerdict, ValidationCase, GeneralisationPolicy,
+    SplitMetrics, ContextMetrics, GeneralisationReport, evaluate_generalisation,
+)
+__all__ += [
+    "DatasetSplit", "ValidationVerdict", "ValidationCase",
+    "GeneralisationPolicy", "SplitMetrics", "ContextMetrics",
+    "GeneralisationReport", "evaluate_generalisation",
+]
+__version__ = "0.2.2"
+
+from .temporal_external import (
+    ValidationCohort, ValidationObservation, TemporalExternalPolicy, SiteMetrics,
+    TemporalExternalReport, evaluate_temporal_external,
+)
+__all__ += [
+    "ValidationCohort", "ValidationObservation", "TemporalExternalPolicy",
+    "SiteMetrics", "TemporalExternalReport", "evaluate_temporal_external",
+]
+__version__ = "0.2.3"
+
+
+from .statistics import (
+    StatisticalPolicy, Interval, ContextUncertainty, CohortUncertainty,
+    StatisticalRobustnessReport, quantify_temporal_external,
+)
+__all__ += [
+    "StatisticalPolicy", "Interval", "ContextUncertainty", "CohortUncertainty",
+    "StatisticalRobustnessReport", "quantify_temporal_external",
+]
+__version__ = "0.2.4"
+
+
+from .calibration import (
+    CalibrationOutcome, CalibrationObservation, CalibrationLedger,
+    ReliabilityStatus, CalibrationPolicy, ReliabilityBin, CalibrationMetrics,
+    ContextReliability, ReliabilityAlert, ReliabilityMonitoringReport,
+    monitor_reliability,
+)
+__all__ += [
+    "CalibrationOutcome", "CalibrationObservation", "CalibrationLedger",
+    "ReliabilityStatus", "CalibrationPolicy", "ReliabilityBin",
+    "CalibrationMetrics", "ContextReliability", "ReliabilityAlert",
+    "ReliabilityMonitoringReport", "monitor_reliability",
+]
+__version__ = "0.2.5"
