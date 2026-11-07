@@ -25,6 +25,22 @@ from engram import Config, Engrams
 
 STOP, TOKEN = engram.STOP, engram.TOKEN
 
+# Layers outside the engine (the knowledge store and later ones) keep data that rests on sentences. Each adds a step here, so deleting
+# a sentence reaches it. The engine imports none of them. A layer also writes its name into engram_layers in the database, and a
+# deletion is refused if that layer's step is not loaded, so a sentence can never be deleted while what rests on it stays.
+OPEN_STEPS: dict = {}
+FORGET_STEPS: dict = {}
+
+
+def add_open_step(layer: str, step) -> None:
+    """step(db) runs each time a memory opens, after the engine's own tables are ready, so a layer can check and prepare its tables."""
+    OPEN_STEPS[layer] = step
+
+
+def add_forget_step(layer: str, step) -> None:
+    """step(db, sid) runs inside the deletion, before it is committed, so the sentence and what rests on it go together."""
+    FORGET_STEPS[layer] = step
+
 
 def stem(w: str) -> str:
     """Trims word endings, so pet and pets, or organize and organized, match."""
@@ -179,8 +195,10 @@ class ChatMemory:
             CREATE TABLE IF NOT EXISTS sentences(sid INTEGER PRIMARY KEY, chat INTEGER, pos INTEGER, ref TEXT, speaker TEXT, date TEXT, text TEXT, caption TEXT, tokens INTEGER);
             CREATE INDEX IF NOT EXISTS sentences_chat ON sentences(chat);
             CREATE VIRTUAL TABLE IF NOT EXISTS words_index USING fts5(words, tokenize="unicode61 remove_diacritics 0");
+            CREATE TABLE IF NOT EXISTS engram_layers(layer TEXT PRIMARY KEY);
         """)
         self.db.executescript(F.SCHEMA)
+        for layer in sorted(OPEN_STEPS): OPEN_STEPS[layer](self.db)
         self.index = Engrams(cfg=self.cfg)
         self.indexed_any = False
         self.chat = None
@@ -457,10 +475,14 @@ class ChatMemory:
         return (r[0] or "") if r else ""
 
     def forget_sentence(self, sid: int) -> dict:
-        """Deletes one sentence and every fact built on it, then rebuilds what lives in RAM."""
+        """Deletes one sentence and every fact built on it, in this memory and in every layer that keeps data here, then rebuilds what lives in RAM."""
+        layers = sorted(r[0] for r in self.db.execute("SELECT layer FROM engram_layers"))
+        missing = [layer for layer in layers if layer not in FORGET_STEPS]
+        if missing: raise RuntimeError(f"this memory holds data from {', '.join(missing)}; load that layer before deleting, so the deletion reaches it")
         fids = [r[0] for r in self.db.execute("SELECT fact FROM fact_sources WHERE sid=?", (sid,)).fetchall()]
         for fid in fids: self._drop_facts("fact=?", (fid,))
         self._fact_vectors = None
+        for layer in layers: FORGET_STEPS[layer](self.db, sid)
         n = self.db.execute("DELETE FROM sentences WHERE sid=?", (sid,)).rowcount
         self.db.execute("DELETE FROM words_index WHERE rowid=?", (sid,))
         self.db.commit()
