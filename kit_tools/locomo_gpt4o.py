@@ -163,8 +163,7 @@ def main():
         evidence_found={s: round(100 * sum(by[(c, i, s)]["recall"] or 0 for c, i in keys) / max(1, len(keys)), 1) for s in SYSTEMS},
         not_mentioned={s: round(100 * sum("not mentioned" in by[(c, i, s)]["pred"].lower() for c, i in keys) / max(1, len(keys)), 1) for s in SYSTEMS},
         facts_stored=n_facts, fact_chats=len(cache),
-        gemma_final_test_for_comparison="Gemma 3 4B, blind Claude labels: with facts strict 62.4 / generous 79.9; no facts 58.6 / 75.4; current 53.9 / 67.5 (776 questions)",
-        caveats="GPT-4o judge scores here are the generous standard only and are not the same judge as the Gemma figures; blind strict and generous labels follow.")
+        caveats="GPT-4o judge with the generous LoCoMo standard. LongMemEval (kit_tools/lme_gpt4o.py) is the benchmark compared with published systems.")
     json.dump(summary, open(f"{a.save}/locomo_gpt4o_summary{tag}.json", "w"), indent=1)
     print(json.dumps(summary, indent=1))
     print("Done", flush=True)
