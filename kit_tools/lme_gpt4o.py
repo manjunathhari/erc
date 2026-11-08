@@ -117,6 +117,22 @@ def make_chat(fake=False):
     return chat
 
 
+def answer_line_summary(rows):
+    """How often the line holding the answer was shown, not just its session; and where it ranked."""
+    marked = [r for r in rows if r.get("answer_turns")]
+    if not marked: return None
+    all_shown = [r for r in marked if r["answer_turns_shown"] == r["answer_turns"]]
+    at = sorted(r["first_answer_at"] for r in marked if r.get("first_answer_at") is not None)
+    fits = lambda b: round(100 * sum(x <= b for x in at) / len(marked), 1)
+    return dict(questions_with_marked_lines=len(marked),
+                all_answer_lines_shown=round(100 * len(all_shown) / len(marked), 1),
+                right_when_all_shown=round(100 * sum(r["label"] for r in all_shown) / max(1, len(all_shown)), 1),
+                right_when_some_missing=round(100 * sum(r["label"] for r in marked if r not in all_shown) / max(1, len(marked) - len(all_shown)), 1),
+                first_answer_line_within={"800": fits(800), "2000": fits(2000), "4000": fits(4000)},
+                first_answer_line_median_tokens=at[len(at) // 2] if at else None,
+                note="first_answer_at counts memory tokens in search rank order; budgets below the run's own are an estimate")
+
+
 def bootstrap(values, reps=10000, seed=7):
     rng = random.Random(seed)
     n = len(values)
@@ -175,26 +191,39 @@ def main():
         hit = {where[r][0] for r in refs if r in where}
         wanted = set(q["answer_session_ids"])
         reached = len(wanted & hit) / len(wanted) if wanted else None
+        # Answer lines: the turns LongMemEval marks has_answer. Shown = at least one sentence of the turn is in the context.
+        # first_answer_at = memory tokens used, in search rank order, when the first answer sentence comes up (None if never).
+        answer_turns = {(v[0], v[1]) for v in where.values() if v[2]}
+        shown_turns, used, first_at = set(), 0, None
+        for sid in info["sids"]:
+            r = m.db.execute("SELECT ref, tokens FROM sentences WHERE sid=?", (sid,)).fetchone()
+            if not r: continue
+            used += r[1] or 0
+            w = where.get(r[0])
+            if w and w[2]:
+                shown_turns.add((w[0], w[1]))
+                if first_at is None: first_at = used
+        lines = dict(answer_turns=len(answer_turns), answer_turns_shown=len(shown_turns), first_answer_at=first_at)
         m.db.close()
         for tail in ("", "-wal", "-shm"):
             if os.path.exists(path + tail): os.remove(path + tail)
-        return ctx, info["tokens"], reached
+        return ctx, info["tokens"], reached, lines
 
-    def answer_and_judge(q, ctx, tokens, reached, secs):
+    def answer_and_judge(q, ctx, tokens, reached, lines, secs):
         asked = f"{q['question']} (Today is {session_date(q['question_date'])}.)"
         hyp = chat(a.answer_model, K.PROMPTS[a.prompt].format(ctx=ctx, q=asked), 60)
         prompt = get_anscheck_prompt(q["question_type"], q["question"], q["answer"], hyp, abstention="_abs" in q["question_id"])
         verdict = chat(JUDGE_MODEL, prompt, 10)
         return dict(question_id=q["question_id"], question_type=q["question_type"], abstention="_abs" in q["question_id"], question=q["question"], answer=str(q["answer"]),
-                    hypothesis=hyp, judge_reply=verdict, label="yes" in verdict.lower(), context_tokens=tokens, answer_sessions_reached=reached, retrieval_secs=round(secs, 2))
+                    hypothesis=hyp, judge_reply=verdict, label="yes" in verdict.lower(), context_tokens=tokens, answer_sessions_reached=reached, **lines, retrieval_secs=round(secs, 2))
 
     t0 = time.time()
     with open(out_path, "a") as out, concurrent.futures.ThreadPoolExecutor(a.threads) as pool:
         futures = []
         for n, q in enumerate(todo, 1):
             s0 = time.time()
-            ctx, tokens, reached = retrieve(q)  # search runs here, one question at a time; the API calls run in parallel
-            futures.append(pool.submit(answer_and_judge, q, ctx, tokens, reached, time.time() - s0))
+            ctx, tokens, reached, lines = retrieve(q)  # search runs here, one question at a time; the API calls run in parallel
+            futures.append(pool.submit(answer_and_judge, q, ctx, tokens, reached, lines, time.time() - s0))
             if n % 10 == 0: print(f"searched {n}/{len(todo)}, {(time.time() - t0) / n:.1f} s each", flush=True)
             for f in [f for f in futures if f.done()]:
                 out.write(json.dumps(f.result()) + "\n"); out.flush(); futures.remove(f)
@@ -212,6 +241,7 @@ def main():
         by_type={k: dict(n=len(v), accuracy=round(100 * sum(v) / len(v), 1)) for k, v in sorted(by_type.items())},
         not_answerable=dict(n=sum(r["abstention"] for r in rows), right=sum(r["label"] for r in rows if r["abstention"])),
         all_answer_sessions_reached=round(100 * sum(x == 1 for x in reached) / max(1, len(reached)), 1),
+        answer_lines=answer_line_summary(rows),
         mean_context_tokens=round(sum(r["context_tokens"] for r in rows) / max(1, len(rows))),
         published_for_comparison="Supermemory report, LongMemEval-S, GPT-4o judge: Zep 71.2, full context 60.2; Supermemory 84.6 (GPT-5 answers), 85.2 (Gemini 3 Pro). Their 97 (GPT-4o row) equals their Recall@20.",
         caveats="Fast run is a sample of the 470 test questions, so its interval is wide; the published figures use all 500. Errors are not dropped: every question is in the score.")
