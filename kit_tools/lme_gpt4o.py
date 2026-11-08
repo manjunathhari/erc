@@ -149,9 +149,12 @@ def main():
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--context-tokens", type=int, default=800, help="memory text shown to the model (Settings.retrieved_tokens); 800 is the tested design")
     ap.add_argument("--answer-model", default=ANSWER_MODEL, help="model that writes the answers; the judge stays GPT-4o")
-    ap.add_argument("--prompt", default="reason", choices=("reason", "frozen"), help="answer prompt: reason (GPT-4o, default) or frozen (the Gemma prompt)")
+    ap.add_argument("--prompt", default="reason", help="answer prompt: reason (default), v2 or frozen; a comma list (reason,v2) answers every question with each prompt from one search, paired")
+    ap.add_argument("--types", default="", help="only these question types, comma-separated (e.g. single-session-preference); default all")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
     a = ap.parse_args()
+    global ARGS
+    ARGS = a
     os.makedirs(a.save, exist_ok=True)
 
     sys.path.insert(0, os.getcwd())
@@ -163,15 +166,22 @@ def main():
     numbers = session_numbers(data)
     _, test = split_questions(data)
     questions = test[a.start:a.start + a.n] if a.n else test[a.start:]
-    tag = f"_q{a.start + 1}-{a.start + len(questions)}_{a.prompt}"
+    prompts = [p.strip() for p in a.prompt.split(",") if p.strip()]
+    bad = [p for p in prompts if p not in K.PROMPTS]
+    if bad: raise SystemExit(f"unknown prompt {bad}; choose from {sorted(K.PROMPTS)}")
+    types = [t.strip() for t in a.types.split(",") if t.strip()]
+    if types: questions = [q for q in questions if q["question_type"] in types]
+    short = {"single-session-preference": "ssp", "single-session-user": "ssu", "single-session-assistant": "ssa", "temporal-reasoning": "tr", "multi-session": "ms", "knowledge-update": "ku"}
+    rng = f"_q{a.start + 1}-{a.start + (a.n or len(test) - a.start)}"
+    extra = ("" if a.answer_model == ANSWER_MODEL else "_" + a.answer_model) + ("" if a.context_tokens == 800 else f"_ctx{a.context_tokens}")
+    extra += ("_only-" + "+".join(short.get(t, t) for t in types)) if types else ""
+    tags = {p: f"{rng}_{p}{extra}" for p in prompts}
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
-    tag += "" if a.answer_model == ANSWER_MODEL else "_" + a.answer_model
-    tag += "" if a.context_tokens == 800 else f"_ctx{a.context_tokens}"
-    out_path = f"{a.save}/lme_gpt4o_answers{tag}.jsonl"
-    done = {r["question_id"] for r in map(json.loads, open(out_path))} if os.path.exists(out_path) else set()
-    todo = [q for q in questions if q["question_id"] not in done]
-    print(f"{len(questions)} questions, {len(todo)} still to run; answer model {a.answer_model}, context budget {a.context_tokens} tokens, judge {JUDGE_MODEL}", flush=True)
+    out_paths = {p: f"{a.save}/lme_gpt4o_answers{tags[p]}.jsonl" for p in prompts}
+    done = {p: ({r["question_id"] for r in map(json.loads, open(out_paths[p]))} if os.path.exists(out_paths[p]) else set()) for p in prompts}
+    todo = [q for q in questions if any(q["question_id"] not in done[p] for p in prompts)]
+    print(f"{len(questions)} questions, {len(todo)} still to run; prompts {prompts}; answer model {a.answer_model}, context budget {a.context_tokens} tokens, judge {JUDGE_MODEL}", flush=True)
 
     def retrieve(q):
         """Replays the question's history into a fresh memory, closing each session as a chat, then searches."""
@@ -209,34 +219,46 @@ def main():
             if os.path.exists(path + tail): os.remove(path + tail)
         return ctx, info["tokens"], reached, lines
 
-    def answer_and_judge(q, ctx, tokens, reached, lines, secs):
+    def answer_and_judge(p, q, ctx, tokens, reached, lines, secs):
         asked = f"{q['question']} (Today is {session_date(q['question_date'])}.)"
-        hyp = chat(a.answer_model, K.PROMPTS[a.prompt].format(ctx=ctx, q=asked), 60)
+        reply = chat(a.answer_model, K.PROMPTS[p].format(ctx=ctx, q=asked), K.REPLY_TOKENS.get(p, 60))
+        hyp = K.final_answer(reply) if p == "v2" else reply
         prompt = get_anscheck_prompt(q["question_type"], q["question"], q["answer"], hyp, abstention="_abs" in q["question_id"])
         verdict = chat(JUDGE_MODEL, prompt, 10)
         return dict(question_id=q["question_id"], question_type=q["question_type"], abstention="_abs" in q["question_id"], question=q["question"], answer=str(q["answer"]),
-                    hypothesis=hyp, judge_reply=verdict, label="yes" in verdict.lower(), context_tokens=tokens, answer_sessions_reached=reached, **lines, retrieval_secs=round(secs, 2))
+                    hypothesis=hyp, **({"reply": reply} if reply != hyp else {}), judge_reply=verdict, label="yes" in verdict.lower(), context_tokens=tokens, answer_sessions_reached=reached, **lines, retrieval_secs=round(secs, 2))
 
     t0 = time.time()
-    with open(out_path, "a") as out, concurrent.futures.ThreadPoolExecutor(a.threads) as pool:
+    outs = {p: open(out_paths[p], "a") for p in prompts}
+    with concurrent.futures.ThreadPoolExecutor(a.threads) as pool:
         futures = []
+        def flush(wait=False):
+            for f, p in [x for x in futures if wait or x[0].done()]:
+                outs[p].write(json.dumps(f.result()) + "\n"); outs[p].flush(); futures.remove((f, p))
         for n, q in enumerate(todo, 1):
             s0 = time.time()
-            ctx, tokens, reached, lines = retrieve(q)  # search runs here, one question at a time; the API calls run in parallel
-            futures.append(pool.submit(answer_and_judge, q, ctx, tokens, reached, lines, time.time() - s0))
+            ctx, tokens, reached, lines = retrieve(q)  # one search per question; every prompt answers from the same context
+            for p in prompts:
+                if q["question_id"] not in done[p]:
+                    futures.append((pool.submit(answer_and_judge, p, q, ctx, tokens, reached, lines, time.time() - s0), p))
             if n % 10 == 0: print(f"searched {n}/{len(todo)}, {(time.time() - t0) / n:.1f} s each", flush=True)
-            for f in [f for f in futures if f.done()]:
-                out.write(json.dumps(f.result()) + "\n"); out.flush(); futures.remove(f)
-        for f in futures:
-            out.write(json.dumps(f.result()) + "\n"); out.flush()
+            flush()
+        flush(wait=True)
+    for f in outs.values(): f.close()
 
-    rows = [r for r in map(json.loads, open(out_path)) if r["question_id"] in {q["question_id"] for q in questions}]
+    wanted_ids = {q["question_id"] for q in questions}
+    results = {p: summarise(p, [r for r in map(json.loads, open(out_paths[p])) if r["question_id"] in wanted_ids], tags[p]) for p in prompts}
+    if len(prompts) > 1: compare_prompts(prompts, out_paths, wanted_ids, f"{a.save}/lme_gpt4o_compare{rng}_{'-vs-'.join(prompts)}{extra}.json")
+    print("Done", flush=True)
+
+
+def summarise(p, rows, tag):
     labels = [int(r["label"]) for r in rows]
     by_type = {}
     for r in rows: by_type.setdefault(r["question_type"], []).append(int(r["label"]))
     reached = [r["answer_sessions_reached"] for r in rows if r["answer_sessions_reached"] is not None]
     summary = dict(
-        questions=len(rows), answer_prompt=a.prompt, context_tokens_budget=a.context_tokens, answer_model=a.answer_model, no_answer=sum(r["hypothesis"].startswith("[no answer") for r in rows), judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
+        questions=len(rows), answer_prompt=p, context_tokens_budget=ARGS.context_tokens, answer_model=ARGS.answer_model, no_answer=sum(r["hypothesis"].startswith("[no answer") for r in rows), judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
         accuracy=round(100 * sum(labels) / max(1, len(labels)), 1), interval_95=bootstrap(labels) if labels else None,
         by_type={k: dict(n=len(v), accuracy=round(100 * sum(v) / len(v), 1)) for k, v in sorted(by_type.items())},
         not_answerable=dict(n=sum(r["abstention"] for r in rows), right=sum(r["label"] for r in rows if r["abstention"])),
@@ -245,9 +267,32 @@ def main():
         mean_context_tokens=round(sum(r["context_tokens"] for r in rows) / max(1, len(rows))),
         published_for_comparison="Supermemory report, LongMemEval-S, GPT-4o judge: Zep 71.2, full context 60.2; Supermemory 84.6 (GPT-5 answers), 85.2 (Gemini 3 Pro). Their 97 (GPT-4o row) equals their Recall@20.",
         caveats="Fast run is a sample of the 470 test questions, so its interval is wide; the published figures use all 500. Errors are not dropped: every question is in the score.")
-    json.dump(summary, open(f"{a.save}/lme_gpt4o_summary{tag}.json", "w"), indent=1)
+    json.dump(summary, open(f"{ARGS.save}/lme_gpt4o_summary{tag}.json", "w"), indent=1)
     print(json.dumps(summary, indent=1))
-    print("Done", flush=True)
+    return summary
+
+
+def compare_prompts(prompts, out_paths, wanted_ids, path):
+    """Paired comparison of each later prompt against the first, on the questions every prompt answered."""
+    rows = {p: {r["question_id"]: r for r in map(json.loads, open(out_paths[p])) if r["question_id"] in wanted_ids} for p in prompts}
+    base = prompts[0]
+    out = {}
+    for p in prompts[1:]:
+        ids = sorted(set(rows[base]) & set(rows[p]))
+        pairs = [(int(rows[p][i]["label"]), int(rows[base][i]["label"])) for i in ids]
+        rng = random.Random(7); n = len(pairs)
+        d = sorted(sum(x - y for x, y in (pairs[rng.randrange(n)] for _ in range(n))) / n for _ in range(10000)) if n else [0]
+        types = sorted({rows[base][i]["question_type"] for i in ids})
+        out[f"{p}_vs_{base}"] = dict(
+            questions=n, points=round(100 * sum(x - y for x, y in pairs) / max(1, n), 1),
+            interval_95=[round(100 * d[250], 1), round(100 * d[9749], 1)] if n else None,
+            won=sum(x > y for x, y in pairs), lost=sum(x < y for x, y in pairs),
+            by_type={t: dict(n=sum(rows[base][i]["question_type"] == t for i in ids),
+                             **{q: sum(rows[q][i]["label"] for i in ids if rows[base][i]["question_type"] == t) for q in (base, p)}) for t in types},
+            not_mentioned_on_answerable={q: sum("not mentioned" in rows[q][i]["hypothesis"].lower() for i in ids if not rows[q][i]["abstention"]) for q in (base, p)},
+            unanswerable_right={q: sum(rows[q][i]["label"] for i in ids if rows[q][i]["abstention"]) for q in (base, p)})
+    json.dump(out, open(path, "w"), indent=1)
+    print(json.dumps(out, indent=1))
 
 
 if __name__ == "__main__":

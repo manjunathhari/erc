@@ -112,7 +112,35 @@ Excerpts:
 
 Question: {q}
 Answer:"""
-PROMPTS = {"frozen": ANSWER, "reason": ANSWER_REASON}
+# Version 2 (8 Nov 2026, LongMemEval base tweak): short written notes before the answer, aimed at the measured
+# failures with the evidence shown (date order and arithmetic, counting across sessions, changed values, personalised
+# suggestions) and at both calibration failures (refusing when the answer is there, answering what was never said).
+# Only the line after "Answer:" is judged. Needs about 400 reply tokens.
+ANSWER_V2 = """Below are excerpts from past conversations, with noted facts first when there are any. Each excerpt carries the date it was said, in brackets. Answer the question from them.
+
+Work in two parts. First, under "Notes:", write in a few short lines only what the question needs:
+- for dates, order, durations or "how long ago": each relevant event with its date, earliest first, then the arithmetic, taking the date given with the question as today;
+- for "how many", totals or lists: each distinct item, one per line, counting an item mentioned in several conversations only once;
+- if a value changed over time: each value with its date; use the latest unless the question asks about an earlier time;
+- for requests for suggestions, recommendations or advice: what the user has said about their own tastes, habits, plans and past experiences that bears on the request.
+Then write "Answer:" followed by the answer on one line:
+- for a factual question, in as few words as you can;
+- for suggestions, recommendations or advice, one to three sentences built on the specifics in your notes, not general advice.
+You may combine excerpts and draw reasonable inferences. If the excerpts answer the question, answer it even when their wording differs from the question's. Write "Answer: not mentioned" only if the excerpts say nothing about the specific thing asked: check every part of the question (names, places, times); something similar is not the same thing.
+
+Excerpts:
+{ctx}
+
+Question: {q}
+Notes:"""
+PROMPTS = {"frozen": ANSWER, "reason": ANSWER_REASON, "v2": ANSWER_V2}
+REPLY_TOKENS = {"frozen": 60, "reason": 60, "v2": 400}
+
+
+def final_answer(reply):
+    """The judged part of a reply: the text after the last 'Answer:' line, or the whole reply if there is none."""
+    i = reply.rfind("Answer:")
+    return reply[i + len("Answer:"):].strip() if i >= 0 else reply.strip()
 JUDGE = """Your task is to label an answer to a question as 'CORRECT' or 'WRONG'. The gold answer will usually be concise. The generated answer might be much longer, but be generous: as long as it touches on the same topic as the gold answer, count it as CORRECT. For time questions, count it as CORRECT if it refers to the same date or time period, whatever the format.
 
 Question: {q}
