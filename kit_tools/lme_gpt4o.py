@@ -11,7 +11,13 @@ Work resumes where it stopped. Needs OPENAI_API_KEY.
 """
 import argparse, concurrent.futures, datetime, hashlib, json, math, os, random, re, sys, tempfile, time
 
-ANSWER_MODEL = "gpt-4o-2024-08-06"
+ANSWER_MODEL = "gpt-4o-2024-08-06"  # default; --answer-model gpt-5 for the Supermemory comparison
+REASONING_BUDGET = 8000  # max_completion_tokens for reasoning models; hidden reasoning counts against it
+
+
+def is_reasoning(model):
+    """GPT-5 and o-series models take max_completion_tokens and reject temperature, top_p and seed."""
+    return model.startswith(("gpt-5", "o1", "o3", "o4")) and "chat" not in model
 JUDGE_MODEL = "gpt-4o-2024-08-06"  # the official evaluate_qa.py maps "gpt-4o" to this snapshot
 DEV_QUESTIONS = 30  # the same 30 development questions as the Gemma test; never counted
 LONGEST_SENTENCE = 600
@@ -96,8 +102,14 @@ def make_chat(fake=False):
     def chat(model, prompt, max_tokens):
         for attempt in range(6):
             try:
-                r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, temperature=0, max_tokens=max_tokens, seed=7)
-                return r.choices[0].message.content.strip()
+                if is_reasoning(model):  # default reasoning effort; the answer prompt keeps the visible answer short
+                    r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, max_completion_tokens=REASONING_BUDGET)
+                else:
+                    r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, temperature=0, max_tokens=max_tokens, seed=7)
+                text = (r.choices[0].message.content or "").strip()
+                if not text and is_reasoning(model):  # budget spent on reasoning: record it, count it as answered wrong
+                    return f"[no answer: {r.choices[0].finish_reason}]"
+                return text
             except Exception as e:
                 err = e
                 time.sleep(min(60, 2 ** attempt))
@@ -119,6 +131,7 @@ def main():
     ap.add_argument("--n", type=int, default=100, help="test questions to run; 0 = all")
     ap.add_argument("--start", type=int, default=0, help="skip this many test questions first (hash order), for staged runs")
     ap.add_argument("--threads", type=int, default=8)
+    ap.add_argument("--answer-model", default=ANSWER_MODEL, help="model that writes the answers; the judge stays GPT-4o")
     ap.add_argument("--prompt", default="reason", choices=("reason", "frozen"), help="answer prompt: reason (GPT-4o, default) or frozen (the Gemma prompt)")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
     a = ap.parse_args()
@@ -136,10 +149,11 @@ def main():
     tag = f"_q{a.start + 1}-{a.start + len(questions)}_{a.prompt}"
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
+    tag += "" if a.answer_model == ANSWER_MODEL else "_" + a.answer_model
     out_path = f"{a.save}/lme_gpt4o_answers{tag}.jsonl"
     done = {r["question_id"] for r in map(json.loads, open(out_path))} if os.path.exists(out_path) else set()
     todo = [q for q in questions if q["question_id"] not in done]
-    print(f"{len(questions)} questions, {len(todo)} still to run; answer model {ANSWER_MODEL}, judge {JUDGE_MODEL}", flush=True)
+    print(f"{len(questions)} questions, {len(todo)} still to run; answer model {a.answer_model}, judge {JUDGE_MODEL}", flush=True)
 
     def retrieve(q):
         """Replays the question's history into a fresh memory, closing each session as a chat, then searches."""
@@ -166,7 +180,7 @@ def main():
 
     def answer_and_judge(q, ctx, tokens, reached, secs):
         asked = f"{q['question']} (Today is {session_date(q['question_date'])}.)"
-        hyp = chat(ANSWER_MODEL, K.PROMPTS[a.prompt].format(ctx=ctx, q=asked), 60)
+        hyp = chat(a.answer_model, K.PROMPTS[a.prompt].format(ctx=ctx, q=asked), 60)
         prompt = get_anscheck_prompt(q["question_type"], q["question"], q["answer"], hyp, abstention="_abs" in q["question_id"])
         verdict = chat(JUDGE_MODEL, prompt, 10)
         return dict(question_id=q["question_id"], question_type=q["question_type"], abstention="_abs" in q["question_id"], question=q["question"], answer=str(q["answer"]),
@@ -191,7 +205,7 @@ def main():
     for r in rows: by_type.setdefault(r["question_type"], []).append(int(r["label"]))
     reached = [r["answer_sessions_reached"] for r in rows if r["answer_sessions_reached"] is not None]
     summary = dict(
-        questions=len(rows), answer_prompt=a.prompt, answer_model=ANSWER_MODEL, judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
+        questions=len(rows), answer_prompt=a.prompt, answer_model=a.answer_model, no_answer=sum(r["hypothesis"].startswith("[no answer") for r in rows), judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
         accuracy=round(100 * sum(labels) / max(1, len(labels)), 1), interval_95=bootstrap(labels) if labels else None,
         by_type={k: dict(n=len(v), accuracy=round(100 * sum(v) / len(v), 1)) for k, v in sorted(by_type.items())},
         not_answerable=dict(n=sum(r["abstention"] for r in rows), right=sum(r["label"] for r in rows if r["abstention"])),
