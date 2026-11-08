@@ -119,6 +119,7 @@ def main():
     ap.add_argument("--n", type=int, default=100, help="test questions to run; 0 = all")
     ap.add_argument("--start", type=int, default=0, help="skip this many test questions first (hash order), for staged runs")
     ap.add_argument("--threads", type=int, default=8)
+    ap.add_argument("--prompt", default="reason", choices=("reason", "frozen"), help="answer prompt: reason (GPT-4o, default) or frozen (the Gemma prompt)")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
     a = ap.parse_args()
     os.makedirs(a.save, exist_ok=True)
@@ -132,7 +133,7 @@ def main():
     numbers = session_numbers(data)
     _, test = split_questions(data)
     questions = test[a.start:a.start + a.n] if a.n else test[a.start:]
-    tag = f"_q{a.start + 1}-{a.start + len(questions)}"
+    tag = f"_q{a.start + 1}-{a.start + len(questions)}_{a.prompt}"
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
     out_path = f"{a.save}/lme_gpt4o_answers{tag}.jsonl"
@@ -165,7 +166,7 @@ def main():
 
     def answer_and_judge(q, ctx, tokens, reached, secs):
         asked = f"{q['question']} (Today is {session_date(q['question_date'])}.)"
-        hyp = chat(ANSWER_MODEL, K.ANSWER.format(ctx=ctx, q=asked), 60)
+        hyp = chat(ANSWER_MODEL, K.PROMPTS[a.prompt].format(ctx=ctx, q=asked), 60)
         prompt = get_anscheck_prompt(q["question_type"], q["question"], q["answer"], hyp, abstention="_abs" in q["question_id"])
         verdict = chat(JUDGE_MODEL, prompt, 10)
         return dict(question_id=q["question_id"], question_type=q["question_type"], abstention="_abs" in q["question_id"], question=q["question"], answer=str(q["answer"]),
@@ -190,7 +191,7 @@ def main():
     for r in rows: by_type.setdefault(r["question_type"], []).append(int(r["label"]))
     reached = [r["answer_sessions_reached"] for r in rows if r["answer_sessions_reached"] is not None]
     summary = dict(
-        questions=len(rows), answer_model=ANSWER_MODEL, judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
+        questions=len(rows), answer_prompt=a.prompt, answer_model=ANSWER_MODEL, judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
         accuracy=round(100 * sum(labels) / max(1, len(labels)), 1), interval_95=bootstrap(labels) if labels else None,
         by_type={k: dict(n=len(v), accuracy=round(100 * sum(v) / len(v), 1)) for k, v in sorted(by_type.items())},
         not_answerable=dict(n=sum(r["abstention"] for r in rows), right=sum(r["label"] for r in rows if r["abstention"])),

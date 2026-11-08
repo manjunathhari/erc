@@ -46,6 +46,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--save", required=True)
     ap.add_argument("--sample", type=int, default=100000, help="questions to run, in the balanced order; default all")
+    ap.add_argument("--prompt", default="reason", choices=("reason", "frozen"), help="answer prompt: reason (GPT-4o, default) or frozen (the Gemma prompt)")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
     ap.add_argument("--start", type=int, default=0, help="first question (0-based, balanced order), for staged runs")
     ap.add_argument("--stop", type=int, default=0, help="stop before this question; 0 = to the end")
@@ -114,7 +115,7 @@ def main():
     plan = [(c, i) for c, i in plan if any(e in REF[c] for e in convs[c].qs[i]["ev"])]
     total = len(plan)
     plan = plan[a.start:a.stop or None]
-    tag = f"_q{a.start + 1}-{a.start + len(plan)}"
+    tag = f"_q{a.start + 1}-{a.start + len(plan)}_{a.prompt}"
     print(f"running questions {a.start + 1} to {a.start + len(plan)} of {total}", flush=True)
     print(f"{len(plan)} questions, {len(SYSTEMS)} ways each", flush=True)
 
@@ -130,7 +131,7 @@ def main():
                 m.use_facts = name == "with_facts"
                 ctx, info = m.context_for(q["q"])
                 gold_sids = {ref[e] for e in q["ev"] if e in ref}
-                pred, usage, secs = llm(K.ANSWER.format(ctx=ctx, q=q["q"]), max_tokens=60)
+                pred, usage, secs = llm(K.PROMPTS[a.prompt].format(ctx=ctx, q=q["q"]), max_tokens=60)
                 verdict = llm(K.JUDGE.format(q=q["q"], gold=q["answer"], pred=pred), max_tokens=10)[0]
                 out.write(json.dumps(dict(
                     conv=c, i=i, system=name, cat=K.CATS[q["cat"]], q=q["q"], gold=q["answer"], pred=pred,
@@ -153,7 +154,7 @@ def main():
 
     cats = sorted({by[(c, i, SYSTEMS[0])]["cat"] for c, i in keys})
     summary = dict(
-        questions=len(keys), question_range=[a.start + 1, a.start + len(plan)], of_total=total, model=MODEL, judge=f"{MODEL} with vps_kit.JUDGE (generous LoCoMo standard)",
+        questions=len(keys), question_range=[a.start + 1, a.start + len(plan)], of_total=total, answer_prompt=a.prompt, model=MODEL, judge=f"{MODEL} with vps_kit.JUDGE (generous LoCoMo standard)",
         accuracy={s: acc(s) for s in SYSTEMS},
         facts_vs_no_facts=diff("with_facts", "no_facts"), facts_vs_current=diff("with_facts", "current"),
         no_facts_vs_current=diff("no_facts", "current"),

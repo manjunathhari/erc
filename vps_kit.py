@@ -101,6 +101,18 @@ Excerpts:
 
 Question: {q}
 Answer:"""
+# Answer prompt for GPT-4o (phase B, fixed 8 November 2026 after the pilot). The frozen ANSWER above was written
+# for Gemma; GPT-4o read "using only them" literally and refused on 12 of 52 questions whose evidence was all shown.
+# This version allows combining excerpts and reasonable inference, and keeps "not mentioned" for questions the
+# excerpts do not bear on at all.
+ANSWER_REASON = """Below are excerpts from past conversations, with noted facts first when there are any. Answer the question from them, in as few words as you can. You may combine excerpts and draw reasonable inferences from what they say; if the question asks what is likely or what someone would do, give your best inference from them. Resolve relative dates using the date in brackets. Reply exactly "not mentioned" only if nothing in the excerpts bears on the question.
+
+Excerpts:
+{ctx}
+
+Question: {q}
+Answer:"""
+PROMPTS = {"frozen": ANSWER, "reason": ANSWER_REASON}
 JUDGE = """Your task is to label an answer to a question as 'CORRECT' or 'WRONG'. The gold answer will usually be concise. The generated answer might be much longer, but be generous: as long as it touches on the same topic as the gold answer, count it as CORRECT. For time questions, count it as CORRECT if it refers to the same date or time period, whatever the format.
 
 Question: {q}
