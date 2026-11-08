@@ -42,6 +42,11 @@ def session_date(text):
     return f"{d.hour % 12 or 12}:{d.minute:02d} {'am' if d.hour < 12 else 'pm'} on {d.day} {d.strftime('%B')}, {d.year}"
 
 
+def iso_date(text):
+    d = datetime.datetime.strptime(re.sub(r"\s*\(\w+\)\s*", " ", text.strip()), "%Y/%m/%d %H:%M")
+    return d.strftime("%Y-%m-%d")
+
+
 def hash_order(question_id):
     return hashlib.sha256(question_id.encode()).hexdigest()
 
@@ -94,18 +99,25 @@ def get_anscheck_prompt(task, question, answer, response, abstention=False):
 # ---------- OpenAI calls ----------
 
 def make_chat(fake=False):
-    if fake:  # dry run without a key: answers "not mentioned", judge says no
-        return lambda model, prompt, max_tokens: "not mentioned" if max_tokens > 10 else "no"
+    if fake:  # dry run without a key: answers "not mentioned", judge says no, the writer notes one preference per chat
+        def fake_chat(model, prompt, max_tokens, json_mode=False):
+            if json_mode:
+                first = re.search(r"^(D\d+:\d+) (.*)$", prompt, re.M)
+                rows = [dict(type="preference", about="fake", text="Likes " + first.group(2)[:60], category="other", date=None, lines=[first.group(1)])] if first else []
+                return json.dumps({"records": rows})
+            return "not mentioned" if max_tokens > 10 else "no"
+        return fake_chat
     from openai import OpenAI
     client = OpenAI()
 
-    def chat(model, prompt, max_tokens):
+    def chat(model, prompt, max_tokens, json_mode=False):
         for attempt in range(6):
             try:
                 if is_reasoning(model):  # default reasoning effort; the answer prompt keeps the visible answer short
                     r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, max_completion_tokens=REASONING_BUDGET)
                 else:
-                    r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, temperature=0, max_tokens=max_tokens, seed=7)
+                    extra = {"response_format": {"type": "json_object"}} if json_mode else {}
+                    r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, temperature=0, max_tokens=max_tokens, seed=7, **extra)
                 text = (r.choices[0].message.content or "").strip()
                 if not text and is_reasoning(model):  # budget spent on reasoning: record it, count it as answered wrong
                     return f"[no answer: {r.choices[0].finish_reason}]"
@@ -150,6 +162,9 @@ def main():
     ap.add_argument("--context-tokens", type=int, default=800, help="memory text shown to the model (Settings.retrieved_tokens); 800 is the tested design")
     ap.add_argument("--answer-model", default=ANSWER_MODEL, help="model that writes the answers; the judge stays GPT-4o")
     ap.add_argument("--prompt", default="reason", help="answer prompt: reason (default), v2 or frozen; a comma list (reason,v2) answers every question with each prompt from one search, paired")
+    ap.add_argument("--erc", action="store_true", help="add a paired ERC arm for each prompt: the bridge's preference profile first, then Engram excerpts, within the same total budget")
+    ap.add_argument("--writer-model", default="gpt-4o-mini", help="model that writes the typed memory records for the ERC arm (cached per chat)")
+    ap.add_argument("--profile-tokens", type=int, default=600, help="most tokens the ERC profile may take out of --context-tokens")
     ap.add_argument("--types", default="", help="only these question types, comma-separated (e.g. single-session-preference); default all")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
     a = ap.parse_args()
@@ -175,13 +190,41 @@ def main():
     rng = f"_q{a.start + 1}-{a.start + (a.n or len(test) - a.start)}"
     extra = ("" if a.answer_model == ANSWER_MODEL else "_" + a.answer_model) + ("" if a.context_tokens == 800 else f"_ctx{a.context_tokens}")
     extra += ("_only-" + "+".join(short.get(t, t) for t in types)) if types else ""
-    tags = {p: f"{rng}_{p}{extra}" for p in prompts}
+    arms = prompts + ([p + "+erc" for p in prompts] if a.erc else [])
+    tags = {p: f"{rng}_{p.replace('+erc', 'erc')}{extra}" for p in arms}
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
-    out_paths = {p: f"{a.save}/lme_gpt4o_answers{tags[p]}.jsonl" for p in prompts}
-    done = {p: ({r["question_id"] for r in map(json.loads, open(out_paths[p]))} if os.path.exists(out_paths[p]) else set()) for p in prompts}
-    todo = [q for q in questions if any(q["question_id"] not in done[p] for p in prompts)]
-    print(f"{len(questions)} questions, {len(todo)} still to run; prompts {prompts}; answer model {a.answer_model}, context budget {a.context_tokens} tokens, judge {JUDGE_MODEL}", flush=True)
+    out_paths = {p: f"{a.save}/lme_gpt4o_answers{tags[p]}.jsonl" for p in arms}
+    done = {p: ({r["question_id"] for r in map(json.loads, open(out_paths[p]))} if os.path.exists(out_paths[p]) else set()) for p in arms}
+    todo = [q for q in questions if any(q["question_id"] not in done[p] for p in arms)]
+    print(f"{len(questions)} questions, {len(todo)} still to run; arms {arms}; answer model {a.answer_model}, context budget {a.context_tokens} tokens, judge {JUDGE_MODEL}", flush=True)
+    if a.erc:
+        import threading
+        import engram_erc_bridge as B
+        scorer = B._overlap_scores if a.fake else B.make_scorer()
+        cache_path = f"{a.save}/erc_records_{a.writer_model}.json"
+        cache = json.load(open(cache_path)) if os.path.exists(cache_path) else {}
+        cache_lock = threading.Lock()
+        writer_pool = concurrent.futures.ThreadPoolExecutor(16)
+        print(f"ERC arm: writer {a.writer_model}, {len(cache)} chats already written, profile up to {a.profile_tokens} tokens", flush=True)
+
+        def write_chat(key, lines, d):
+            reply = chat(a.writer_model, B.writer_prompt(lines, f"{session_date(d)} ({iso_date(d)})"), 900, json_mode=True)
+            rows = B.parse_records(reply, iso_date(d), {i for i, _ in lines})
+            with cache_lock: cache[key] = rows
+
+        def records_for(q):
+            jobs = []
+            for i, s, d in zip(q["haystack_session_ids"], q["haystack_sessions"], q["haystack_dates"]):
+                key = session_key(i, s)
+                if key in cache: continue
+                lines = [(lid, sent) for lid, speaker, sent, _, _ in session_lines(s, numbers[key]) if speaker == "User"]
+                if not lines: cache[key] = []; continue
+                jobs.append(writer_pool.submit(write_chat, key, lines, d))
+            for j in jobs: j.result()
+            if jobs:
+                with cache_lock: json.dump(cache, open(cache_path, "w"))
+            return {session_key(i, s): cache[session_key(i, s)] for i, s in zip(q["haystack_session_ids"], q["haystack_sessions"])}
 
     def retrieve(q):
         """Replays the question's history into a fresh memory, closing each session as a chat, then searches."""
@@ -214,12 +257,27 @@ def main():
                 shown_turns.add((w[0], w[1]))
                 if first_at is None: first_at = used
         lines = dict(answer_turns=len(answer_turns), answer_turns_shown=len(shown_turns), first_answer_at=first_at)
+        ctxs = {"raw": (ctx, info["tokens"])}
+        if a.erc:
+            state = B.build_memory_state(records_for(q))
+            prof = B.profile_section(state, q["question"], a.profile_tokens, scorer)
+            budget, keep, used2 = a.context_tokens - (B.count_tokens(prof) if prof else 0), [], 0
+            for sid in info["sids"]:  # same search ranking, cut to the space the profile leaves
+                t = m._tokens(sid) + 8
+                if used2 + t > budget: break
+                keep.append(sid); used2 += t
+            raw2 = m.text_of(sorted(keep)) if keep else "(no excerpts)"
+            ctxs["erc"] = ((prof + "\n\n" + raw2) if prof else raw2, used2 + (B.count_tokens(prof) if prof else 0))
+            lines = dict(lines, erc_records=len(state.records), erc_superseded=len(state.superseded),
+                         erc_profile_tokens=B.count_tokens(prof) if prof else 0)
         m.db.close()
         for tail in ("", "-wal", "-shm"):
             if os.path.exists(path + tail): os.remove(path + tail)
-        return ctx, info["tokens"], reached, lines
+        return ctxs, reached, lines
 
-    def answer_and_judge(p, q, ctx, tokens, reached, lines, secs):
+    def answer_and_judge(arm, q, ctxs, reached, lines, secs):
+        p = arm.replace("+erc", "")
+        ctx, tokens = ctxs["erc" if arm.endswith("+erc") else "raw"]
         asked = f"{q['question']} (Today is {session_date(q['question_date'])}.)"
         reply = chat(a.answer_model, K.PROMPTS[p].format(ctx=ctx, q=asked), K.REPLY_TOKENS.get(p, 60))
         hyp = K.final_answer(reply) if p == "v2" else reply
@@ -229,7 +287,7 @@ def main():
                     hypothesis=hyp, **({"reply": reply} if reply != hyp else {}), judge_reply=verdict, label="yes" in verdict.lower(), context_tokens=tokens, answer_sessions_reached=reached, **lines, retrieval_secs=round(secs, 2))
 
     t0 = time.time()
-    outs = {p: open(out_paths[p], "a") for p in prompts}
+    outs = {p: open(out_paths[p], "a") for p in arms}
     with concurrent.futures.ThreadPoolExecutor(a.threads) as pool:
         futures = []
         def flush(wait=False):
@@ -237,18 +295,19 @@ def main():
                 outs[p].write(json.dumps(f.result()) + "\n"); outs[p].flush(); futures.remove((f, p))
         for n, q in enumerate(todo, 1):
             s0 = time.time()
-            ctx, tokens, reached, lines = retrieve(q)  # one search per question; every prompt answers from the same context
-            for p in prompts:
+            ctxs, reached, lines = retrieve(q)  # one search per question; every arm answers from the same search
+            for p in arms:
                 if q["question_id"] not in done[p]:
-                    futures.append((pool.submit(answer_and_judge, p, q, ctx, tokens, reached, lines, time.time() - s0), p))
+                    futures.append((pool.submit(answer_and_judge, p, q, ctxs, reached, lines, time.time() - s0), p))
             if n % 10 == 0: print(f"searched {n}/{len(todo)}, {(time.time() - t0) / n:.1f} s each", flush=True)
             flush()
         flush(wait=True)
     for f in outs.values(): f.close()
 
     wanted_ids = {q["question_id"] for q in questions}
-    results = {p: summarise(p, [r for r in map(json.loads, open(out_paths[p])) if r["question_id"] in wanted_ids], tags[p]) for p in prompts}
-    if len(prompts) > 1: compare_prompts(prompts, out_paths, wanted_ids, f"{a.save}/lme_gpt4o_compare{rng}_{'-vs-'.join(prompts)}{extra}.json")
+    results = {p: summarise(p, [r for r in map(json.loads, open(out_paths[p])) if r["question_id"] in wanted_ids], tags[p]) for p in arms}
+    if len(arms) > 1: compare_prompts(arms, out_paths, wanted_ids, f"{a.save}/lme_gpt4o_compare{rng}_{'-vs-'.join(t.replace('+erc', 'erc') for t in arms)}{extra}.json")
+    if a.erc: writer_pool.shutdown()
     print("Done", flush=True)
 
 
