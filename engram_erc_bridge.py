@@ -83,6 +83,29 @@ def writer_prompt(lines: Iterable[tuple[str, str]], date: str) -> str:
 
 
 _DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_LINE = re.compile(r"D?(\d+):(\d+)")
+
+
+def _line_ids(raw, valid_lines: set[str] | None) -> list[str]:
+    """Writer line references -> known line ids. Accepts "D12:3", "12:3", ranges like "D12:3-D12:5", and bare
+    sentence numbers (3) when the chat has a single prefix; anything that does not match a known line is dropped."""
+    items = raw if isinstance(raw, list) else [raw]
+    prefix = None
+    if valid_lines:
+        heads = {v.split(":")[0] for v in valid_lines}
+        prefix = heads.pop() if len(heads) == 1 else None
+    out = []
+    for x in items:
+        text = str(x).strip()
+        found = [f"D{a}:{b}" for a, b in _LINE.findall(text)]
+        if len(found) == 2 and "-" in text and found[0].split(":")[0] == found[1].split(":")[0]:
+            head, lo, hi = found[0].split(":")[0], int(found[0].split(":")[1]), int(found[1].split(":")[1])
+            found = [f"{head}:{n}" for n in range(lo, hi + 1)] if 0 <= hi - lo <= 50 else found
+        if not found and prefix and text.isdigit():
+            found = [f"{prefix}:{int(text)}"]
+        out += found
+    if valid_lines is not None: out = [x for x in out if x in valid_lines]
+    return out
 
 
 def parse_records(reply: str, chat_date: str, valid_lines: set[str] | None = None) -> list[dict]:
@@ -103,8 +126,7 @@ def parse_records(reply: str, chat_date: str, valid_lines: set[str] | None = Non
         cat = next((c for c in TAXONOMY if c == cat), next((c for c in TAXONOMY if cat and cat.split()[0] in c), "other"))
         date = str(r.get("date") or "").strip()
         date = date if _DATE.match(date) else None
-        lines = [str(x) for x in r.get("lines", []) if str(x).strip()]
-        if valid_lines is not None: lines = [x for x in lines if x in valid_lines]
+        lines = _line_ids(r.get("lines", []), valid_lines)
         out.append(dict(type=kind, about=about, text=text[:300], category=cat, date=date, said_on=chat_date,
                         polarity=r.get("polarity") is not False, lines=sorted(set(lines))))
     return out[:12]

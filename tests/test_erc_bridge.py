@@ -80,3 +80,9 @@ def test_memory_profile_registered_and_core_untouched():
     assert get_profile("engram-memory") is B.MEMORY_PROFILE
     assert "preference" in B.MEMORY_PROFILE.node_subtypes
     assert "preference" not in get_profile("general").node_subtypes
+
+
+def test_line_references_are_normalised():
+    valid = {"D7:1", "D7:2", "D7:3", "D7:4"}
+    out = B.parse_records(reply(rec("event", "x", "Did a thing", lines=("7:1", "D7:2-D7:4", 3, "D9:1", "nonsense"))), "2023-05-20", valid)
+    assert out[0]["lines"] == ["D7:1", "D7:2", "D7:3", "D7:4"]
