@@ -16,6 +16,7 @@ Claude labels are added afterwards from the answers file, as in the Gemma test.
   python kit_tools/locomo_gpt4o.py --save results_dir            # all test questions
   python kit_tools/locomo_gpt4o.py --save results_dir --sample 40 # quick check
   python kit_tools/locomo_gpt4o.py --save results_dir --fake      # dry run, no key, no API calls
+  Staged: --stop 100 (pilot; writes all facts), then --start 100 --facts results/locomo_gpt4o_facts.json
 
 Work resumes where it stopped: facts are cached per chat and answers are appended per question.
 Needs OPENAI_API_KEY and the LoCoMo data in ./locomo (git clone https://github.com/snap-research/locomo).
@@ -46,6 +47,9 @@ def main():
     ap.add_argument("--save", required=True)
     ap.add_argument("--sample", type=int, default=100000, help="questions to run, in the balanced order; default all")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
+    ap.add_argument("--start", type=int, default=0, help="first question (0-based, balanced order), for staged runs")
+    ap.add_argument("--stop", type=int, default=0, help="stop before this question; 0 = to the end")
+    ap.add_argument("--facts", default="", help="use this facts file from an earlier run and write no new facts")
     ap.add_argument("--design", default="tested", help="tested (default) or light; light only for dry runs without wordllama")
     a = ap.parse_args()
     os.makedirs(a.save, exist_ok=True)
@@ -65,7 +69,14 @@ def main():
     convs = {c: K.load_conv(K.DATA[c]) for c in TEST}
     tmp = tempfile.mkdtemp()
     cache_path = f"{a.save}/locomo_gpt4o_facts.json"
-    cache = json.load(open(cache_path)) if os.path.exists(cache_path) else {}
+    if a.facts:
+        cache = json.load(open(a.facts))
+        wanted = {f"{c}:{s}" for c in TEST for s in {t["session"] for t in convs[c].turns}}
+        missing = sorted(wanted - set(cache))
+        if missing: raise SystemExit(f"facts file lacks {len(missing)} chats, e.g. {missing[:3]}; refusing to write new facts")
+        print(f"using facts from {a.facts} ({len(cache)} chats); no new facts will be written", flush=True)
+    else:
+        cache = json.load(open(cache_path)) if os.path.exists(cache_path) else {}
 
     def replay(c, design, with_helper):
         state = {}
@@ -73,6 +84,7 @@ def main():
         def helper(prompt, max_tokens=0):
             key = state["key"]
             if key not in cache:
+                if a.facts: raise SystemExit(f"facts for chat {key} missing from {a.facts}")
                 t0 = time.time()
                 cache[key] = dict(raw=llm(prompt, max_tokens=max_tokens)[0], secs=round(time.time() - t0, 1))
                 json.dump(cache, open(cache_path, "w"))
@@ -100,9 +112,13 @@ def main():
     CREF = {c: dict(CUR[c].db.execute("SELECT ref, sid FROM sentences").fetchall()) for c in TEST}
     plan = [(c, i) for c, i in K.balanced(convs, TEST, a.sample) if convs[c].qs[i]["cat"] != 5]
     plan = [(c, i) for c, i in plan if any(e in REF[c] for e in convs[c].qs[i]["ev"])]
+    total = len(plan)
+    plan = plan[a.start:a.stop or None]
+    tag = f"_q{a.start + 1}-{a.start + len(plan)}"
+    print(f"running questions {a.start + 1} to {a.start + len(plan)} of {total}", flush=True)
     print(f"{len(plan)} questions, {len(SYSTEMS)} ways each", flush=True)
 
-    path = f"{a.save}/locomo_gpt4o_answers.jsonl"
+    path = f"{a.save}/locomo_gpt4o_answers{tag}.jsonl"
     done = {(r["conv"], r["i"], r["system"]) for r in map(json.loads, open(path))} if os.path.exists(path) else set()
     t0 = time.time()
     with open(path, "a") as out:
@@ -137,7 +153,7 @@ def main():
 
     cats = sorted({by[(c, i, SYSTEMS[0])]["cat"] for c, i in keys})
     summary = dict(
-        questions=len(keys), model=MODEL, judge=f"{MODEL} with vps_kit.JUDGE (generous LoCoMo standard)",
+        questions=len(keys), question_range=[a.start + 1, a.start + len(plan)], of_total=total, model=MODEL, judge=f"{MODEL} with vps_kit.JUDGE (generous LoCoMo standard)",
         accuracy={s: acc(s) for s in SYSTEMS},
         facts_vs_no_facts=diff("with_facts", "no_facts"), facts_vs_current=diff("with_facts", "current"),
         no_facts_vs_current=diff("no_facts", "current"),
@@ -148,7 +164,7 @@ def main():
         facts_stored=n_facts, fact_chats=len(cache),
         gemma_final_test_for_comparison="Gemma 3 4B, blind Claude labels: with facts strict 62.4 / generous 79.9; no facts 58.6 / 75.4; current 53.9 / 67.5 (776 questions)",
         caveats="GPT-4o judge scores here are the generous standard only and are not the same judge as the Gemma figures; blind strict and generous labels follow.")
-    json.dump(summary, open(f"{a.save}/locomo_gpt4o_summary.json", "w"), indent=1)
+    json.dump(summary, open(f"{a.save}/locomo_gpt4o_summary{tag}.json", "w"), indent=1)
     print(json.dumps(summary, indent=1))
     print("Done", flush=True)
 

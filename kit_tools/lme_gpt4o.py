@@ -6,6 +6,7 @@ Search is the tested design from main (open_memory, saved networks trained on Lo
   python kit_tools/lme_gpt4o.py --data longmemeval_s_cleaned.json --save results_dir --n 100
 
 --n 100 is the fast run (first 100 test questions in hash order, about 20 minutes); --n 0 runs every question.
+--start 100 --n 0 runs the rest after the first 100 (staged runs). Output files carry the question range in their names.
 Work resumes where it stopped. Needs OPENAI_API_KEY.
 """
 import argparse, concurrent.futures, datetime, hashlib, json, math, os, random, re, sys, tempfile, time
@@ -116,6 +117,7 @@ def main():
     ap.add_argument("--data", required=True)
     ap.add_argument("--save", required=True)
     ap.add_argument("--n", type=int, default=100, help="test questions to run; 0 = all")
+    ap.add_argument("--start", type=int, default=0, help="skip this many test questions first (hash order), for staged runs")
     ap.add_argument("--threads", type=int, default=8)
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
     a = ap.parse_args()
@@ -129,10 +131,11 @@ def main():
     data = json.load(open(a.data))
     numbers = session_numbers(data)
     _, test = split_questions(data)
-    questions = test[:a.n] if a.n else test
+    questions = test[a.start:a.start + a.n] if a.n else test[a.start:]
+    tag = f"_q{a.start + 1}-{a.start + len(questions)}"
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
-    out_path = f"{a.save}/lme_gpt4o_answers.jsonl"
+    out_path = f"{a.save}/lme_gpt4o_answers{tag}.jsonl"
     done = {r["question_id"] for r in map(json.loads, open(out_path))} if os.path.exists(out_path) else set()
     todo = [q for q in questions if q["question_id"] not in done]
     print(f"{len(questions)} questions, {len(todo)} still to run; answer model {ANSWER_MODEL}, judge {JUDGE_MODEL}", flush=True)
@@ -195,7 +198,7 @@ def main():
         mean_context_tokens=round(sum(r["context_tokens"] for r in rows) / max(1, len(rows))),
         published_for_comparison="Supermemory report, LongMemEval-S, GPT-4o judge: Zep 71.2, full context 60.2; Supermemory 84.6 (GPT-5 answers), 85.2 (Gemini 3 Pro). Their 97 (GPT-4o row) equals their Recall@20.",
         caveats="Fast run is a sample of the 470 test questions, so its interval is wide; the published figures use all 500. Errors are not dropped: every question is in the score.")
-    json.dump(summary, open(f"{a.save}/lme_gpt4o_summary.json", "w"), indent=1)
+    json.dump(summary, open(f"{a.save}/lme_gpt4o_summary{tag}.json", "w"), indent=1)
     print(json.dumps(summary, indent=1))
     print("Done", flush=True)
 
