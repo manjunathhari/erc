@@ -131,6 +131,7 @@ def main():
     ap.add_argument("--n", type=int, default=100, help="test questions to run; 0 = all")
     ap.add_argument("--start", type=int, default=0, help="skip this many test questions first (hash order), for staged runs")
     ap.add_argument("--threads", type=int, default=8)
+    ap.add_argument("--context-tokens", type=int, default=800, help="memory text shown to the model (Settings.retrieved_tokens); 800 is the tested design")
     ap.add_argument("--answer-model", default=ANSWER_MODEL, help="model that writes the answers; the judge stays GPT-4o")
     ap.add_argument("--prompt", default="reason", choices=("reason", "frozen"), help="answer prompt: reason (GPT-4o, default) or frozen (the Gemma prompt)")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
@@ -150,15 +151,16 @@ def main():
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
     tag += "" if a.answer_model == ANSWER_MODEL else "_" + a.answer_model
+    tag += "" if a.context_tokens == 800 else f"_ctx{a.context_tokens}"
     out_path = f"{a.save}/lme_gpt4o_answers{tag}.jsonl"
     done = {r["question_id"] for r in map(json.loads, open(out_path))} if os.path.exists(out_path) else set()
     todo = [q for q in questions if q["question_id"] not in done]
-    print(f"{len(questions)} questions, {len(todo)} still to run; answer model {a.answer_model}, judge {JUDGE_MODEL}", flush=True)
+    print(f"{len(questions)} questions, {len(todo)} still to run; answer model {a.answer_model}, context budget {a.context_tokens} tokens, judge {JUDGE_MODEL}", flush=True)
 
     def retrieve(q):
         """Replays the question's history into a fresh memory, closing each session as a chat, then searches."""
         path = f"{tmp}/{hash_order(q['question_id'])[:12]}.db"
-        m = open_memory(path, durable=False)
+        m = open_memory(path, durable=False, settings=E.Settings(retrieved_tokens=a.context_tokens))
         where, total = {}, len(q["haystack_sessions"])
         for n, (i, s, d) in enumerate(zip(q["haystack_session_ids"], q["haystack_sessions"], q["haystack_dates"]), 1):
             date = session_date(d)
@@ -205,7 +207,7 @@ def main():
     for r in rows: by_type.setdefault(r["question_type"], []).append(int(r["label"]))
     reached = [r["answer_sessions_reached"] for r in rows if r["answer_sessions_reached"] is not None]
     summary = dict(
-        questions=len(rows), answer_prompt=a.prompt, answer_model=a.answer_model, no_answer=sum(r["hypothesis"].startswith("[no answer") for r in rows), judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
+        questions=len(rows), answer_prompt=a.prompt, context_tokens_budget=a.context_tokens, answer_model=a.answer_model, no_answer=sum(r["hypothesis"].startswith("[no answer") for r in rows), judge=JUDGE_MODEL, search="Engram tested design (open_memory, main)",
         accuracy=round(100 * sum(labels) / max(1, len(labels)), 1), interval_95=bootstrap(labels) if labels else None,
         by_type={k: dict(n=len(v), accuracy=round(100 * sum(v) / len(v), 1)) for k, v in sorted(by_type.items())},
         not_answerable=dict(n=sum(r["abstention"] for r in rows), right=sum(r["label"] for r in rows if r["abstention"])),
