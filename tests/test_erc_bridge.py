@@ -120,3 +120,30 @@ def test_fact_walk_seeds_from_search_results():
     st = _facts_state()
     assert B.fact_walk(st, "Where is the club's boss from?") == []
     assert B.fact_walk(st, "Where is the club's boss from?", seeds=[1]) == [3, 5]  # seed fact 1 -> subject Liverpool F.C. -> current chain
+
+
+def test_superseded_refs_are_hidden_only_at_answer_time():
+    st = _facts_state()  # facts 1 and 4 were replaced by 3 and 5
+    assert B.is_superseded_ref(st, "F1") and B.is_superseded_ref(st, "F4")
+    assert not B.is_superseded_ref(st, "F3") and not B.is_superseded_ref(st, "F5")
+    assert not any(B.is_superseded_ref(st, r) for r in (None, "", "D1:3", "F", "Fx", "F99"))
+    assert 1 in st.records and 4 in st.records  # nothing is removed from the stored records
+
+
+def test_arm_e_context_never_shows_replaced_facts(tmp_path):
+    import json, subprocess, sys, os
+    facts = ["The chairperson of Liverpool F.C. is John W. Henry.", "John W. Henry is a citizen of United States of America.",
+             "The chairperson of Liverpool F.C. is Ali Khan.", "Ali Khan is a citizen of Pakistan.", "Ali Khan is a citizen of India."]
+    rows = [dict(source="factconsolidation_mh_test", context="Here is a list of facts:\n" + "\n".join(f"{i}. {f}" for i, f in enumerate(facts, 1)),
+                 questions=["What is the country of citizenship of the chairperson of Liverpool F.C.?"], answers=[["India"]])]
+    data = tmp_path / "rows.json"; data.write_text(json.dumps(rows))
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    subprocess.run([sys.executable, "kit_tools/mab_cr.py", "--parquet", str(data), "--save", str(tmp_path / "out"), "--fake",
+                    "--arms", "C,E", "--keep-context", "--design", "light"], cwd=root, check=True, capture_output=True)
+    row = lambda arm: json.loads(open(tmp_path / "out" / f"mab_factconsolidation_mh_test_{arm}_fake.jsonl").readline())
+    c, e = row("C"), row("E")
+    replaced = [n for n in (1, 2, 3, 4, 5) if f"Fact {n}:" in c["context"] and f"Fact {n}:" not in e["context"]]
+    assert e["replaced_in_search"] >= 1 and replaced and set(replaced) <= {1, 4}  # only replaced facts disappear from E
+    assert "Fact 5:" in e["context"] and "Fact 3:" in e["context"]
+    summary = json.load(open(tmp_path / "out" / "mab_summary_factconsolidation_mh_test_fake.json"))
+    assert summary["arms"] == ["C", "E"] and summary["E_minus_C"] is not None and summary["E_minus_B"] is None

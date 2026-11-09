@@ -5,11 +5,13 @@ Four paired arms answer every question from one Engram search and one set of wri
   B  writer records for the question's entities, every version, oldest first, then excerpts (same total)
   C  ERC's current facts only (contradiction finder over version keys; multi-hop walk on ERC's graph), then excerpts
   D  ERC's current facts only, no excerpts
+  E  as C, but excerpt lines whose fact ERC marked replaced are left out (addendum, protocol section 9)
 Scoring is the paper's SubEM (normalised gold answer contained in the answer), on the line after "Answer:".
 
   python kit_tools/mab_cr.py --parquet Conflict_Resolution.parquet --list              # rows, sizes, sample lines; no API
   python kit_tools/mab_cr.py --parquet Conflict_Resolution.parquet --save out --fake --sources factconsolidation_sh_6k --n 5
   python kit_tools/mab_cr.py --parquet Conflict_Resolution.parquet --save out --sources factconsolidation_sh_32k
+  python kit_tools/mab_cr.py --parquet Conflict_Resolution.parquet --save out --sources factconsolidation_mh_32k --arms B,C,E
 
 Each source is one memory ("inject once, ask many"). Work resumes where it stopped; writer records are cached per fact.
 Needs OPENAI_API_KEY except with --list or --fake.
@@ -21,7 +23,7 @@ sys.path.insert(0, os.getcwd())
 from lme_gpt4o import make_chat, bootstrap  # noqa: E402
 
 ANSWER_MODEL = "gpt-4o-2024-08-06"
-ARMS = ("A", "B", "C", "D")
+ALL_ARMS = ("A", "B", "C", "D", "E")
 FACT_LINE = re.compile(r"^\s*(?:fact\s*)?\[?(\d+)\]?\s*[.:)\]]\s*(.+?)\s*$", re.I)
 
 
@@ -88,7 +90,12 @@ def main():
     ap.add_argument("--hops", type=int, default=4, help="links followed from the question's entities (MQuAKE chains have up to 4)")
     ap.add_argument("--seed-facts", type=int, default=10, help="Engram's top N results also seed the walk (0 = question names only)")
     ap.add_argument("--threads", type=int, default=3, help="parallel answer calls; keep low to stay under the account's tokens-per-minute limit")
+    ap.add_argument("--design", default="tested", help="Engram search design; 'light' only for offline tests (benchmarks use 'tested')")
+    ap.add_argument("--keep-context", action="store_true", help="also save each arm's full context in its answer file (for review)")
+    ap.add_argument("--arms", default="A,B,C,D", help="comma list of arms to answer, from A,B,C,D,E (E: protocol section 9)")
     a = ap.parse_args()
+    ARMS = tuple(x.strip().upper() for x in a.arms.split(",") if x.strip())
+    if not ARMS or any(x not in ALL_ARMS for x in ARMS): raise SystemExit(f"--arms must be from {ALL_ARMS}")
 
     rows = load_rows(a.parquet)
     if a.list:
@@ -150,7 +157,7 @@ def main():
 
         # 2. Engram memory: one chat per chunk of facts, dates one day apart so date order = serial order
         t0 = time.time()
-        m = open_memory(f"{tempfile.mkdtemp()}/{src}.db", durable=False, settings=E.Settings(retrieved_tokens=a.context_tokens))
+        m = open_memory(f"{tempfile.mkdtemp()}/{src}.db", design=a.design, durable=False, settings=E.Settings(retrieved_tokens=a.context_tokens))
         chunks, cur, used = [], [], 0
         for n in sorted(facts):
             t = len(facts[n]) // 4 + 6
@@ -176,7 +183,8 @@ def main():
             reply = chat(a.answer_model, prompt.format(ctx=ctx, q=q), 400)
             hyp = K.final_answer(reply)
             return arm, dict(i=i, source=src, arm=arm, question=q, answers=golds, hypothesis=hyp, reply=reply,
-                             label=sub_em(hyp, golds), answer_in_context=sub_em(ctx, golds), context_tokens=B.count_tokens(ctx), **info)
+                             label=sub_em(hyp, golds), answer_in_context=sub_em(ctx, golds), context_tokens=B.count_tokens(ctx),
+                             **info, **(dict(context=ctx) if a.keep_context else {}))
 
         t0 = time.time()
         with concurrent.futures.ThreadPoolExecutor(a.threads) as pool:
@@ -194,16 +202,21 @@ def main():
                 sec_c = B.facts_section(state, walk_cur, a.facts_tokens, "[Current facts from the memory layer: the newest version of each, linked from the question]")
                 sec_d = B.facts_section(state, walk_cur, a.context_tokens, "[Current facts from the memory layer: the newest version of each, linked from the question]")
 
-                def with_excerpts(sec):
+                refs = {sid: (m.db.execute("SELECT ref FROM sentences WHERE sid=?", (sid,)).fetchone() or [None])[0] for sid in info["sids"]}
+
+                def with_excerpts(sec, clean=False):  # clean=True (arm E): skip lines whose fact ERC marked replaced
                     budget, keep, u = a.context_tokens - (B.count_tokens(sec) if sec else 0), [], 0
                     for sid in info["sids"]:
+                        if clean and B.is_superseded_ref(state, refs[sid]): continue
                         t = m._tokens(sid) + 8
                         if u + t > budget: break
                         keep.append(sid); u += t
                     body = m.text_of(sorted(keep)) if keep else ""
                     return "\n\n".join(x for x in (sec, body) if x) or "(nothing found)"
-                ctxs = {"A": raw, "B": with_excerpts(sec_b), "C": with_excerpts(sec_c), "D": sec_d or "(nothing found)"}
-                extra = dict(walk_all=len(walk_all), walk_current=len(walk_cur))
+                ctxs = {"A": raw, "B": with_excerpts(sec_b), "C": with_excerpts(sec_c), "D": sec_d or "(nothing found)",
+                        "E": with_excerpts(sec_c, clean=True)}
+                hidden = sum(B.is_superseded_ref(state, refs[s]) for s in info["sids"])
+                extra = dict(walk_all=len(walk_all), walk_current=len(walk_cur), replaced_in_search=hidden)
                 for arm in ARMS:
                     if i not in done[arm]: futures.append(pool.submit(answer, arm, i, q, list(golds), ctxs[arm], extra))
                 if k % 10 == 0: print(f"  searched {k}/{len(qs)}, {(time.time() - t0) / k:.1f} s each", flush=True)
@@ -220,6 +233,7 @@ def main():
         acc = {arm: round(100 * sum(res[arm][i]["label"] for i in ids) / max(1, len(ids)), 1) for arm in ARMS}
 
         def diff(x, y):
+            if x not in res or y not in res: return None
             vals = [int(res[x][i]["label"]) - int(res[y][i]["label"]) for i in ids]
             rng = random.Random(7); n = len(vals)
             d = sorted(sum(vals[rng.randrange(n)] for _ in range(n)) / n for _ in range(10000)) if n else [0]
@@ -228,14 +242,18 @@ def main():
         summary = dict(
             source=src, questions=len(ids), answer_model=a.answer_model, writer_model=a.writer_model, fake=a.fake,
             accuracy_subem=acc, interval_95={arm: bootstrap([int(res[arm][i]["label"]) for i in ids]) if ids else None for arm in ARMS},
+            arms=list(ARMS),
             C_minus_B=diff("C", "B"), C_minus_A=diff("C", "A"), C_minus_D=diff("C", "D"),
+            E_minus_B=diff("E", "B"), E_minus_C=diff("E", "C"),
+            mean_replaced_lines_in_search=round(sum(res[ARMS[0]][i].get("replaced_in_search", 0) for i in ids) / max(1, len(ids)), 1),
             answer_in_context={arm: round(100 * sum(res[arm][i]["answer_in_context"] for i in ids) / max(1, len(ids)), 1) for arm in ARMS},
             facts=len(facts), records=len(records), version_keys_with_more_than_one=state.keys_with_versions, superseded=len(state.superseded),
-            mean_walk={"all_versions": round(sum(res["B"][i]["walk_all"] for i in ids) / max(1, len(ids)), 1),
-                       "current": round(sum(res["C"][i]["walk_current"] for i in ids) / max(1, len(ids)), 1)},
+            mean_walk={"all_versions": round(sum(res[ARMS[0]][i]["walk_all"] for i in ids) / max(1, len(ids)), 1),
+                       "current": round(sum(res[ARMS[0]][i]["walk_current"] for i in ids) / max(1, len(ids)), 1)},
             settings=dict(context_tokens=a.context_tokens, facts_tokens=a.facts_tokens, chunk_tokens=a.chunk_tokens, hops=a.hops, seed_facts=a.seed_facts),
             published="MemoryAgentBench GPT-4o long context 60 SH / 5 MH; Mem0 18/2; MemGPT 28/3; deterministic pipeline (arXiv 2606.01435) 93/41 at 262K",
-            rule="ERC adds value if C beats B by >=10 points (interval excluding 0) at the largest length; stop if C-B < 5 on SH and MH at every length")
+            rule="ERC adds value if C beats B by >=10 points (interval excluding 0) at the largest length; stop if C-B < 5 on SH and MH at every length",
+            rule_arm_E="addendum (section 9): E-B >=10 with interval excluding 0 -> confirm at 262K; 5-10 or interval touching 0 -> unclear; < 5 -> ERC stays out of chat memory")
         json.dump(summary, open(f"{a.save}/mab_summary_{src}{tag}.json", "w"), indent=1)
         print(json.dumps(summary, indent=1), flush=True)
     print("Done", flush=True)

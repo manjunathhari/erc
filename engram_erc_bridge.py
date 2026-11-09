@@ -363,6 +363,15 @@ def facts_section(state: FactState, numbers: list[int], budget: int, head: str) 
     return "\n".join(out) if len(out) > 1 else ""
 
 
+def is_superseded_ref(state: FactState, ref) -> bool:
+    """True when a stored line's reference ("F<n>") is a fact ERC marked replaced. Used at answer time only (arm E):
+    the line stays in Engram's storage; it is just not shown. Lines without a fact number, or facts the writer did not
+    record, are never filtered."""
+    s = str(ref or "")
+    return s[:1] == "F" and s[1:].isdigit() and int(s[1:]) in state.superseded
+
+
 __all__ = ["TAXONOMY", "MEMORY_PROFILE", "WRITER_PROMPT", "writer_prompt", "parse_records", "MemoryState",
            "build_memory_state", "profile_section", "make_scorer", "count_tokens",
-           "fact_writer_prompt", "parse_fact_records", "FactState", "build_fact_state", "fact_walk", "facts_section"]
+           "fact_writer_prompt", "parse_fact_records", "FactState", "build_fact_state", "fact_walk", "facts_section",
+           "is_superseded_ref"]
