@@ -127,7 +127,7 @@ def main():
         print(f"\n== {src}: {len(facts)} facts, {len(qs)} questions; arms {ARMS}; answer {a.answer_model}, writer {a.writer_model}", flush=True)
 
         # 1. writer records (cached per fact)
-        cache_path = f"{a.save}/mab_facts_{a.writer_model}{tag}_{src}.json"
+        cache_path = f"{a.save}/mab_facts_{a.writer_model}{tag}_{src.rsplit('_', 1)[-1]}.json"  # sh and mh at one length share facts
         cache = {int(k): v for k, v in json.load(open(cache_path)).items()} if os.path.exists(cache_path) else {}
         missing = sorted(n for n in facts if n not in cache)
         batches = [missing[i:i + 60] for i in range(0, len(missing), 60)]
