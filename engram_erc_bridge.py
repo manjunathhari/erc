@@ -323,11 +323,14 @@ def build_fact_state(records: dict[int, dict]) -> FactState:
                      keys_with_versions=sum(1 for g in groups.values() if len(g) > 1))
 
 
-def fact_walk(state: FactState, question: str, hops: int = 4, current_only: bool = True) -> list[int]:
+def fact_walk(state: FactState, question: str, hops: int = 4, current_only: bool = True, seeds: Iterable[int] = ()) -> list[int]:
     """Facts reached from the question: subjects named in the question first, then the facts about each fact's object,
     up to `hops` links. current_only=True follows ERC's current facts (arm C/D); False follows every version (arm B)."""
     q = f" {_norm(question)} "
     start = sorted((s for s in state.by_subject if len(s) >= 3 and f" {s} " in q), key=len, reverse=True)
+    for n in seeds:  # subjects of facts Engram's search found, after those named in the question
+        subj = _norm(state.records[n]["subject"]) if n in state.records else ""
+        if subj and subj not in start: start.append(subj)
     if current_only:  # walk ERC's knowledge graph: INVOLVES edges hold only the current facts
         index = defaultdict(list)
         for e in state.graph.edges:

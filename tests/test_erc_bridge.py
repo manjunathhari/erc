@@ -114,3 +114,9 @@ def test_fact_walk_follows_current_chain_on_erc_graph():
     assert B.fact_walk(st, q, hops=1) == [3]
     text = B.facts_section(st, B.fact_walk(st, q), 200, "[Current]")
     assert text.splitlines()[1] == "Fact 3: The chairperson of Liverpool F.C. is Ali Khan." and "India" in text
+
+
+def test_fact_walk_seeds_from_search_results():
+    st = _facts_state()
+    assert B.fact_walk(st, "Where is the club's boss from?") == []
+    assert B.fact_walk(st, "Where is the club's boss from?", seeds=[1]) == [3, 5]  # seed fact 1 -> subject Liverpool F.C. -> current chain

@@ -86,6 +86,7 @@ def main():
     ap.add_argument("--facts-tokens", type=int, default=2000, help="most tokens the records may take in arms B and C")
     ap.add_argument("--chunk-tokens", type=int, default=4096, help="facts per Engram chat, as MemoryAgentBench's chunk_size")
     ap.add_argument("--hops", type=int, default=4, help="links followed from the question's entities (MQuAKE chains have up to 4)")
+    ap.add_argument("--seed-facts", type=int, default=10, help="Engram's top N results also seed the walk (0 = question names only)")
     ap.add_argument("--threads", type=int, default=8)
     a = ap.parse_args()
 
@@ -183,8 +184,12 @@ def main():
             for k, (i, (q, golds)) in enumerate(qs, 1):
                 if all(i in done[arm] for arm in ARMS): continue
                 raw, info = m.context_for(q)
-                walk_all = B.fact_walk(state, q, a.hops, current_only=False)
-                walk_cur = B.fact_walk(state, q, a.hops, current_only=True)
+                seeds = []  # facts in Engram's top results seed the walk too, for questions that don't name a subject exactly
+                for sid in info["sids"][: a.seed_facts]:
+                    ref = m.db.execute("SELECT ref FROM sentences WHERE sid=?", (sid,)).fetchone()
+                    if ref and str(ref[0]).startswith("F") and str(ref[0])[1:].isdigit(): seeds.append(int(str(ref[0])[1:]))
+                walk_all = B.fact_walk(state, q, a.hops, current_only=False, seeds=seeds)
+                walk_cur = B.fact_walk(state, q, a.hops, current_only=True, seeds=seeds)
                 sec_b = B.facts_section(state, walk_all, a.facts_tokens, "[Facts about the entities in the question, every version, oldest first]")
                 sec_c = B.facts_section(state, walk_cur, a.facts_tokens, "[Current facts from the memory layer: the newest version of each, linked from the question]")
                 sec_d = B.facts_section(state, walk_cur, a.context_tokens, "[Current facts from the memory layer: the newest version of each, linked from the question]")
@@ -228,7 +233,7 @@ def main():
             facts=len(facts), records=len(records), version_keys_with_more_than_one=state.keys_with_versions, superseded=len(state.superseded),
             mean_walk={"all_versions": round(sum(res["B"][i]["walk_all"] for i in ids) / max(1, len(ids)), 1),
                        "current": round(sum(res["C"][i]["walk_current"] for i in ids) / max(1, len(ids)), 1)},
-            settings=dict(context_tokens=a.context_tokens, facts_tokens=a.facts_tokens, chunk_tokens=a.chunk_tokens, hops=a.hops),
+            settings=dict(context_tokens=a.context_tokens, facts_tokens=a.facts_tokens, chunk_tokens=a.chunk_tokens, hops=a.hops, seed_facts=a.seed_facts),
             published="MemoryAgentBench GPT-4o long context 60 SH / 5 MH; Mem0 18/2; MemGPT 28/3; deterministic pipeline (arXiv 2606.01435) 93/41 at 262K",
             rule="ERC adds value if C beats B by >=10 points (interval excluding 0) at the largest length; stop if C-B < 5 on SH and MH at every length")
         json.dump(summary, open(f"{a.save}/mab_summary_{src}{tag}.json", "w"), indent=1)
