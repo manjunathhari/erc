@@ -17,8 +17,13 @@ Writing, when a chat is saved:
        - who-rule: the subject is the speaker, or is named in the sentence (P2's attribution check, with "named but
          not the speaker" accepted rather than held for review).
      Doubtful proposals go to P1's review queue, which nothing reads as a fact. No model judges its own output.
-  5. Accepted facts are stored in P1 with their source sentence, the date said, and every version: a newer object for
-     the same subject and the same wording marks the older fact superseded (kept, with its end date).
+  5. Accepted facts are stored in P1 as (entity, relation, value, polarity): the relation comes from the relation
+     table (engram_knowledge/relations.py; the sentence's version key is kept in metadata and used when no pattern
+     matches), a recognised retraction ("I no longer like X") is a fact with polarity false, and every statement is its
+     own record (a restatement is linked to the earlier record by metadata.same_claim_as, not merged into it).
+  6. Which statements supersede which is ERC's decision, written into P1 after each filing (engram_knowledge/verdict.py):
+     a functional relation with two values, or a claim and its retraction, retires the earlier statement (kept, with its
+     end date and the ERC reason in its note); a multi-valued relation keeps every value. Nothing is deleted.
 
 Reading, for a question (no model): the walk starts from the subjects named in the question and from facts whose
 sentence the base 1 search already found, and follows subject -> object links up to `hops` steps, every version, oldest
@@ -40,8 +45,9 @@ from engram_knowledge.interpreter import interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
 from engram_knowledge.models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, normalize_name
+from engram_knowledge import relations as REL, verdict as V
 
-RULES_VERSION = "base2-1"
+RULES_VERSION = "base3-1"
 MONTHS = "january february march april may june july august september october november december".split()
 
 # ---------- 2. the gate ----------
@@ -135,8 +141,9 @@ def iso_day(date_said: str) -> str | None:
 class Outcome:
     verdict: str                 # accepted, uncertain or rejected
     reasons: tuple = ()
-    fact_id: str | None = None   # set when stored (or when it added evidence to a fact already stored)
+    fact_id: str | None = None   # set when stored
     review_id: str | None = None
+    changed: dict = field(default_factory=dict)   # {fact_id: status} ERC changed in the group when this was filed
 
 
 class StructureLayer:
@@ -164,10 +171,14 @@ class StructureLayer:
         # subject who is neither ("the speaker of the source is someone else"); it sends "named but not the speaker" to
         # review, and the who-rule accepts that (the user telling us about their sister is a fact about the sister).
         doubts = tuple(r for r in d.reasons if r != "reported by someone else, not the subject")
+        rel = REL.relate(src.text, src.speaker)
+        if rel and not rel[3] and doubts == ("the source may negate this",):   # a recognised retraction: the negation IS the statement
+            doubts = ()
         return (UNCERTAIN if doubts else ACCEPTED), doubts, d
 
-    def file(self, sid: int, subject: str, obj: str, kind: str = "") -> Outcome:
-        """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing."""
+    def file(self, sid: int, subject: str, obj: str, kind: str = "", relation: str | None = None, polarity: bool | None = None) -> Outcome:
+        """Checks one proposal and stores it: accepted -> a P1 statement; uncertain -> P1's review queue; rejected -> nothing.
+        relation/polarity may be given by the writer; otherwise the relation table reads them from the sentence."""
         verdict, reasons, d = self.check(sid, subject, obj)
         if verdict == REJECTED: return Outcome(REJECTED, reasons)
         src = self.line(sid)
@@ -176,21 +187,26 @@ class StructureLayer:
             return Outcome(UNCERTAIN, reasons, review_id=self.kb.add_review(json.dumps(item), list(reasons), [sid]))
         who = d.subject.entity_id or self.kb.add_entity(Entity.create(d.subject.name, "unknown")).entity_id
         key, day = version_key(src.text, obj), iso_day(src.date)
+        rel = REL.relate(src.text, src.speaker)
+        if relation: relation, pol = relation, (True if polarity is None else polarity)
+        elif rel: relation, pol = rel[1], rel[3]
+        else: relation, pol = key, (True if polarity is None else polarity)
+        value_norm = REL.norm(obj)
         mine = self.kb.about_entity(who, statuses=("active", "superseded"))
-        same = [x for x in mine if normalize_name(x.fact.object_value or "") == normalize_name(obj) and x.fact.predicate == key]
-        if same:  # the same fact said again: more evidence, not a second fact
-            if not any(e.source_id == str(sid) for e in same[0].evidence):
-                self.kb.add_evidence(FactEvidence.create(same[0].fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION))
+        same = [x for x in mine if x.fact.predicate == relation and REL.norm(x.fact.object_value or "") == value_norm
+                and bool(x.fact.metadata.get("polarity", True)) == pol]
+        if same and any(e.source_id == str(sid) for x in same for e in x.evidence):   # this very sentence already filed
             return Outcome(ACCEPTED, (), fact_id=same[0].fact.fact_id)
-        fact = KnowledgeFact.create(who, key, "text", FACT_TYPE.get(kind, "observation"), "explicit", object_value=obj,
-                                    validation_status="accepted", valid_from=day,
-                                    metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date))
+        meta = dict(checked_by="rules " + RULES_VERSION, said_on=src.date, template_key=key, polarity=pol,
+                    relation_version=REL.RELATIONS_VERSION if rel or relation != key else None,
+                    same_claim_as=same[-1].fact.fact_id if same else None)
+        meta = {k: v for k, v in meta.items() if v is not None}
+        fact = KnowledgeFact.create(who, relation, "text", FACT_TYPE.get(kind, "observation"), "explicit", object_value=obj,
+                                    validation_status="accepted", valid_from=day, metadata=meta)
         stored = self.kb.add(FactWithEvidence(fact, (FactEvidence.create(fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION),)))
-        for old in mine:  # a newer value for the same subject and wording replaces the older one; the old one is kept
-            if old.fact.status == "active" and old.fact.predicate == key:
-                ends = day if day and (not old.fact.valid_from or day >= old.fact.valid_from) else None
-                self.kb.set_status(old.fact.fact_id, "superseded", note=f"replaced by {fact.fact_id}", valid_to=ends)
-        return Outcome(ACCEPTED, (), fact_id=stored.fact.fact_id)
+        changed = V.apply(self.db, who, relation)      # ERC decides what this statement supersedes (or is superseded by)
+        self.db.commit()
+        return Outcome(ACCEPTED, (), fact_id=stored.fact.fact_id, changed=changed)
 
     def graph(self) -> "FactGraph":
         """Every active or superseded fact with its subject, object and source sentences. Invalidated and
@@ -198,7 +214,7 @@ class StructureLayer:
         rows = self.db.execute(
             "SELECT r.fact_id, e.canonical_name, r.object_value, r.status, r.valid_from, r.recorded_at FROM knowledge_records r "
             "JOIN entities e ON e.entity_id = r.subject_id WHERE r.status IN ('active','superseded') "
-            "AND r.metadata LIKE ? ORDER BY r.recorded_at, r.fact_id", ('%"checked_by": "rules ' + RULES_VERSION + '"%',)).fetchall()
+            "AND r.metadata LIKE ? ORDER BY r.recorded_at, r.fact_id", ('%"checked_by": "rules base%',)).fetchall()
         facts = {}
         for fid, subj, obj, status, vf, rec in rows:
             sids = [int(r[0]) for r in self.db.execute("SELECT source_id FROM record_evidence WHERE fact_id=? AND evidence_role='supports' ORDER BY CAST(source_id AS INTEGER)", (fid,))]

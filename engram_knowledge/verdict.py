@@ -56,13 +56,30 @@ def decide(rows: list[dict], relation: str, as_of: datetime | None = None) -> di
                                  source_refs=(r["fact_id"],), valid_time=vt))
     order = [r["fact_id"] for r in rows]; pos = {f: i for i, f in enumerate(order)}
     verdict = {f: (None, "", None) for f in order}
-    if len(props) > 1:
-        for c in find_contradictions(props, functional_predicates=frozenset([relation]) if functional else frozenset()):
+
+    def record(contradictions):
+        for c in contradictions:
             old, new = (c.left_id, c.right_id) if pos[c.left_id] < pos[c.right_id] else (c.right_id, c.left_id)
             prev = verdict[old][0]
             if prev and pos[prev] <= pos[new]: continue
             end = start_of[new].date().isoformat() if start_of[new] else None
             verdict[old] = (new, f"ERC {c.reason_code} ({c.certainty.value})", end)
+
+    if len(props) > 1:
+        record(find_contradictions(props, functional_predicates=frozenset([relation]) if functional else frozenset()))
+        if not functional:
+            # Count rule: within a multi-valued relation, values that differ only by a leading number ("3 bikes" / "4 bikes")
+            # are versions of one count, so that sub-group is functional. "a dog" / "a cat" stay two values.
+            by_tail = {}
+            for p in props:
+                m = re.match(r"^(\d+|a|an|one|two|three|four|five|six|seven|eight|nine|ten)\s+(.+)$", p.object_value)
+                if m: by_tail.setdefault(m.group(2), []).append(p)
+            for tail, group in by_tail.items():
+                if len(group) < 2: continue
+                sub = f"{relation}#{tail}"
+                record(find_contradictions([Proposition(id=p.id, subject=p.subject, predicate=sub, object_value=p.object_value, polarity=p.polarity,
+                                                         source_refs=p.source_refs, valid_time=p.valid_time) for p in group],
+                                           functional_predicates=frozenset([sub])))
     return verdict
 
 

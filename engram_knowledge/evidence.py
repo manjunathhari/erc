@@ -1,6 +1,7 @@
 """The sentences behind each fact: adding them, reading them, and what happens when one is deleted."""
 import engram_chat
 
+from . import verdict
 from .models import FactEvidence, FactWithEvidence, RecordError, SourceSentence
 
 
@@ -67,10 +68,14 @@ def forget_sentence(db, sid: int) -> dict:
             db.execute("UPDATE knowledge_records SET status='invalidated', subject_id=NULL, predicate=NULL, object_type=NULL, object_value=NULL, object_entity_id=NULL, valid_from=NULL, valid_to=NULL, metadata='{}', note='All supporting sentences were deleted' WHERE fact_id=?", (fact,))
             invalid += 1
             db.execute("DELETE FROM state_reviews WHERE keep_fact_id=? OR other_fact_id=?", (fact, fact))  # a decision quotes the fact, so it goes with it
+    # A supersession rests on the sentence that caused it: records superseded by a fact that just lost its content are
+    # re-decided by ERC, so the previous value comes back when its rival is forgotten (and stays out if another rival remains).
+    gone = [f for f in facts if db.execute("SELECT status FROM knowledge_records WHERE fact_id=?", (f,)).fetchone()[0] in ("invalidated", "needs_review")]
+    reinstated = len(verdict.reinstate_after_delete(db, gone)) if gone else 0
     for entity in touched:
         used = db.execute("SELECT 1 FROM knowledge_records WHERE subject_id=? OR object_entity_id=? LIMIT 1", (entity, entity)).fetchone() or db.execute("SELECT 1 FROM entity_aliases WHERE entity_id=? LIMIT 1", (entity,)).fetchone()
         if not used: db.execute("DELETE FROM entities WHERE entity_id=?", (entity,))
-    return dict(needs_review=review, invalidated=invalid)
+    return dict(needs_review=review, invalidated=invalid, reinstated=reinstated)
 
 
 engram_chat.add_forget_step("knowledge", forget_sentence, order=10)

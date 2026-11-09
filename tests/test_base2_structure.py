@@ -169,12 +169,15 @@ def test_a_newer_version_replaces_the_older_one_and_both_are_kept(m):
     assert [g.facts[f]["object"] for f in g.by_subject["user"]] == ["3 bikes", "4 bikes"]  # every version, oldest first
 
 
-def test_the_same_fact_said_twice_is_one_fact_with_two_sentences(m):
+def test_the_same_fact_said_twice_is_two_statements_linked_not_merged(m):
+    """Base 3: every statement is its own record with its own date; a restatement points at the earlier record."""
     first = file(m, "job", "I", "Dave")
     sid = m.add("User", "I work with Dave at the studio.", date=DAY2)
     again = S.StructureLayer(m.db).file(sid, "I", "Dave")
-    assert again.fact_id == first.fact_id
-    assert len(KnowledgeBase(m.db).get(first.fact_id).evidence) == 2
+    assert again.fact_id != first.fact_id
+    kb = KnowledgeBase(m.db)
+    assert kb.get(again.fact_id).fact.metadata["same_claim_as"] == first.fact_id
+    assert kb.get(first.fact_id).fact.status == "active" and kb.get(again.fact_id).fact.status == "active"   # same value: no conflict
 
 
 # ---------- the walk ----------
@@ -236,13 +239,43 @@ def test_deleting_a_sentence_removes_its_facts_from_the_walk(m, chain):
     assert KnowledgeBase(m.db).integrity_check() == []
 
 
-def test_a_fact_that_loses_one_of_two_sentences_leaves_the_walk_until_reviewed(m):
+def test_forgetting_one_statement_of_a_claim_leaves_the_other_standing(m):
+    """Base 3: each statement is its own record, so deleting one sentence invalidates that statement only."""
     first = file(m, "job", "I", "Dave")
     sid = m.add("User", "I work with Dave at the studio.", date=DAY2)
-    S.StructureLayer(m.db).file(sid, "I", "Dave")
+    again = S.StructureLayer(m.db).file(sid, "I", "Dave")
     m.forget_sentence(sid)
-    assert KnowledgeBase(m.db).get(first.fact_id).fact.status == "needs_review"  # P1's cascade
-    assert first.fact_id not in S.StructureLayer(m.db).graph().facts
+    kb = KnowledgeBase(m.db)
+    assert kb.get(again.fact_id).fact.status == "invalidated" and kb.get(first.fact_id).fact.status == "active"
+    assert first.fact_id in S.StructureLayer(m.db).graph().facts and again.fact_id not in S.StructureLayer(m.db).graph().facts
+
+
+def test_forgetting_the_newer_version_reinstates_the_older_one(m):
+    """Base 3: a supersession rests on the sentence that caused it (finding F9)."""
+    old = file(m, "bikes3", "I", "3 bikes"); new = file(m, "bikes4", "I", "4 bikes")
+    kb = KnowledgeBase(m.db)
+    assert kb.get(old.fact_id).fact.status == "superseded"
+    m.forget_sentence(m.ids["bikes4"])
+    assert kb.get(old.fact_id).fact.status == "active" and kb.get(old.fact_id).fact.valid_to is None
+
+
+def test_a_retraction_is_a_statement_and_retires_the_claim(m):
+    """Base 3: 'I no longer like X' is filed with polarity false (finding F7); ERC's polarity check retires 'I like X'."""
+    m.ids["like"] = m.add("User", "I like jazz.", date=DAY1); m.ids["unlike"] = m.add("User", "I no longer like jazz.", date=DAY2)
+    a = S.StructureLayer(m.db).file(m.ids["like"], "I", "jazz", "preference"); b = S.StructureLayer(m.db).file(m.ids["unlike"], "I", "jazz", "preference")
+    assert a.verdict == b.verdict == "accepted"
+    kb = KnowledgeBase(m.db)
+    assert kb.get(b.fact_id).fact.metadata["polarity"] is False
+    assert kb.get(a.fact_id).fact.status == "superseded" and "OPPOSITE_POLARITY" in kb.get(a.fact_id).fact.note
+
+
+def test_two_values_of_a_multi_valued_relation_both_stand(m):
+    """Base 3: 'I like X' then 'I like Y' are two preferences, not two versions of one (finding F6)."""
+    m.ids["c"] = m.add("User", "I like coffee.", date=DAY1); m.ids["t"] = m.add("User", "I like tea.", date=DAY2)
+    a = S.StructureLayer(m.db).file(m.ids["c"], "I", "coffee", "preference"); b = S.StructureLayer(m.db).file(m.ids["t"], "I", "tea", "preference")
+    kb = KnowledgeBase(m.db)
+    assert kb.get(a.fact_id).fact.status == "active" and kb.get(b.fact_id).fact.status == "active"
+    assert kb.get(a.fact_id).fact.predicate == "likes"
 
 
 def test_deleting_a_sentence_also_drops_its_review_item(m):

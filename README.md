@@ -166,6 +166,27 @@ P7 moves what P6 has learned, never memories, facts or conversations: only conte
 - **One fix:** P7.1 and P7.4 set `row_factory` on the connection they are given, which is the engine's own, so after a restore every engine query returned named rows instead of tuples. They now read through `engram_p7/_rows.py`, which names columns per query and leaves the connection alone; a test checks this.
 - The P7.5 and P7.6 tests loaded neighbouring stages by file path from the separate packages, including copies of P6; they now import from `engram_p7` and this repository's `engram_p6`. Their checks are unchanged.
 
+## Base 3: statements, relations and ERC's verdict in P1
+
+Base 3 changes how the structure layer stores what it accepts; the engine (base 1) and the check rules are unchanged.
+
+- **Entity, relation, value, polarity** (`engram_knowledge/relations.py`): a sentence pattern table turns "Asha lives in Pune" into
+  `(asha, lives_in, pune)` and "I no longer like X" into `(user, likes, x, polarity=false)`. The relation goes in `predicate`,
+  the sentence's version key stays in `metadata.template_key`. A sentence no pattern matches keeps the version key as its
+  relation. Multi-valued relations (`likes`, `owns`, `speaks`, …) are declared: a second value is not a new version.
+- **One record per statement**: a restated fact is a new record with its own date, linked by `metadata.same_claim_as`.
+- **ERC decides supersession** (`engram_knowledge/verdict.py`): after each filing, one ERC Proposition per statement in the
+  (entity, relation) group with real dates; ERC's contradicting pairs retire the earlier statement (`superseded`, `valid_to`,
+  note "superseded by <fact>: ERC <reason>"). Polarity retires a claim; a functional relation's second value retires the first;
+  a count on the same noun ("3 bikes" → "4 bikes") is a version even inside a multi-valued relation. Nothing is deleted.
+- **Forget reinstates**: when a sentence is forgotten, the records its fact had superseded are re-decided, so the previous
+  value returns on its own (`evidence.py` → `verdict.reinstate_after_delete`).
+- **The adapter** (`engram_erc_adapter.py`, `ADAPTER_REQUIREMENTS.md`) reads these records, recomputes ERC's verdict at the
+  question's date for questions about the past, walks ERC's graph of current facts, keeps preferences always on, and withholds
+  any sentence whose statement is not in force. Lab results: `results/synth500/REPORT.md`.
+
+Older (base 2) records still load: the adapter reads their relation from the sentence once; new filings write base 3 records.
+
 ## Reasoning (ERC overlay)
 
 ```python
