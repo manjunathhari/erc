@@ -233,5 +233,133 @@ def profile_section(state: MemoryState, question: str, budget: int, scorer=_over
     return "\n".join(out) if len(out) > 1 else ""
 
 
+
+# ---------- numbered facts (MemoryAgentBench FactConsolidation) ----------
+FACT_WRITER_PROMPT = """Each line below is one numbered fact. For every fact, copy its subject and its object exactly as they are written in the sentence (the object is the value the sentence assigns, usually at the end).
+
+Return a JSON object {{"facts": [{{"n": <fact number>, "subject": "...", "object": "..."}}, ...]}} with one entry per line, in the same order.
+
+{lines}"""
+
+
+def _norm(text: str) -> str:
+    text = re.sub(r"[^a-z0-9 ]+", " ", (text or "").lower())
+    return " ".join(w for w in text.split() if w not in ("a", "an", "the"))
+
+
+def fact_writer_prompt(facts: Iterable[tuple[int, str]]) -> str:
+    return FACT_WRITER_PROMPT.format(lines="\n".join(f"Fact {n}: {t}" for n, t in facts))
+
+
+def parse_fact_records(reply: str, facts: dict[int, str]) -> dict[int, dict]:
+    """Writer reply -> {fact number: record}. A record keeps the sentence, subject and object, and a version key: the
+    sentence with the object blanked out. Two versions of the same fact share the key, so ERC can treat it as a
+    functional predicate. Entries whose object is not in the sentence are dropped (the excerpts still carry them)."""
+    try:
+        m = re.search(r"\{.*\}", reply or "", re.S)
+        rows = json.loads(m.group(0)).get("facts", []) if m else []
+    except (ValueError, AttributeError):
+        return {}
+    out = {}
+    for r in rows if isinstance(rows, list) else []:
+        try:
+            n = int(r.get("n"))
+        except (TypeError, ValueError, AttributeError):
+            continue
+        sent, obj, subj = facts.get(n), str(r.get("object", "")).strip(), str(r.get("subject", "")).strip()
+        if not sent or not obj: continue
+        i = sent.lower().rfind(obj.lower())
+        if i < 0: continue
+        key = _norm(sent[:i] + " _ " + sent[i + len(obj):])
+        out[n] = dict(n=n, sentence=sent, subject=subj, object=sent[i:i + len(obj)], key=key)
+    return out
+
+
+@dataclass(frozen=True)
+class FactState:
+    graph: DomainKnowledgeGraph
+    records: dict[int, dict]
+    superseded: dict[int, int]            # fact number -> newer fact number that replaced it
+    by_subject: dict[str, list[int]]      # normalised subject -> fact numbers, oldest first
+    keys_with_versions: int
+
+
+_BASE = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+
+def build_fact_state(records: dict[int, dict]) -> FactState:
+    """ERC over numbered facts: one Proposition per fact (serial number as valid time), every version key a functional
+    predicate, ERC's contradiction finder run within each key group; the newer of a contradicting pair supersedes the
+    older. Current facts become INVOLVES edges (subject -> object) in an ERC knowledge graph used for multi-hop walks."""
+    from datetime import timedelta
+    groups = defaultdict(list)
+    for n, r in records.items():
+        groups[r["key"]].append(Proposition(id=str(n), subject=_norm(r["subject"]) or r["key"], predicate=r["key"],
+                                            object_value=_norm(r["object"]), source_refs=(f"fact:{n}",),
+                                            valid_time=TimeInterval(start=_BASE + timedelta(seconds=n))))
+    superseded = {}
+    for key, props in groups.items():
+        if len(props) < 2: continue
+        for c in find_contradictions(props, functional_predicates=frozenset([key])):
+            a, b = int(c.left_id), int(c.right_id)
+            old, new = (a, b) if a < b else (b, a)
+            if old not in superseded or superseded[old] < new: superseded[old] = new
+    by_subject = defaultdict(list)
+    for n in sorted(records): by_subject[_norm(records[n]["subject"])].append(n)
+    nodes, edges, seen = [], [], set()
+    for n in sorted(records):
+        if n in superseded: continue
+        r = records[n]
+        for ent in (_norm(r["subject"]), _norm(r["object"])):
+            if ent and ent not in seen:
+                seen.add(ent)
+                nodes.append(KnowledgeNode(node_ref=f"entity:{ent}", kind=KnowledgeNodeKind.ENTITY, label=ent, domain="memory",
+                                           source_refs=(f"fact:{n}",), provenance_ref="writer", subtype="state"))
+        if _norm(r["subject"]) and _norm(r["object"]):
+            edges.append(KnowledgeEdge(edge_ref=f"fact:{n}", source_ref=f"entity:{_norm(r['subject'])}", target_ref=f"entity:{_norm(r['object'])}",
+                                       relation=KnowledgeRelation.INVOLVES, source_refs=(f"fact:{n}",), provenance_ref=r["key"]))
+    graph = build_knowledge_graph(nodes, edges)
+    return FactState(graph=graph, records=records, superseded=superseded, by_subject=dict(by_subject),
+                     keys_with_versions=sum(1 for g in groups.values() if len(g) > 1))
+
+
+def fact_walk(state: FactState, question: str, hops: int = 4, current_only: bool = True) -> list[int]:
+    """Facts reached from the question: subjects named in the question first, then the facts about each fact's object,
+    up to `hops` links. current_only=True follows ERC's current facts (arm C/D); False follows every version (arm B)."""
+    q = f" {_norm(question)} "
+    start = sorted((s for s in state.by_subject if len(s) >= 3 and f" {s} " in q), key=len, reverse=True)
+    if current_only:  # walk ERC's knowledge graph: INVOLVES edges hold only the current facts
+        index = defaultdict(list)
+        for e in state.graph.edges:
+            index[e.source_ref.split(":", 1)[1]].append(int(e.edge_ref.split(":", 1)[1]))
+        index = {k: sorted(v) for k, v in index.items()}
+    else:  # no ERC: every version of every fact, oldest first
+        index = state.by_subject
+    out, seen_facts, frontier, seen_subj = [], set(), list(start), set(start)
+    for _ in range(max(1, hops)):
+        nxt = []
+        for subj in frontier:
+            for n in index.get(subj, []):
+                if n in seen_facts: continue
+                seen_facts.add(n); out.append(n)
+                o = _norm(state.records[n]["object"])
+                if o and o not in seen_subj and o in index:
+                    seen_subj.add(o); nxt.append(o)
+        if not nxt: break
+        frontier = nxt
+    return out
+
+
+def facts_section(state: FactState, numbers: list[int], budget: int, head: str) -> str:
+    out, used = [head], count_tokens(head)
+    for n in numbers:
+        line = f"Fact {n}: {state.records[n]['sentence']}"
+        t = count_tokens(line)
+        if used + t > budget: break
+        out.append(line); used += t
+    return "\n".join(out) if len(out) > 1 else ""
+
+
 __all__ = ["TAXONOMY", "MEMORY_PROFILE", "WRITER_PROMPT", "writer_prompt", "parse_records", "MemoryState",
-           "build_memory_state", "profile_section", "make_scorer", "count_tokens"]
+           "build_memory_state", "profile_section", "make_scorer", "count_tokens",
+           "fact_writer_prompt", "parse_fact_records", "FactState", "build_fact_state", "fact_walk", "facts_section"]

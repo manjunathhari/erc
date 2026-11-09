@@ -86,3 +86,31 @@ def test_line_references_are_normalised():
     valid = {"D7:1", "D7:2", "D7:3", "D7:4"}
     out = B.parse_records(reply(rec("event", "x", "Did a thing", lines=("7:1", "D7:2-D7:4", 3, "D9:1", "nonsense"))), "2023-05-20", valid)
     assert out[0]["lines"] == ["D7:1", "D7:2", "D7:3", "D7:4"]
+
+
+def _facts_state():
+    facts = {1: "The chairperson of Liverpool F.C. is John W. Henry.", 2: "John W. Henry is a citizen of United States of America.",
+             3: "The chairperson of Liverpool F.C. is Ali Khan.", 4: "Ali Khan is a citizen of Pakistan.",
+             5: "Ali Khan is a citizen of India."}
+    reply = json.dumps({"facts": [
+        {"n": 1, "subject": "Liverpool F.C.", "object": "John W. Henry"}, {"n": 2, "subject": "John W. Henry", "object": "United States of America"},
+        {"n": 3, "subject": "Liverpool F.C.", "object": "Ali Khan"}, {"n": 4, "subject": "Ali Khan", "object": "Pakistan"},
+        {"n": 5, "subject": "Ali Khan", "object": "India"}, {"n": 9, "subject": "x", "object": "y"},
+        {"n": 2, "subject": "bad", "object": "not in sentence"}]})
+    return B.build_fact_state(B.parse_fact_records(reply, facts))
+
+
+def test_fact_versions_superseded_by_serial_via_erc():
+    st = _facts_state()
+    assert st.superseded == {1: 3, 4: 5} and st.keys_with_versions == 2
+    assert 9 not in st.records  # unknown fact number dropped
+
+
+def test_fact_walk_follows_current_chain_on_erc_graph():
+    st = _facts_state()
+    q = "What is the country of citizenship of the chairperson of Liverpool F.C.?"
+    assert B.fact_walk(st, q) == [3, 5]
+    assert B.fact_walk(st, q, current_only=False) == [1, 3, 2, 4, 5]
+    assert B.fact_walk(st, q, hops=1) == [3]
+    text = B.facts_section(st, B.fact_walk(st, q), 200, "[Current]")
+    assert text.splitlines()[1] == "Fact 3: The chairperson of Liverpool F.C. is Ali Khan." and "India" in text
