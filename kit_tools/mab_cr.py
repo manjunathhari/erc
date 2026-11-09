@@ -87,7 +87,7 @@ def main():
     ap.add_argument("--chunk-tokens", type=int, default=4096, help="facts per Engram chat, as MemoryAgentBench's chunk_size")
     ap.add_argument("--hops", type=int, default=4, help="links followed from the question's entities (MQuAKE chains have up to 4)")
     ap.add_argument("--seed-facts", type=int, default=10, help="Engram's top N results also seed the walk (0 = question names only)")
-    ap.add_argument("--threads", type=int, default=8)
+    ap.add_argument("--threads", type=int, default=3, help="parallel answer calls; keep low to stay under the account's tokens-per-minute limit")
     a = ap.parse_args()
 
     rows = load_rows(a.parquet)

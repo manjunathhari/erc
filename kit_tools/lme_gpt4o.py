@@ -111,7 +111,7 @@ def make_chat(fake=False):
     client = OpenAI()
 
     def chat(model, prompt, max_tokens, json_mode=False):
-        for attempt in range(6):
+        for attempt in range(12):  # rate limits (429) can last a minute or more; back off up to 60 s each time
             try:
                 if is_reasoning(model):  # default reasoning effort; the answer prompt keeps the visible answer short
                     r = client.chat.completions.create(model=model, messages=[{"role": "user", "content": prompt}], n=1, max_completion_tokens=REASONING_BUDGET)
@@ -124,8 +124,8 @@ def make_chat(fake=False):
                 return text
             except Exception as e:
                 err = e
-                time.sleep(min(60, 2 ** attempt))
-        raise RuntimeError(f"OpenAI call failed after 6 tries: {err}")
+                time.sleep(min(60, 2 ** attempt) + random.random())
+        raise RuntimeError(f"OpenAI call failed after 12 tries: {err}")
     return chat
 
 
