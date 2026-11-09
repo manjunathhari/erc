@@ -214,3 +214,28 @@ def test_a_name_shared_by_two_known_entities_goes_to_review(m):
     kb.add_entity(Entity.create("Ben", "person")); kb.add_entity(Entity.create("Ben", "person"))
     d = verdict(m, "Ben", "adopted", "llama", "ben")
     assert d.verdict == UNCERTAIN and d.subject.status == "ambiguous" and any("names 2 known entities" in r for r in d.reasons)
+
+
+def test_a_speaker_called_user_is_a_name_not_a_loop(tmp_path):
+    """LongMemEval's speaker is literally 'User'. 'I' must resolve to that speaker without endless recursion."""
+    mem = E.ChatMemory(str(tmp_path / "u.db"))
+    mem.open_chat(DAY)
+    sid = mem.add("User", "I adopted a beagle called Pixel yesterday.", date=DAY)
+    pipe = KnowledgePipeline(mem.db)
+    for mention in ("I", "User", "user"):
+        c = Candidate(mention, "adopted", "beagle", (sid,))
+        d = pipe.validator.validate(c, pipe.lines(c))
+        assert d.verdict == ACCEPTED and d.subject.name == "User"
+    mem.close()
+
+
+def test_sharing_only_a_little_word_does_not_make_two_names_alike(m):
+    """'my sister' and 'my brother' share only 'my'; that must not send the second to review as possibly the same."""
+    kb = KnowledgeBase(m.db)
+    kb.add_entity(Entity.create("my sister", "unknown"))
+    from engram_knowledge.entity_resolver import EntityResolver
+    r = EntityResolver(kb).resolve("my brother", [SourceLine(1, "Asha", "My brother lives in Paris.")])
+    assert r.status == "new" and r.name == "my brother"
+    # a shared real word still counts as possibly the same person
+    kb.add_entity(Entity.create("Ben Thomas", "person"))
+    assert EntityResolver(kb).resolve("Ben", [SourceLine(1, "Ben", "I adopted a llama.")]).status == "ambiguous"

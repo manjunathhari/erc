@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from .models import normalize_name, tidy
 
 FIRST_PERSON = {"i", "me", "my", "myself", "user", "the user", "the speaker", "speaker"}
+# Small words two different names can share without being alike ("my sister", "my brother").
+LITTLE = {"my", "our", "your", "his", "her", "their", "its", "the", "a", "an", "of", "and"}
 UNCLEAR = {"he", "she", "they", "them", "him", "her", "his", "their", "it", "we", "us", "our", "you", "your", "someone", "somebody", "friend", "my friend", "the person", "this person", "narrator", "the narrator"}
 
 
@@ -27,7 +29,8 @@ class EntityResolver:
 
     def _similar(self, name):
         """Entities that share a word with this name. These could be the same person, so a person must decide."""
-        words = set(normalize_name(name).split())
+        words = set(normalize_name(name).split()) - LITTLE
+        if not words: return []
         rows = self.kb.db.execute("SELECT entity_id, normalized_name FROM entities").fetchall() + self.kb.db.execute("SELECT entity_id, normalized_alias FROM entity_aliases").fetchall()
         return sorted({r[0] for r in rows if words & set(r[1].split())})
 
@@ -37,7 +40,11 @@ class EntityResolver:
         if key in FIRST_PERSON:
             speakers = {tidy(s.speaker) for s in sentences}
             if len(speakers) != 1: return Resolution("ambiguous", why="first person across different speakers")
-            return self.resolve(speakers.pop(), sentences)
+            speaker = speakers.pop()
+            if normalize_name(speaker) in FIRST_PERSON:  # a speaker literally called "User" is a name, not another "I"
+                known = self.kb.resolve(speaker)
+                return Resolution("known", self.kb.entity(known).canonical_name, known) if known else Resolution("new", speaker)
+            return self.resolve(speaker, sentences)
         if key in UNCLEAR: return Resolution("unresolved", why=f"'{name}' does not say who")
         several = self.kb.find(name)
         if len(several) > 1: return Resolution("ambiguous", name, why=f"'{name}' names {len(several)} known entities")

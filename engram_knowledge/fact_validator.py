@@ -48,17 +48,23 @@ class Decision:
 
 
 class FactValidator:
-    def __init__(self, kb):
+    def __init__(self, kb, open_predicate=False):
+        """open_predicate=True (the structure layer, base 2): predicates are not from the fixed list, so the list and its
+        cue words are skipped; every other check is the same. Fixed by the code that builds the checker, never per call."""
         self.resolver = EntityResolver(kb)
+        self.open_predicate = bool(open_predicate)
 
     def validate(self, candidate, source_sentences):
         """1 entity references, 2 predicate and object, 3 source support, 4 negation and attribution. Returns a Decision."""
+        open_predicate = self.open_predicate
         reject, unsure = [], []
-        word = predicate(candidate.predicate)
+        word = tidy(candidate.predicate) if open_predicate else predicate(candidate.predicate)
         lines = list(source_sentences)
         if not lines: reject.append("no source sentence")
         if any(s is None for s in candidate.source_sids) or len(lines) != len(candidate.source_sids): reject.append("a cited sentence does not exist")
-        if word not in PREDICATE_TYPES: reject.append(f"predicate not allowed: {word}")
+        if open_predicate:
+            if not word: reject.append("no predicate")
+        elif word not in PREDICATE_TYPES: reject.append(f"predicate not allowed: {word}")
         wanted = content_stems(candidate.object)
         if not wanted: reject.append("object is empty or has no meaning alone")
 
@@ -79,7 +85,7 @@ class FactValidator:
         held = stems(sentence)
 
         # Predicate: does that sentence use a word for this kind of fact?
-        cues = {stem(w) for w in PREDICATE_CUES.get(word, "").split()}
+        cues = set() if open_predicate else {stem(w) for w in PREDICATE_CUES.get(word, "").split()}
         if cues and not cues & set(held): unsure.append(f"nothing in the source says {word}")
 
         # Negation and uncertainty near the object.

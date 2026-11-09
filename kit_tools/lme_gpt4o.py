@@ -8,6 +8,10 @@ Search is the tested design from main (open_memory, saved networks trained on Lo
 --n 100 is the fast run (first 100 test questions in hash order, about 20 minutes); --n 0 runs every question.
 --start 100 --n 0 runs the rest after the first 100 (staged runs). Output files carry the question range in their names.
 Work resumes where it stopped. Needs OPENAI_API_KEY.
+
+--base2 adds a paired arm per prompt ("<prompt>+b2", Engram base 2): the same search, plus the structure layer's linked
+facts (engram_structure.py) shown first as their original sentences; the excerpts fill the rest of the same total budget.
+When the walk reaches no fact, the base 2 context is the base 1 context, unchanged. Writer proposals are cached per chat.
 """
 import argparse, concurrent.futures, datetime, hashlib, json, math, os, random, re, sys, tempfile, time
 
@@ -101,6 +105,10 @@ def get_anscheck_prompt(task, question, answer, response, abstention=False):
 def make_chat(fake=False):
     if fake:  # dry run without a key: answers "not mentioned", judge says no, the writer notes one preference per chat
         def fake_chat(model, prompt, max_tokens, json_mode=False):
+            if json_mode and '"facts"' in prompt:  # base 2 writer: the last word of the first line, copied
+                first = re.search(r"^(D\d+:\d+) (.*?)[.!?]?$", prompt, re.M)
+                words = first.group(2).split() if first else []
+                return json.dumps({"facts": [dict(line=first.group(1), subject="I", object=words[-1])] if words else []})
             if json_mode:
                 first = re.search(r"^(D\d+:\d+) (.*)$", prompt, re.M)
                 rows = [dict(type="preference", about="fake", text="Likes " + first.group(2)[:60], category="other", date=None, lines=[first.group(1)])] if first else []
@@ -165,8 +173,14 @@ def main():
     ap.add_argument("--erc", action="store_true", help="add a paired ERC arm for each prompt: the bridge's preference profile first, then Engram excerpts, within the same total budget")
     ap.add_argument("--writer-model", default="gpt-4o-mini", help="model that writes the typed memory records for the ERC arm (cached per chat)")
     ap.add_argument("--profile-tokens", type=int, default=600, help="most tokens the ERC profile may take out of --context-tokens")
+    ap.add_argument("--base2", action="store_true", help="add a paired base 2 arm for each prompt: linked facts from the structure layer first, then Engram excerpts, within the same total budget")
+    ap.add_argument("--b2-writer-model", default=ANSWER_MODEL, help="model that proposes subject and object for base 2 (cached per chat)")
+    ap.add_argument("--facts-tokens", type=int, default=1000, help="most tokens base 2's linked facts may take out of --context-tokens")
+    ap.add_argument("--hops", type=int, default=4, help="links the base 2 walk follows")
+    ap.add_argument("--seed-facts", type=int, default=10, help="facts on Engram's top N results also seed the base 2 walk")
     ap.add_argument("--types", default="", help="only these question types, comma-separated (e.g. single-session-preference); default all")
     ap.add_argument("--fake", action="store_true", help="dry run without OpenAI")
+    ap.add_argument("--design", default="tested", help="Engram search design; 'light' only for offline tests (benchmarks use 'tested')")
     a = ap.parse_args()
     global ARGS
     ARGS = a
@@ -190,8 +204,8 @@ def main():
     rng = f"_q{a.start + 1}-{a.start + (a.n or len(test) - a.start)}"
     extra = ("" if a.answer_model == ANSWER_MODEL else "_" + a.answer_model) + ("" if a.context_tokens == 800 else f"_ctx{a.context_tokens}")
     extra += ("_only-" + "+".join(short.get(t, t) for t in types)) if types else ""
-    arms = prompts + ([p + "+erc" for p in prompts] if a.erc else [])
-    tags = {p: f"{rng}_{p.replace('+erc', 'erc')}{extra}" for p in arms}
+    arms = prompts + ([p + "+erc" for p in prompts] if a.erc else []) + ([p + "+b2" for p in prompts] if a.base2 else [])
+    tags = {p: f"{rng}_{p.replace('+erc', 'erc').replace('+b2', 'b2')}{extra}" for p in arms}
     chat = make_chat(a.fake)
     tmp = tempfile.mkdtemp()
     out_paths = {p: f"{a.save}/lme_gpt4o_answers{tags[p]}.jsonl" for p in arms}
@@ -226,17 +240,53 @@ def main():
                 with cache_lock: json.dump(cache, open(cache_path, "w"))
             return {session_key(i, s): cache[session_key(i, s)] for i, s in zip(q["haystack_session_ids"], q["haystack_sessions"])}
 
+    if a.base2:
+        import threading
+        import engram_structure as S
+        b2_path = f"{a.save}/base2_proposals_{a.b2_writer_model}.json"
+        b2_cache = json.load(open(b2_path)) if os.path.exists(b2_path) else {}
+        b2_lock = threading.Lock()
+        b2_pool = concurrent.futures.ThreadPoolExecutor(16)
+        print(f"base 2 arm: writer {a.b2_writer_model}, {len(b2_cache)} chats already written, facts up to {a.facts_tokens} tokens, hops {a.hops}, seeds {a.seed_facts}", flush=True)
+
+        def b2_write(key, picked):
+            reply = chat(a.b2_writer_model, S.writer_prompt([(lid, t) for lid, t, _ in picked]), 1500, json_mode=True)
+            kinds = {lid: k for lid, _, k in picked}
+            rows = [dict(p, kind=kinds[p["line"]]) for p in S.parse_proposals(reply, set(kinds))]
+            with b2_lock: b2_cache[key] = rows
+
+        def proposals_for(q):
+            """Per chat: the P2 gate picks the user's sentences, the writer proposes for those only. Written once per chat."""
+            jobs = []
+            for i, s, d in zip(q["haystack_session_ids"], q["haystack_sessions"], q["haystack_dates"]):
+                key = session_key(i, s)
+                if key in b2_cache: continue
+                date = session_date(d)
+                picked = []
+                for lid, speaker, sentence, _, _ in session_lines(s, numbers[key]):
+                    if speaker != "User": continue
+                    ok, kind = S.gate(speaker, sentence, date)
+                    if ok: picked.append((lid, sentence, kind))
+                if not picked:
+                    with b2_lock: b2_cache[key] = []
+                    continue
+                jobs.append(b2_pool.submit(b2_write, key, picked))
+            for j in jobs: j.result()
+            if jobs:
+                with b2_lock: json.dump(b2_cache, open(b2_path, "w"))
+            return {session_key(i, s): b2_cache[session_key(i, s)] for i, s in zip(q["haystack_session_ids"], q["haystack_sessions"])}
+
     def retrieve(q):
         """Replays the question's history into a fresh memory, closing each session as a chat, then searches."""
         path = f"{tmp}/{hash_order(q['question_id'])[:12]}.db"
-        m = open_memory(path, durable=False, settings=E.Settings(retrieved_tokens=a.context_tokens))
-        where, total = {}, len(q["haystack_sessions"])
+        m = open_memory(path, design=a.design, durable=False, settings=E.Settings(retrieved_tokens=a.context_tokens))
+        where, total, sid_of = {}, len(q["haystack_sessions"]), {}
         for n, (i, s, d) in enumerate(zip(q["haystack_session_ids"], q["haystack_sessions"], q["haystack_dates"]), 1):
             date = session_date(d)
             m.open_chat(date)
             for line_id, speaker, sentence, turn, answer in session_lines(s, numbers[session_key(i, s)]):
                 where[line_id] = (i, turn, answer)
-                m.add(speaker, sentence, date=date, ref=line_id, commit=False)
+                sid_of[line_id] = m.add(speaker, sentence, date=date, ref=line_id, commit=False)
             m.db.commit()
             m.close_chat(write_note=False, sleep=n == total)
         ctx, info = m.context_for(q["question"])
@@ -270,14 +320,33 @@ def main():
             ctxs["erc"] = ((prof + "\n\n" + raw2) if prof else raw2, used2 + (B.count_tokens(prof) if prof else 0))
             lines = dict(lines, erc_records=len(state.records), erc_superseded=len(state.superseded),
                          erc_profile_tokens=B.count_tokens(prof) if prof else 0)
+        if a.base2:  # filed after base 1's search, so the base 1 context cannot change
+            props, layer, seen = proposals_for(q), S.StructureLayer(m.db), {"accepted": 0, "uncertain": 0, "rejected": 0}
+            for i, s in zip(q["haystack_session_ids"], q["haystack_sessions"]):  # chats in their order, so versions are in order
+                for p in props[session_key(i, s)]:
+                    if p["line"] in sid_of: seen[layer.file(sid_of[p["line"]], p["subject"], p["object"], p.get("kind", "")).verdict] += 1
+            g = layer.graph()
+            fids = S.walk(g, q["question"], info["sids"][: a.seed_facts], a.hops, hubs=("User", "Assistant"))
+            sec, used_f = S.facts_section(m, g, fids, a.facts_tokens)
+            if sec:
+                budget, keep, used3 = a.context_tokens - used_f, [], 0
+                for sid in info["sids"]:  # same search ranking, cut to the space the facts leave
+                    t = m._tokens(sid) + 8
+                    if used3 + t > budget: break
+                    keep.append(sid); used3 += t
+                ctxs["b2"] = (sec + ("\n\n" + m.text_of(sorted(keep)) if keep else ""), used_f + used3)
+            else:
+                ctxs["b2"] = ctxs["raw"]  # nothing reached: base 2 shows exactly what base 1 shows
+            lines = dict(lines, b2_proposals=sum(seen.values()), b2_accepted=seen["accepted"], b2_uncertain=seen["uncertain"],
+                         b2_rejected=seen["rejected"], b2_facts=len(g.facts), b2_walked=len(fids), b2_facts_tokens=used_f)
         m.db.close()
         for tail in ("", "-wal", "-shm"):
             if os.path.exists(path + tail): os.remove(path + tail)
         return ctxs, reached, lines
 
     def answer_and_judge(arm, q, ctxs, reached, lines, secs):
-        p = arm.replace("+erc", "")
-        ctx, tokens = ctxs["erc" if arm.endswith("+erc") else "raw"]
+        p = arm.replace("+erc", "").replace("+b2", "")
+        ctx, tokens = ctxs["erc" if arm.endswith("+erc") else "b2" if arm.endswith("+b2") else "raw"]
         asked = f"{q['question']} (Today is {session_date(q['question_date'])}.)"
         reply = chat(a.answer_model, K.PROMPTS[p].format(ctx=ctx, q=asked), K.REPLY_TOKENS.get(p, 60))
         hyp = K.final_answer(reply) if p == "v2" else reply
@@ -306,8 +375,9 @@ def main():
 
     wanted_ids = {q["question_id"] for q in questions}
     results = {p: summarise(p, [r for r in map(json.loads, open(out_paths[p])) if r["question_id"] in wanted_ids], tags[p]) for p in arms}
-    if len(arms) > 1: compare_prompts(arms, out_paths, wanted_ids, f"{a.save}/lme_gpt4o_compare{rng}_{'-vs-'.join(t.replace('+erc', 'erc') for t in arms)}{extra}.json")
+    if len(arms) > 1: compare_prompts(arms, out_paths, wanted_ids, f"{a.save}/lme_gpt4o_compare{rng}_{'-vs-'.join(t.replace('+erc', 'erc').replace('+b2', 'b2') for t in arms)}{extra}.json")
     if a.erc: writer_pool.shutdown()
+    if a.base2: b2_pool.shutdown()
     print("Done", flush=True)
 
 
