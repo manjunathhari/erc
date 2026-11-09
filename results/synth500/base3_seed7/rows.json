@@ -1,0 +1,13602 @@
+[
+{
+"i": 0,
+"cat": "single",
+"kind": "current",
+"q": "Where does Zara live?",
+"gold": [
+"Pune"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1610
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2643
+}
+},
+{
+"i": 1,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Zara work at?",
+"gold": [
+"Infosys"
+],
+"stale": [
+"Zara works at Paytm."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1625
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2682
+}
+},
+{
+"i": 2,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Zara work in May 2024?",
+"gold": [
+"Paytm"
+],
+"stale": [
+"Zara works at Infosys."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1625
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1390
+}
+},
+{
+"i": 3,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Zara married to?",
+"gold": [
+"Pallavi"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2117
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3092
+}
+},
+{
+"i": 4,
+"cat": "single",
+"kind": "current",
+"q": "Where does Vani live?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Vani lives in Shimla."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2040
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2774
+}
+},
+{
+"i": 5,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Vani live in October 2024?",
+"gold": [
+"Shimla"
+],
+"stale": [
+"Vani lives in Raipur."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2040
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2062
+}
+},
+{
+"i": 6,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Vani work at?",
+"gold": [
+"Freshworks"
+],
+"stale": [
+"Vani works at Meesho."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2093
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2866
+}
+},
+{
+"i": 7,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Vani work in January 2025?",
+"gold": [
+"Meesho"
+],
+"stale": [
+"Vani works at Freshworks."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2093
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2813
+}
+},
+{
+"i": 8,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Vani married to?",
+"gold": [
+"Farhan"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2099
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3331
+}
+},
+{
+"i": 9,
+"cat": "single",
+"kind": "current",
+"q": "Where does Omar live?",
+"gold": [
+"Madurai"
+],
+"stale": [
+"Omar lives in Goa.",
+"Omar lives in Jaipur."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 110
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2111
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2862
+}
+},
+{
+"i": 10,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Omar live in May 2024?",
+"gold": [
+"Goa"
+],
+"stale": [
+"Omar lives in Jaipur.",
+"Omar lives in Madurai."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 110
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2111
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1413
+}
+},
+{
+"i": 11,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Omar work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Omar works at Freshworks."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2109
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2981
+}
+},
+{
+"i": 12,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Omar work in January 2024?",
+"gold": [
+"Freshworks"
+],
+"stale": [
+"Omar works at Flipkart."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2108
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 321
+}
+},
+{
+"i": 13,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Omar married to?",
+"gold": [
+"Neel"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 72
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2064
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3232
+}
+},
+{
+"i": 14,
+"cat": "single",
+"kind": "current",
+"q": "Where does Varun live?",
+"gold": [
+"Indore"
+],
+"stale": [
+"Varun lives in Mysuru.",
+"Varun lives in Chennai.",
+"Varun lives in Dehradun."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 149
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2065
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2911
+}
+},
+{
+"i": 15,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Varun live in September 2024?",
+"gold": [
+"Chennai"
+],
+"stale": [
+"Varun lives in Mysuru.",
+"Varun lives in Dehradun.",
+"Varun lives in Indore."
+],
+"withheld": 8,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 149
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2065
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1969
+}
+},
+{
+"i": 16,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Varun work at?",
+"gold": [
+"Freshworks"
+],
+"stale": [
+"Varun works at Razorpay."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1416
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2655
+}
+},
+{
+"i": 17,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Varun work in September 2024?",
+"gold": [
+"Razorpay"
+],
+"stale": [
+"Varun works at Freshworks."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 135
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1414
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2069
+}
+},
+{
+"i": 18,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Varun married to?",
+"gold": [
+"Harish"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2015
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3021
+}
+},
+{
+"i": 19,
+"cat": "single",
+"kind": "current",
+"q": "Where does Isha live?",
+"gold": [
+"Agra"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2122
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2780
+}
+},
+{
+"i": 20,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Isha work at?",
+"gold": [
+"Razorpay"
+],
+"stale": [
+"Isha works at Flipkart."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 144
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1864
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2705
+}
+},
+{
+"i": 21,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Isha work in January 2024?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Isha works at Razorpay."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 145
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2136
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 398
+}
+},
+{
+"i": 22,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Isha married to?",
+"gold": [
+"Ravi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 102
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2103
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3324
+}
+},
+{
+"i": 23,
+"cat": "single",
+"kind": "current",
+"q": "Where does Asha live?",
+"gold": [
+"Indore"
+],
+"stale": [
+"Asha lives in Agra."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1688
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2672
+}
+},
+{
+"i": 24,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Asha live in February 2025?",
+"gold": [
+"Agra"
+],
+"stale": [
+"Asha lives in Indore."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1688
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2484
+}
+},
+{
+"i": 25,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Asha work at?",
+"gold": [
+"Ola"
+],
+"stale": [
+"Asha works at Tata Motors."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 111
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1724
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2683
+}
+},
+{
+"i": 26,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Asha work in July 2024?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Asha works at Ola."
+],
+"withheld": 5,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 111
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1724
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1631
+}
+},
+{
+"i": 27,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Asha married to?",
+"gold": [
+"Maya"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2105
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3336
+}
+},
+{
+"i": 28,
+"cat": "single",
+"kind": "current",
+"q": "Where does Pallavi live?",
+"gold": [
+"Jaipur"
+],
+"stale": [
+"Pallavi lives in Kanpur.",
+"Pallavi lives in Lucknow."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2769
+}
+},
+{
+"i": 29,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Pallavi live in March 2025?",
+"gold": [
+"Lucknow"
+],
+"stale": [
+"Pallavi lives in Kanpur.",
+"Pallavi lives in Jaipur."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2742
+}
+},
+{
+"i": 30,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Pallavi work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [
+"Pallavi works at Biocon."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1882
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2783
+}
+},
+{
+"i": 31,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Pallavi work in December 2024?",
+"gold": [
+"Biocon"
+],
+"stale": [
+"Pallavi works at Delhivery."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1882
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2435
+}
+},
+{
+"i": 32,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Pallavi married to?",
+"gold": [
+"Gauri"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2119
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3341
+}
+},
+{
+"i": 33,
+"cat": "single",
+"kind": "current",
+"q": "Where does Ira live?",
+"gold": [
+"Mumbai"
+],
+"stale": [
+"Ira lives in Bhopal.",
+"Ira lives in Goa.",
+"Ira lives in Lucknow."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 113
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2111
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2514
+}
+},
+{
+"i": 34,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Ira live in May 2024?",
+"gold": [
+"Bhopal"
+],
+"stale": [
+"Ira lives in Goa.",
+"Ira lives in Lucknow.",
+"Ira lives in Mumbai."
+],
+"withheld": 8,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 113
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2111
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1277
+}
+},
+{
+"i": 35,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Ira work at?",
+"gold": [
+"Zoho"
+],
+"stale": [
+"Ira works at Tata Motors."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1324
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2548
+}
+},
+{
+"i": 36,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Ira work in April 2024?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Ira works at Zoho."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1324
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1122
+}
+},
+{
+"i": 37,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Ira married to?",
+"gold": [
+"Gauri"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 88
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1215
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2803
+}
+},
+{
+"i": 38,
+"cat": "single",
+"kind": "current",
+"q": "Where does Maya live?",
+"gold": [
+"Thrissur"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2099
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2748
+}
+},
+{
+"i": 39,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Maya work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Maya works at Tata Motors."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 114
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2115
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2672
+}
+},
+{
+"i": 40,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Maya work in March 2024?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Maya works at PhonePe."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 114
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2115
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 961
+}
+},
+{
+"i": 41,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Maya married to?",
+"gold": [
+"Aditya"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 93
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2083
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3253
+}
+},
+{
+"i": 42,
+"cat": "single",
+"kind": "current",
+"q": "Where does Nikhil live?",
+"gold": [
+"Goa"
+],
+"stale": [
+"Nikhil lives in Kanpur."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 128
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2530
+}
+},
+{
+"i": 43,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Nikhil live in May 2024?",
+"gold": [
+"Kanpur"
+],
+"stale": [
+"Nikhil lives in Goa."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 128
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1417
+}
+},
+{
+"i": 44,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Nikhil work at?",
+"gold": [
+"Razorpay"
+],
+"stale": [
+"Nikhil works at Tata Motors."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2700
+}
+},
+{
+"i": 45,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Nikhil work in December 2024?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Nikhil works at Razorpay."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2461
+}
+},
+{
+"i": 46,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Nikhil married to?",
+"gold": [
+"Pallavi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2138
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3373
+}
+},
+{
+"i": 47,
+"cat": "single",
+"kind": "current",
+"q": "Where does Nisha live?",
+"gold": [
+"Pune"
+],
+"stale": [
+"Nisha lives in Ranchi.",
+"Nisha lives in Chennai."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 90
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1532
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2770
+}
+},
+{
+"i": 48,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Nisha live in November 2024?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Nisha lives in Chennai.",
+"Nisha lives in Pune."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 90
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1532
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2166
+}
+},
+{
+"i": 49,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Nisha work at?",
+"gold": [
+"Infosys"
+],
+"stale": [
+"Nisha works at Zomato."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1094
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2648
+}
+},
+{
+"i": 50,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Nisha work in July 2024?",
+"gold": [
+"Zomato"
+],
+"stale": [
+"Nisha works at Infosys."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1094
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1636
+}
+},
+{
+"i": 51,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Nisha married to?",
+"gold": [
+"Leela"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2107
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3207
+}
+},
+{
+"i": 52,
+"cat": "single",
+"kind": "current",
+"q": "Where does Aditya live?",
+"gold": [
+"Nagpur"
+],
+"stale": [
+"Aditya lives in Lucknow.",
+"Aditya lives in Thrissur.",
+"Aditya lives in Raipur."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2600
+}
+},
+{
+"i": 53,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Aditya live in March 2025?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Aditya lives in Lucknow.",
+"Aditya lives in Thrissur.",
+"Aditya lives in Nagpur."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2696
+}
+},
+{
+"i": 54,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Aditya work at?",
+"gold": [
+"Razorpay"
+],
+"stale": [
+"Aditya works at Nykaa."
+],
+"withheld": 5,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 143
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2607
+}
+},
+{
+"i": 55,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Aditya work in January 2024?",
+"gold": [
+"Nykaa"
+],
+"stale": [
+"Aditya works at Razorpay."
+],
+"withheld": 7,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 143
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 342
+}
+},
+{
+"i": 56,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Aditya married to?",
+"gold": [
+"Pallavi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 108
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2105
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3284
+}
+},
+{
+"i": 57,
+"cat": "single",
+"kind": "current",
+"q": "Where does Pooja live?",
+"gold": [
+"Kochi"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 123
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1975
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2660
+}
+},
+{
+"i": 58,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Pooja work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [
+"Pooja works at Zerodha."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1135
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2619
+}
+},
+{
+"i": 59,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Pooja work in February 2024?",
+"gold": [
+"Zerodha"
+],
+"stale": [
+"Pooja works at Delhivery."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 656
+}
+},
+{
+"i": 60,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Pooja married to?",
+"gold": [
+"Vikram"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 123
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1122
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2711
+}
+},
+{
+"i": 61,
+"cat": "single",
+"kind": "current",
+"q": "Where does Yash live?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Yash lives in Patna."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 128
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2126
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2715
+}
+},
+{
+"i": 62,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Yash live in March 2025?",
+"gold": [
+"Patna"
+],
+"stale": [
+"Yash lives in Ranchi."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 128
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2126
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2575
+}
+},
+{
+"i": 63,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Yash work at?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Yash works at Wipro."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1140
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2532
+}
+},
+{
+"i": 64,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Yash work in April 2024?",
+"gold": [
+"Wipro"
+],
+"stale": [
+"Yash works at Apollo."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1140
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1204
+}
+},
+{
+"i": 65,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Yash married to?",
+"gold": [
+"Siddharth"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2134
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3133
+}
+},
+{
+"i": 66,
+"cat": "single",
+"kind": "current",
+"q": "Where does Aman live?",
+"gold": [
+"Madurai"
+],
+"stale": [
+"Aman lives in Thrissur.",
+"Aman lives in Goa."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2141
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2648
+}
+},
+{
+"i": 67,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Aman live in October 2024?",
+"gold": [
+"Goa"
+],
+"stale": [
+"Aman lives in Thrissur.",
+"Aman lives in Madurai."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2269
+}
+},
+{
+"i": 68,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Aman work at?",
+"gold": [
+"Nykaa"
+],
+"stale": [
+"Aman works at Zerodha."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2138
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2664
+}
+},
+{
+"i": 69,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Aman work in August 2024?",
+"gold": [
+"Zerodha"
+],
+"stale": [
+"Aman works at Nykaa."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2138
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1891
+}
+},
+{
+"i": 70,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Aman married to?",
+"gold": [
+"Farhan"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 131
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3276
+}
+},
+{
+"i": 71,
+"cat": "single",
+"kind": "current",
+"q": "Where does Jay live?",
+"gold": [
+"Mumbai"
+],
+"stale": [
+"Jay lives in Madurai.",
+"Jay lives in Chennai.",
+"Jay lives in Hubli."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 101
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1807
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2620
+}
+},
+{
+"i": 72,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Jay live in May 2024?",
+"gold": [
+"Madurai"
+],
+"stale": [
+"Jay lives in Chennai.",
+"Jay lives in Hubli.",
+"Jay lives in Mumbai."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 101
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1807
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1337
+}
+},
+{
+"i": 73,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Jay work at?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Jay works at Freshworks."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1294
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2566
+}
+},
+{
+"i": 74,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Jay work in May 2024?",
+"gold": [
+"Freshworks"
+],
+"stale": [
+"Jay works at Apollo."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1294
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1404
+}
+},
+{
+"i": 75,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Jay married to?",
+"gold": [
+"Vani"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 87
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2088
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3121
+}
+},
+{
+"i": 76,
+"cat": "single",
+"kind": "current",
+"q": "Where does Uday live?",
+"gold": [
+"Chennai"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 107
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1878
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2537
+}
+},
+{
+"i": 77,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Uday work at?",
+"gold": [
+"Mahindra"
+],
+"stale": [
+"Uday works at Swiggy."
+],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 92
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1019
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2537
+}
+},
+{
+"i": 78,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Uday work in June 2024?",
+"gold": [
+"Swiggy"
+],
+"stale": [
+"Uday works at Mahindra."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 92
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1019
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1427
+}
+},
+{
+"i": 79,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Uday married to?",
+"gold": [
+"Nisha"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 75
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1797
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3002
+}
+},
+{
+"i": 80,
+"cat": "single",
+"kind": "current",
+"q": "Where does Priya live?",
+"gold": [
+"Mysuru"
+],
+"stale": [
+"Priya lives in Patna."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2567
+}
+},
+{
+"i": 81,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Priya live in October 2024?",
+"gold": [
+"Patna"
+],
+"stale": [
+"Priya lives in Mysuru."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1990
+}
+},
+{
+"i": 82,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Priya work at?",
+"gold": [
+"Dream11"
+],
+"stale": [
+"Priya works at PhonePe."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 115
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1406
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2595
+}
+},
+{
+"i": 83,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Priya work in March 2025?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Priya works at Dream11."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 115
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1406
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2581
+}
+},
+{
+"i": 84,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Priya married to?",
+"gold": [
+"Arjun"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1367
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2858
+}
+},
+{
+"i": 85,
+"cat": "single",
+"kind": "current",
+"q": "Where does Manish live?",
+"gold": [
+"Patna"
+],
+"stale": [
+"Manish lives in Mysuru.",
+"Manish lives in Nagpur."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2112
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2550
+}
+},
+{
+"i": 86,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Manish live in August 2024?",
+"gold": [
+"Mysuru"
+],
+"stale": [
+"Manish lives in Nagpur.",
+"Manish lives in Patna."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2112
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1776
+}
+},
+{
+"i": 87,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Manish work at?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Manish works at Wipro."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 122
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1549
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2642
+}
+},
+{
+"i": 88,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Manish work in June 2024?",
+"gold": [
+"Wipro"
+],
+"stale": [
+"Manish works at Apollo."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 122
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1549
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1476
+}
+},
+{
+"i": 89,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Manish married to?",
+"gold": [
+"Arjun"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 133
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2133
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3349
+}
+},
+{
+"i": 90,
+"cat": "single",
+"kind": "current",
+"q": "Where does Gauri live?",
+"gold": [
+"Mysuru"
+],
+"stale": [
+"Gauri lives in Hubli.",
+"Gauri lives in Udaipur.",
+"Gauri lives in Indore."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2103
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2565
+}
+},
+{
+"i": 91,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Gauri live in September 2024?",
+"gold": [
+"Udaipur"
+],
+"stale": [
+"Gauri lives in Hubli.",
+"Gauri lives in Indore.",
+"Gauri lives in Mysuru."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2103
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2124
+}
+},
+{
+"i": 92,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Gauri work at?",
+"gold": [
+"Byju"
+],
+"stale": [
+"Gauri works at Zoho."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 88
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2078
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2610
+}
+},
+{
+"i": 93,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Gauri work in January 2024?",
+"gold": [
+"Zoho"
+],
+"stale": [
+"Gauri works at Byju."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 88
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2078
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 320
+}
+},
+{
+"i": 94,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Gauri married to?",
+"gold": [
+"Karan"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2093
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3276
+}
+},
+{
+"i": 95,
+"cat": "single",
+"kind": "current",
+"q": "Where does Ananya live?",
+"gold": [
+"Goa"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2117
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2531
+}
+},
+{
+"i": 96,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Ananya work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Ananya works at Infosys."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2657
+}
+},
+{
+"i": 97,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Ananya work in September 2024?",
+"gold": [
+"Infosys"
+],
+"stale": [
+"Ananya works at PhonePe."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2144
+}
+},
+{
+"i": 98,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Ananya married to?",
+"gold": [
+"Manish"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2104
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3330
+}
+},
+{
+"i": 99,
+"cat": "single",
+"kind": "current",
+"q": "Where does Arjun live?",
+"gold": [
+"Patna"
+],
+"stale": [
+"Arjun lives in Delhi."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1719
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2683
+}
+},
+{
+"i": 100,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Arjun live in July 2024?",
+"gold": [
+"Delhi"
+],
+"stale": [
+"Arjun lives in Patna."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1719
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1756
+}
+},
+{
+"i": 101,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Arjun work at?",
+"gold": [
+"Paytm"
+],
+"stale": [
+"Arjun works at Tata Motors."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1642
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2694
+}
+},
+{
+"i": 102,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Arjun work in July 2024?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Arjun works at Paytm."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1642
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1684
+}
+},
+{
+"i": 103,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Arjun married to?",
+"gold": [
+"Kavya"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2111
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3007
+}
+},
+{
+"i": 104,
+"cat": "single",
+"kind": "current",
+"q": "Where does Meera live?",
+"gold": [
+"Kochi"
+],
+"stale": [
+"Meera lives in Patna.",
+"Meera lives in Udaipur."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2679
+}
+},
+{
+"i": 105,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Meera live in August 2024?",
+"gold": [
+"Patna"
+],
+"stale": [
+"Meera lives in Udaipur.",
+"Meera lives in Kochi."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1770
+}
+},
+{
+"i": 106,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Meera work at?",
+"gold": [
+"Nykaa"
+],
+"stale": [
+"Meera works at Zomato."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1893
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2686
+}
+},
+{
+"i": 107,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Meera work in August 2024?",
+"gold": [
+"Zomato"
+],
+"stale": [
+"Meera works at Nykaa."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1893
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1835
+}
+},
+{
+"i": 108,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Meera married to?",
+"gold": [
+"Ravi"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 152
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2142
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3269
+}
+},
+{
+"i": 109,
+"cat": "single",
+"kind": "current",
+"q": "Where does Siddharth live?",
+"gold": [
+"Vizag"
+],
+"stale": [
+"Siddharth lives in Udaipur.",
+"Siddharth lives in Dehradun.",
+"Siddharth lives in Hubli."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1240
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2599
+}
+},
+{
+"i": 110,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Siddharth live in December 2024?",
+"gold": [
+"Hubli"
+],
+"stale": [
+"Siddharth lives in Udaipur.",
+"Siddharth lives in Dehradun.",
+"Siddharth lives in Vizag."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1240
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2343
+}
+},
+{
+"i": 111,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Siddharth work at?",
+"gold": [
+"Wipro"
+],
+"stale": [
+"Siddharth works at Flipkart."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2016
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2695
+}
+},
+{
+"i": 112,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Siddharth work in January 2024?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Siddharth works at Wipro."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2016
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 384
+}
+},
+{
+"i": 113,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Siddharth married to?",
+"gold": [
+"Tanvi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2095
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3195
+}
+},
+{
+"i": 114,
+"cat": "single",
+"kind": "current",
+"q": "Where does Kabir live?",
+"gold": [
+"Kanpur"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 133
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2134
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2886
+}
+},
+{
+"i": 115,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Kabir work at?",
+"gold": [
+"Meesho"
+],
+"stale": [
+"Kabir works at Mahindra."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2025
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2707
+}
+},
+{
+"i": 116,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Kabir work in October 2024?",
+"gold": [
+"Mahindra"
+],
+"stale": [
+"Kabir works at Meesho."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2025
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2216
+}
+},
+{
+"i": 117,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Kabir married to?",
+"gold": [
+"Sneha"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2094
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3166
+}
+},
+{
+"i": 118,
+"cat": "single",
+"kind": "current",
+"q": "Where does Kavya live?",
+"gold": [
+"Surat"
+],
+"stale": [
+"Kavya lives in Agra."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 115
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1839
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2658
+}
+},
+{
+"i": 119,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Kavya live in July 2024?",
+"gold": [
+"Agra"
+],
+"stale": [
+"Kavya lives in Surat."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 115
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1839
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1742
+}
+},
+{
+"i": 120,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Kavya work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Kavya works at Flipkart."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1162
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2548
+}
+},
+{
+"i": 121,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Kavya work in August 2024?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Kavya works at PhonePe."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1162
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1855
+}
+},
+{
+"i": 122,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Kavya married to?",
+"gold": [
+"Farhan"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 91
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2083
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3332
+}
+},
+{
+"i": 123,
+"cat": "single",
+"kind": "current",
+"q": "Where does Kiran live?",
+"gold": [
+"Kochi"
+],
+"stale": [
+"Kiran lives in Jaipur.",
+"Kiran lives in Bhopal."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2125
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2644
+}
+},
+{
+"i": 124,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Kiran live in May 2024?",
+"gold": [
+"Jaipur"
+],
+"stale": [
+"Kiran lives in Bhopal.",
+"Kiran lives in Kochi."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2125
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1436
+}
+},
+{
+"i": 125,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Kiran work at?",
+"gold": [
+"Zoho"
+],
+"stale": [
+"Kiran works at Infosys."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1224
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2598
+}
+},
+{
+"i": 126,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Kiran work in March 2024?",
+"gold": [
+"Infosys"
+],
+"stale": [
+"Kiran works at Zoho."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1224
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 890
+}
+},
+{
+"i": 127,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Kiran married to?",
+"gold": [
+"Siddharth"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 115
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2114
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3110
+}
+},
+{
+"i": 128,
+"cat": "single",
+"kind": "current",
+"q": "Where does Dev live?",
+"gold": [
+"Pune"
+],
+"stale": [
+"Dev lives in Raipur.",
+"Dev lives in Delhi.",
+"Dev lives in Mysuru."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2095
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2658
+}
+},
+{
+"i": 129,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Dev live in April 2024?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Dev lives in Delhi.",
+"Dev lives in Mysuru.",
+"Dev lives in Pune."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2095
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1277
+}
+},
+{
+"i": 130,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Dev work at?",
+"gold": [
+"Narayana"
+],
+"stale": [
+"Dev works at PhonePe."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2699
+}
+},
+{
+"i": 131,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Dev work in May 2024?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Dev works at Narayana."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1467
+}
+},
+{
+"i": 132,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Dev married to?",
+"gold": [
+"Vani"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 99
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1210
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2792
+}
+},
+{
+"i": 133,
+"cat": "single",
+"kind": "current",
+"q": "Where does Divya live?",
+"gold": [
+"Shimla"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1865
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2561
+}
+},
+{
+"i": 134,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Divya work at?",
+"gold": [
+"Nykaa"
+],
+"stale": [
+"Divya works at Biocon."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 131
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2131
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2708
+}
+},
+{
+"i": 135,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Divya work in January 2024?",
+"gold": [
+"Biocon"
+],
+"stale": [
+"Divya works at Nykaa."
+],
+"withheld": 7,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 131
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2131
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 335
+}
+},
+{
+"i": 136,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Divya married to?",
+"gold": [
+"Jay"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 76
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2073
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3205
+}
+},
+{
+"i": 137,
+"cat": "single",
+"kind": "current",
+"q": "Where does Vikram live?",
+"gold": [
+"Agra"
+],
+"stale": [
+"Vikram lives in Raipur."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 109
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2109
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2659
+}
+},
+{
+"i": 138,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Vikram live in July 2024?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Vikram lives in Agra."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 109
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2109
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1710
+}
+},
+{
+"i": 139,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Vikram work at?",
+"gold": [
+"Groww"
+],
+"stale": [
+"Vikram works at Meesho."
+],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2731
+}
+},
+{
+"i": 140,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Vikram work in January 2024?",
+"gold": [
+"Meesho"
+],
+"stale": [
+"Vikram works at Groww."
+],
+"withheld": 5,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 317
+}
+},
+{
+"i": 141,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Vikram married to?",
+"gold": [
+"Tanvi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 92
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1142
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2692
+}
+},
+{
+"i": 142,
+"cat": "single",
+"kind": "current",
+"q": "Where does Sara live?",
+"gold": [
+"Vizag"
+],
+"stale": [
+"Sara lives in Udaipur.",
+"Sara lives in Lucknow."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2135
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2640
+}
+},
+{
+"i": 143,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Sara live in July 2024?",
+"gold": [
+"Udaipur"
+],
+"stale": [
+"Sara lives in Lucknow.",
+"Sara lives in Vizag."
+],
+"withheld": 7,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2135
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1631
+}
+},
+{
+"i": 144,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Sara work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [
+"Sara works at Narayana."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1346
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2549
+}
+},
+{
+"i": 145,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Sara work in March 2024?",
+"gold": [
+"Narayana"
+],
+"stale": [
+"Sara works at Zerodha."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 895
+}
+},
+{
+"i": 146,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Sara married to?",
+"gold": [
+"Vani"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2111
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3334
+}
+},
+{
+"i": 147,
+"cat": "single",
+"kind": "current",
+"q": "Where does Rahul live?",
+"gold": [
+"Lucknow"
+],
+"stale": [
+"Rahul lives in Kanpur.",
+"Rahul lives in Thrissur.",
+"Rahul lives in Jaipur."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1928
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2577
+}
+},
+{
+"i": 148,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Rahul live in July 2024?",
+"gold": [
+"Kanpur"
+],
+"stale": [
+"Rahul lives in Thrissur.",
+"Rahul lives in Jaipur.",
+"Rahul lives in Lucknow."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 130
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1928
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1723
+}
+},
+{
+"i": 149,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Rahul work at?",
+"gold": [
+"Razorpay"
+],
+"stale": [
+"Rahul works at Delhivery."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2107
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2552
+}
+},
+{
+"i": 150,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Rahul work in September 2024?",
+"gold": [
+"Delhivery"
+],
+"stale": [
+"Rahul works at Razorpay."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2107
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2254
+}
+},
+{
+"i": 151,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Rahul married to?",
+"gold": [
+"Sara"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2106
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3074
+}
+},
+{
+"i": 152,
+"cat": "single",
+"kind": "current",
+"q": "Where does Karan live?",
+"gold": [
+"Agra"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2126
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2559
+}
+},
+{
+"i": 153,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Karan work at?",
+"gold": [
+"Wipro"
+],
+"stale": [
+"Karan works at Zerodha."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1988
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2700
+}
+},
+{
+"i": 154,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Karan work in September 2024?",
+"gold": [
+"Zerodha"
+],
+"stale": [
+"Karan works at Wipro."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1146
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2022
+}
+},
+{
+"i": 155,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Karan married to?",
+"gold": [
+"Omar"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 102
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2091
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3185
+}
+},
+{
+"i": 156,
+"cat": "single",
+"kind": "current",
+"q": "Where does Harish live?",
+"gold": [
+"Jaipur"
+],
+"stale": [
+"Harish lives in Agra."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2116
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2658
+}
+},
+{
+"i": 157,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Harish live in March 2025?",
+"gold": [
+"Agra"
+],
+"stale": [
+"Harish lives in Jaipur."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2116
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2642
+}
+},
+{
+"i": 158,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Harish work at?",
+"gold": [
+"Freshworks"
+],
+"stale": [
+"Harish works at Apollo."
+],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1081
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2584
+}
+},
+{
+"i": 159,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Harish work in July 2024?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Harish works at Freshworks."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1081
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1685
+}
+},
+{
+"i": 160,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Harish married to?",
+"gold": [
+"Farhan"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 109
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2107
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3115
+}
+},
+{
+"i": 161,
+"cat": "single",
+"kind": "current",
+"q": "Where does Rohan live?",
+"gold": [
+"Madurai"
+],
+"stale": [
+"Rohan lives in Pune.",
+"Rohan lives in Surat."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2118
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2548
+}
+},
+{
+"i": 162,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Rohan live in August 2024?",
+"gold": [
+"Pune"
+],
+"stale": [
+"Rohan lives in Surat.",
+"Rohan lives in Madurai."
+],
+"withheld": 6,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2118
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1760
+}
+},
+{
+"i": 163,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Rohan work at?",
+"gold": [
+"Razorpay"
+],
+"stale": [
+"Rohan works at Zoho."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1421
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2569
+}
+},
+{
+"i": 164,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Rohan work in September 2024?",
+"gold": [
+"Zoho"
+],
+"stale": [
+"Rohan works at Razorpay."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1421
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2066
+}
+},
+{
+"i": 165,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Rohan married to?",
+"gold": [
+"Ananya"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2100
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3186
+}
+},
+{
+"i": 166,
+"cat": "single",
+"kind": "current",
+"q": "Where does Sneha live?",
+"gold": [
+"Indore"
+],
+"stale": [
+"Sneha lives in Shimla.",
+"Sneha lives in Dehradun.",
+"Sneha lives in Patna."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2146
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2780
+}
+},
+{
+"i": 167,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Sneha live in May 2024?",
+"gold": [
+"Shimla"
+],
+"stale": [
+"Sneha lives in Dehradun.",
+"Sneha lives in Patna.",
+"Sneha lives in Indore."
+],
+"withheld": 6,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2146
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1327
+}
+},
+{
+"i": 168,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Sneha work at?",
+"gold": [
+"Meesho"
+],
+"stale": [
+"Sneha works at Groww."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1551
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2616
+}
+},
+{
+"i": 169,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Sneha work in May 2024?",
+"gold": [
+"Groww"
+],
+"stale": [
+"Sneha works at Meesho."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1551
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1392
+}
+},
+{
+"i": 170,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Sneha married to?",
+"gold": [
+"Asha"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 135
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2136
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3277
+}
+},
+{
+"i": 171,
+"cat": "single",
+"kind": "current",
+"q": "Where does Rishi live?",
+"gold": [
+"Mysuru"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2553
+}
+},
+{
+"i": 172,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Rishi work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Rishi works at Apollo."
+],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2141
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2773
+}
+},
+{
+"i": 173,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Rishi work in April 2024?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Rishi works at PhonePe."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2135
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1258
+}
+},
+{
+"i": 174,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Rishi married to?",
+"gold": [
+"Nikhil"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 82
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2083
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3350
+}
+},
+{
+"i": 175,
+"cat": "single",
+"kind": "current",
+"q": "Where does Farhan live?",
+"gold": [
+"Kanpur"
+],
+"stale": [
+"Farhan lives in Pune."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2099
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2968
+}
+},
+{
+"i": 176,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Farhan live in September 2024?",
+"gold": [
+"Pune"
+],
+"stale": [
+"Farhan lives in Kanpur."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2099
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2075
+}
+},
+{
+"i": 177,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Farhan work at?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Farhan works at Cred."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2094
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2840
+}
+},
+{
+"i": 178,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Farhan work in February 2024?",
+"gold": [
+"Cred"
+],
+"stale": [
+"Farhan works at Apollo."
+],
+"withheld": 7,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2094
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 556
+}
+},
+{
+"i": 179,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Farhan married to?",
+"gold": [
+"Rhea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2126
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3326
+}
+},
+{
+"i": 180,
+"cat": "single",
+"kind": "current",
+"q": "Where does Ravi live?",
+"gold": [
+"Surat"
+],
+"stale": [
+"Ravi lives in Delhi.",
+"Ravi lives in Udaipur."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 96
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1303
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2649
+}
+},
+{
+"i": 181,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Ravi live in April 2024?",
+"gold": [
+"Delhi"
+],
+"stale": [
+"Ravi lives in Udaipur.",
+"Ravi lives in Surat."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 96
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1303
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1177
+}
+},
+{
+"i": 182,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Ravi work at?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Ravi works at Apollo."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 124
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2113
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2856
+}
+},
+{
+"i": 183,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Ravi work in July 2024?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Ravi works at Tata Motors."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 124
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2113
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 1915
+}
+},
+{
+"i": 184,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Ravi married to?",
+"gold": [
+"Rhea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 124
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1709
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2908
+}
+},
+{
+"i": 185,
+"cat": "single",
+"kind": "current",
+"q": "Where does Tara live?",
+"gold": [
+"Madurai"
+],
+"stale": [
+"Tara lives in Delhi.",
+"Tara lives in Kanpur.",
+"Tara lives in Hubli."
+],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 125
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2604
+}
+},
+{
+"i": 186,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Tara live in October 2024?",
+"gold": [
+"Delhi"
+],
+"stale": [
+"Tara lives in Kanpur.",
+"Tara lives in Hubli.",
+"Tara lives in Madurai."
+],
+"withheld": 5,
+"base1": {
+"gold": true,
+"stale": true,
+"tokens": 125
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2043
+}
+},
+{
+"i": 187,
+"cat": "single",
+"kind": "current",
+"q": "Which company does Tara work at?",
+"gold": [
+"Byju"
+],
+"stale": [
+"Tara works at Paytm."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 125
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1269
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2605
+}
+},
+{
+"i": 188,
+"cat": "single",
+"kind": "temporal",
+"q": "Where did Tara work in September 2024?",
+"gold": [
+"Paytm"
+],
+"stale": [
+"Tara works at Byju."
+],
+"withheld": 5,
+"base1": {
+"gold": false,
+"stale": true,
+"tokens": 125
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1269
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2021
+}
+},
+{
+"i": 189,
+"cat": "single",
+"kind": "stable",
+"q": "Who is Tara married to?",
+"gold": [
+"Harish"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1219
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2816
+}
+},
+{
+"i": 190,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Asha's manager works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1913
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2904
+}
+},
+{
+"i": 191,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Ravi's manager works in?",
+"gold": [
+"Karnataka"
+],
+"stale": [
+"Volanth works at Tata Motors."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 968
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2744
+}
+},
+{
+"i": 192,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Meera's manager work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2879
+}
+},
+{
+"i": 193,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Karan's manager works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Suranth works at Apollo."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 125
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2114
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3010
+}
+},
+{
+"i": 194,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Divya's manager works in?",
+"gold": [
+"Karnataka"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1940
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2899
+}
+},
+{
+"i": 195,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Arjun's manager work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Miranth works at Zoho."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1444
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2664
+}
+},
+{
+"i": 196,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Nisha's manager works headquartered?",
+"gold": [
+"Jaipur"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3152
+}
+},
+{
+"i": 197,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Rohan's manager works in?",
+"gold": [
+"Gujarat"
+],
+"stale": [
+"Devanth works at Meesho."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 124
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2114
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3030
+}
+},
+{
+"i": 198,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Priya's manager work at?",
+"gold": [
+"Byju"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2989
+}
+},
+{
+"i": 199,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Vikram's manager works headquartered?",
+"gold": [
+"Jaipur"
+],
+"stale": [
+"Bhuanth works at Byju."
+],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 113
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 857
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2686
+}
+},
+{
+"i": 200,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Sneha's manager works in?",
+"gold": [
+"Rajasthan"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2138
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3037
+}
+},
+{
+"i": 201,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Aditya's manager work at?",
+"gold": [
+"Byju"
+],
+"stale": [
+"Kavesh works at Zoho."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 123
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2965
+}
+},
+{
+"i": 202,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Kavya's manager works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 128
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1944
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2729
+}
+},
+{
+"i": 203,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Rahul's manager works in?",
+"gold": [
+"Rajasthan"
+],
+"stale": [
+"Volesh works at Infosys."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 123
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2118
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2803
+}
+},
+{
+"i": 204,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Ananya's manager work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2118
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2855
+}
+},
+{
+"i": 205,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Siddharth's manager works headquartered?",
+"gold": [
+"Udaipur"
+],
+"stale": [
+"Suresh works at Meesho."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2108
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2905
+}
+},
+{
+"i": 206,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Pooja's manager works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1186
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2746
+}
+},
+{
+"i": 207,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Manish's manager work at?",
+"gold": [
+"Freshworks"
+],
+"stale": [
+"Miresh works at Mahindra."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 135
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2134
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3020
+}
+},
+{
+"i": 208,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Lakshmi's manager works headquartered?",
+"gold": [
+"Madurai"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1799
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2891
+}
+},
+{
+"i": 209,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Varun's manager works in?",
+"gold": [
+"Maharashtra"
+],
+"stale": [
+"Devesh works at Wipro."
+],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1847
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2928
+}
+},
+{
+"i": 210,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Isha's manager work at?",
+"gold": [
+"Wipro"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2148
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3050
+}
+},
+{
+"i": 211,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Nikhil's manager works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Bhuesh works at Tata Motors."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2033
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2677
+}
+},
+{
+"i": 212,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Tara's manager works in?",
+"gold": [
+"Tamil Nadu"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 197
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1448
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2834
+}
+},
+{
+"i": 213,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Dev's manager work at?",
+"gold": [
+"Udaan"
+],
+"stale": [
+"Kavika works at Nykaa."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 158
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2155
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2926
+}
+},
+{
+"i": 214,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Rhea's manager works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 123
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 525
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2651
+}
+},
+{
+"i": 215,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Kabir's manager works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [
+"Volika works at Groww."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1446
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2679
+}
+},
+{
+"i": 216,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Zara's manager work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1625
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2749
+}
+},
+{
+"i": 217,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Aman's manager works headquartered?",
+"gold": [
+"Surat"
+],
+"stale": [
+"Surika works at Infosys."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2133
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2920
+}
+},
+{
+"i": 218,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Leela's manager works in?",
+"gold": [
+"Maharashtra"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1817
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2874
+}
+},
+{
+"i": 219,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Farhan's manager work at?",
+"gold": [
+"Zoho"
+],
+"stale": [
+"Mirika works at Cred."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2108
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3035
+}
+},
+{
+"i": 220,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Gauri's manager works headquartered?",
+"gold": [
+"Mysuru"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2134
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3012
+}
+},
+{
+"i": 221,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Harish's manager works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [
+"Devika works at PhonePe."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1077
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2685
+}
+},
+{
+"i": 222,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Ira's manager work at?",
+"gold": [
+"Zomato"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1324
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2582
+}
+},
+{
+"i": 223,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Jay's manager works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Bhuika works at Nykaa."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1271
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2682
+}
+},
+{
+"i": 224,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Kiran's manager works in?",
+"gold": [
+"Tamil Nadu"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 158
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1389
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2994
+}
+},
+{
+"i": 225,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Maya's manager work at?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Kavora works at Byju."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2118
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2961
+}
+},
+{
+"i": 226,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Neel's manager works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 123
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 728
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2791
+}
+},
+{
+"i": 227,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Omar's manager works in?",
+"gold": [
+"Uttarakhand"
+],
+"stale": [
+"Volora works at Mahindra."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1707
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2837
+}
+},
+{
+"i": 228,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Pallavi's manager work at?",
+"gold": [
+"Zomato"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 129
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1882
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2864
+}
+},
+{
+"i": 229,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Rishi's manager works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Surora works at Wipro."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1350
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2716
+}
+},
+{
+"i": 230,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Sara's manager works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 143
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1317
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2700
+}
+},
+{
+"i": 231,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Tanvi's manager work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Mirora works at Swiggy."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 122
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2114
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2973
+}
+},
+{
+"i": 232,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Uday's manager works headquartered?",
+"gold": [
+"Nagpur"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 110
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2074
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2828
+}
+},
+{
+"i": 233,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Vani's manager works in?",
+"gold": [
+"Delhi NCR"
+],
+"stale": [
+"Devora works at Narayana."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2034
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2893
+}
+},
+{
+"i": 234,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Yash's manager work at?",
+"gold": [
+"Swiggy"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 154
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2147
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2809
+}
+},
+{
+"i": 235,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Asha's mentor works headquartered?",
+"gold": [
+"Mysuru"
+],
+"stale": [
+"Bhuora works at Zoho."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 131
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2128
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3019
+}
+},
+{
+"i": 236,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Ravi's mentor works in?",
+"gold": [
+"Uttar Pradesh"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2137
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2871
+}
+},
+{
+"i": 237,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Meera's mentor work at?",
+"gold": [
+"Cred"
+],
+"stale": [
+"Kavind works at Paytm."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2964
+}
+},
+{
+"i": 238,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Karan's mentor works headquartered?",
+"gold": [
+"Lucknow"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 186
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2181
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2996
+}
+},
+{
+"i": 239,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Divya's mentor works in?",
+"gold": [
+"Karnataka"
+],
+"stale": [
+"Volind works at PhonePe."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1933
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2870
+}
+},
+{
+"i": 240,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Arjun's mentor work at?",
+"gold": [
+"Cred"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1909
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2730
+}
+},
+{
+"i": 241,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Nisha's mentor works headquartered?",
+"gold": [
+"Dehradun"
+],
+"stale": [
+"Surind works at Meesho."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 152
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2153
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3230
+}
+},
+{
+"i": 242,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Rohan's mentor works in?",
+"gold": [
+"Uttarakhand"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 109
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1472
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2667
+}
+},
+{
+"i": 243,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Priya's mentor work at?",
+"gold": [
+"PhonePe"
+],
+"stale": [
+"Mirind works at Delhivery."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2120
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2823
+}
+},
+{
+"i": 244,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Vikram's mentor works headquartered?",
+"gold": [
+"Dehradun"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2124
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3025
+}
+},
+{
+"i": 245,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Sneha's mentor works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [
+"Devind works at PhonePe."
+],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 153
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2154
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2874
+}
+},
+{
+"i": 246,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Aditya's mentor work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2137
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2934
+}
+},
+{
+"i": 247,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Kavya's mentor works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Bhuind works at Ola."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 142
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2136
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2853
+}
+},
+{
+"i": 248,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Rahul's mentor works in?",
+"gold": [
+"Delhi NCR"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2109
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2860
+}
+},
+{
+"i": 249,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Ananya's mentor work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [
+"Kavush works at Razorpay."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 122
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2122
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3181
+}
+},
+{
+"i": 250,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Siddharth's mentor works headquartered?",
+"gold": [
+"Dehradun"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 226
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2190
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2816
+}
+},
+{
+"i": 251,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Pooja's mentor works in?",
+"gold": [
+"Delhi NCR"
+],
+"stale": [
+"Volush works at Ola."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": false,
+"stale": true,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2818
+}
+},
+{
+"i": 252,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Manish's mentor work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2136
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3111
+}
+},
+{
+"i": 253,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Lakshmi's mentor works headquartered?",
+"gold": [
+"Hubli"
+],
+"stale": [
+"Surush works at Apollo."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 157
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2147
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2934
+}
+},
+{
+"i": 254,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Varun's mentor works in?",
+"gold": [
+"Uttarakhand"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 153
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2152
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3149
+}
+},
+{
+"i": 255,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Isha's mentor work at?",
+"gold": [
+"Cred"
+],
+"stale": [
+"Mirush works at Swiggy."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3093
+}
+},
+{
+"i": 256,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Nikhil's mentor works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 131
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2676
+}
+},
+{
+"i": 257,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Tara's mentor works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [
+"Devush works at Biocon."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2079
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2704
+}
+},
+{
+"i": 258,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Dev's mentor work at?",
+"gold": [
+"Groww"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2132
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3068
+}
+},
+{
+"i": 259,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Rhea's mentor works headquartered?",
+"gold": [
+"Madurai"
+],
+"stale": [
+"Bhuush works at Dream11."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1977
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2778
+}
+},
+{
+"i": 260,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Kabir's mentor works in?",
+"gold": [
+"Uttarakhand"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 155
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2156
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2839
+}
+},
+{
+"i": 261,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Zara's mentor work at?",
+"gold": [
+"Narayana"
+],
+"stale": [
+"Kavael works at Byju."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1736
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2831
+}
+},
+{
+"i": 262,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Aman's mentor works headquartered?",
+"gold": [
+"Hubli"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 151
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2995
+}
+},
+{
+"i": 263,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Leela's mentor works in?",
+"gold": [
+"Uttar Pradesh"
+],
+"stale": [
+"Volael works at Udaan."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 155
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2153
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2972
+}
+},
+{
+"i": 264,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Farhan's mentor work at?",
+"gold": [
+"Ola"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2117
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3217
+}
+},
+{
+"i": 265,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Gauri's mentor works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Surael works at Freshworks."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2138
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3124
+}
+},
+{
+"i": 266,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Harish's mentor works in?",
+"gold": [
+"Gujarat"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2808
+}
+},
+{
+"i": 267,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Ira's mentor work at?",
+"gold": [
+"Paytm"
+],
+"stale": [
+"Mirael works at Wipro."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1263
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2596
+}
+},
+{
+"i": 268,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Jay's mentor works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 126
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2125
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2797
+}
+},
+{
+"i": 269,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Kiran's mentor works in?",
+"gold": [
+"Karnataka"
+],
+"stale": [
+"Devael works at Nykaa."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 160
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2155
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2944
+}
+},
+{
+"i": 270,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Maya's mentor work at?",
+"gold": [
+"Apollo"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 117
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2116
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2869
+}
+},
+{
+"i": 271,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Neel's mentor works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Bhuael works at Delhivery."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3060
+}
+},
+{
+"i": 272,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Omar's mentor works in?",
+"gold": [
+"Karnataka"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2135
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3223
+}
+},
+{
+"i": 273,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Pallavi's mentor work at?",
+"gold": [
+"Wipro"
+],
+"stale": [
+"Kavoni works at Byju."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 135
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2128
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2837
+}
+},
+{
+"i": 274,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Rishi's mentor works headquartered?",
+"gold": [
+"Nagpur"
+],
+"stale": [],
+"withheld": 4,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2151
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3015
+}
+},
+{
+"i": 275,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Sara's mentor works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [
+"Voloni works at Swiggy."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 154
+},
+"base2": {
+"gold": false,
+"stale": true,
+"tokens": 2150
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3017
+}
+},
+{
+"i": 276,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Tanvi's mentor work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2129
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3213
+}
+},
+{
+"i": 277,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Uday's mentor works headquartered?",
+"gold": [
+"Delhi"
+],
+"stale": [
+"Suroni works at Freshworks."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2125
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2838
+}
+},
+{
+"i": 278,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Vani's mentor works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 154
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2155
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2965
+}
+},
+{
+"i": 279,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Yash's mentor work at?",
+"gold": [
+"Byju"
+],
+"stale": [
+"Mironi works at Biocon."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1295
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2681
+}
+},
+{
+"i": 280,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Asha's neighbour works headquartered?",
+"gold": [
+"Surat"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2133
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3151
+}
+},
+{
+"i": 281,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Ravi's neighbour works in?",
+"gold": [
+"Gujarat"
+],
+"stale": [
+"Devoni works at Flipkart."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 131
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3171
+}
+},
+{
+"i": 282,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Meera's neighbour work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1912
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2864
+}
+},
+{
+"i": 283,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Karan's neighbour works headquartered?",
+"gold": [
+"Lucknow"
+],
+"stale": [
+"Bhuoni works at Meesho."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2138
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3141
+}
+},
+{
+"i": 284,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Divya's neighbour works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 135
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1998
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2838
+}
+},
+{
+"i": 285,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Arjun's neighbour work at?",
+"gold": [
+"Apollo"
+],
+"stale": [
+"Kavami works at Groww."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 103
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1822
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2733
+}
+},
+{
+"i": 286,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Nisha's neighbour works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 106
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1094
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2809
+}
+},
+{
+"i": 287,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Rohan's neighbour works in?",
+"gold": [
+"Rajasthan"
+],
+"stale": [
+"Volami works at Zoho."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 127
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1400
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2685
+}
+},
+{
+"i": 288,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Priya's neighbour work at?",
+"gold": [
+"Swiggy"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1301
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2599
+}
+},
+{
+"i": 289,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Vikram's neighbour works headquartered?",
+"gold": [
+"Hubli"
+],
+"stale": [
+"Surami works at Nykaa."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 107
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2104
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3000
+}
+},
+{
+"i": 290,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Sneha's neighbour works in?",
+"gold": [
+"Tamil Nadu"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 155
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3047
+}
+},
+{
+"i": 291,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Aditya's neighbour work at?",
+"gold": [
+"Zerodha"
+],
+"stale": [
+"Mirami works at Wipro."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2146
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2897
+}
+},
+{
+"i": 292,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Kavya's neighbour works headquartered?",
+"gold": [
+"Delhi"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2128
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3067
+}
+},
+{
+"i": 293,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Rahul's neighbour works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [
+"Devami works at Swiggy."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 118
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1902
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2669
+}
+},
+{
+"i": 294,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Ananya's neighbour work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 135
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3015
+}
+},
+{
+"i": 295,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Siddharth's neighbour works headquartered?",
+"gold": [
+"Lucknow"
+],
+"stale": [
+"Bhuami works at Udaan."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 153
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2150
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3069
+}
+},
+{
+"i": 296,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Pooja's neighbour works in?",
+"gold": [
+"Delhi NCR"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 161
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2156
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2985
+}
+},
+{
+"i": 297,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Manish's neighbour work at?",
+"gold": [
+"Zomato"
+],
+"stale": [
+"Kavuru works at Narayana."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 122
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1549
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2675
+}
+},
+{
+"i": 298,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Lakshmi's neighbour works headquartered?",
+"gold": [
+"Jaipur"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2131
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3148
+}
+},
+{
+"i": 299,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Varun's neighbour works in?",
+"gold": [
+"Delhi NCR"
+],
+"stale": [
+"Voluru works at Freshworks."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 140
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1436
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2735
+}
+},
+{
+"i": 300,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Isha's neighbour work at?",
+"gold": [
+"Apollo"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3324
+}
+},
+{
+"i": 301,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Nikhil's neighbour works headquartered?",
+"gold": [
+"Hubli"
+],
+"stale": [
+"Sururu works at Udaan."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 133
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2131
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2822
+}
+},
+{
+"i": 302,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Tara's neighbour works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2862
+}
+},
+{
+"i": 303,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Dev's neighbour work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [
+"Miruru works at Infosys."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2122
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2876
+}
+},
+{
+"i": 304,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Rhea's neighbour works headquartered?",
+"gold": [
+"Madurai"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2140
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3258
+}
+},
+{
+"i": 305,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Kabir's neighbour works in?",
+"gold": [
+"Gujarat"
+],
+"stale": [
+"Devuru works at Swiggy."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 153
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2146
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2848
+}
+},
+{
+"i": 306,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Zara's neighbour work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2124
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3128
+}
+},
+{
+"i": 307,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Aman's neighbour works headquartered?",
+"gold": [
+"Udaipur"
+],
+"stale": [
+"Bhuuru works at Groww."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 153
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2152
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3330
+}
+},
+{
+"i": 308,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Leela's neighbour works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1883
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2914
+}
+},
+{
+"i": 309,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Farhan's neighbour work at?",
+"gold": [
+"Narayana"
+],
+"stale": [
+"Kaveet works at Apollo."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2104
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3084
+}
+},
+{
+"i": 310,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Gauri's neighbour works headquartered?",
+"gold": [
+"Udaipur"
+],
+"stale": [],
+"withheld": 4,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2121
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3086
+}
+},
+{
+"i": 311,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Harish's neighbour works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [
+"Voleet works at Infosys."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 122
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2118
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3014
+}
+},
+{
+"i": 312,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Ira's neighbour work at?",
+"gold": [
+"Freshworks"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2122
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3000
+}
+},
+{
+"i": 313,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Jay's neighbour works headquartered?",
+"gold": [
+"Jaipur"
+],
+"stale": [
+"Sureet works at Swiggy."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 110
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2108
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2761
+}
+},
+{
+"i": 314,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Kiran's neighbour works in?",
+"gold": [
+"Karnataka"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 158
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1356
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2962
+}
+},
+{
+"i": 315,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Maya's neighbour work at?",
+"gold": [
+"Delhivery"
+],
+"stale": [
+"Mireet works at PhonePe."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 104
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2102
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2888
+}
+},
+{
+"i": 316,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Neel's neighbour works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1633
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3111
+}
+},
+{
+"i": 317,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Omar's neighbour works in?",
+"gold": [
+"Jharkhand"
+],
+"stale": [
+"Deveet works at Byju."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 142
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2139
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3029
+}
+},
+{
+"i": 318,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Pallavi's neighbour work at?",
+"gold": [
+"Wipro"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2151
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3113
+}
+},
+{
+"i": 319,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Rishi's neighbour works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Bhueet works at Tata Motors."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 154
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2155
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2978
+}
+},
+{
+"i": 320,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Sara's neighbour works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2921
+}
+},
+{
+"i": 321,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Tanvi's neighbour work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Kavaan works at Tata Motors."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 152
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2143
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3279
+}
+},
+{
+"i": 322,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Uday's neighbour works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 111
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2074
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2827
+}
+},
+{
+"i": 323,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Vani's neighbour works in?",
+"gold": [
+"Maharashtra"
+],
+"stale": [
+"Volaan works at Meesho."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 136
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2136
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3284
+}
+},
+{
+"i": 324,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Yash's neighbour work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2148
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3016
+}
+},
+{
+"i": 325,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Asha's landlord works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Suraan works at Apollo."
+],
+"withheld": 1,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 146
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2140
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3069
+}
+},
+{
+"i": 326,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Ravi's landlord works in?",
+"gold": [
+"Maharashtra"
+],
+"stale": [],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 138
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2130
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3013
+}
+},
+{
+"i": 327,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Meera's landlord work at?",
+"gold": [
+"Paytm"
+],
+"stale": [
+"Miraan works at Byju."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 134
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1799
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2744
+}
+},
+{
+"i": 328,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Karan's landlord works headquartered?",
+"gold": [
+"Nagpur"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 237
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2236
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3429
+}
+},
+{
+"i": 329,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Divya's landlord works in?",
+"gold": [
+"Uttarakhand"
+],
+"stale": [
+"Devaan works at Razorpay."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1965
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2904
+}
+},
+{
+"i": 330,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Arjun's landlord work at?",
+"gold": [
+"Nykaa"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 120
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2054
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2812
+}
+},
+{
+"i": 331,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Nisha's landlord works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Bhuaan works at Ola."
+],
+"withheld": 3,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 139
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2134
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3032
+}
+},
+{
+"i": 332,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Rohan's landlord works in?",
+"gold": [
+"Maharashtra"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 204
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2934
+}
+},
+{
+"i": 333,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Priya's landlord work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Kavantha works at Nykaa."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 115
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1406
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2629
+}
+},
+{
+"i": 334,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Vikram's landlord works headquartered?",
+"gold": [
+"Dehradun"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 124
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2123
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3153
+}
+},
+{
+"i": 335,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Sneha's landlord works in?",
+"gold": [
+"Gujarat"
+],
+"stale": [
+"Volantha works at Delhivery."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1790
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2886
+}
+},
+{
+"i": 336,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Aditya's landlord work at?",
+"gold": [
+"Ola"
+],
+"stale": [],
+"withheld": 5,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 159
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2152
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2639
+}
+},
+{
+"i": 337,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Kavya's landlord works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Surantha works at Zoho."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 152
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2149
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3076
+}
+},
+{
+"i": 338,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Rahul's landlord works in?",
+"gold": [
+"Delhi NCR"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 121
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 1889
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2680
+}
+},
+{
+"i": 339,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Ananya's landlord work at?",
+"gold": [
+"Flipkart"
+],
+"stale": [
+"Mirantha works at Dream11."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 107
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2108
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2746
+}
+},
+{
+"i": 340,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Siddharth's landlord works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 137
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2135
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3129
+}
+},
+{
+"i": 341,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Pooja's landlord works in?",
+"gold": [
+"Maharashtra"
+],
+"stale": [
+"Devantha works at Swiggy."
+],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 141
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2108
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2889
+}
+},
+{
+"i": 342,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Manish's landlord work at?",
+"gold": [
+"Meesho"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 148
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2142
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2792
+}
+},
+{
+"i": 343,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Lakshmi's landlord works headquartered?",
+"gold": [
+"Raipur"
+],
+"stale": [
+"Bhuantha works at Apollo."
+],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2146
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3015
+}
+},
+{
+"i": 344,
+"cat": "multi",
+"kind": "hop4",
+"q": "Which state is the headquarters of the company where Varun's landlord works in?",
+"gold": [
+"Uttar Pradesh"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 142
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2131
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2944
+}
+},
+{
+"i": 345,
+"cat": "multi",
+"kind": "hop2-upd",
+"q": "Which company does Isha's landlord work at?",
+"gold": [
+"Tata Motors"
+],
+"stale": [
+"Kavesha works at Delhivery."
+],
+"withheld": 3,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 147
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2136
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2871
+}
+},
+{
+"i": 346,
+"cat": "multi",
+"kind": "hop3",
+"q": "In which city is the company where Nikhil's landlord works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [],
+"withheld": 2,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 132
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2133
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2869
+}
+},
+{
+"i": 347,
+"cat": "multi",
+"kind": "hop4-upd",
+"q": "Which state is the headquarters of the company where Tara's landlord works in?",
+"gold": [
+"Chhattisgarh"
+],
+"stale": [
+"Volesha works at Paytm."
+],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 150
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 1358
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2743
+}
+},
+{
+"i": 348,
+"cat": "multi",
+"kind": "hop2",
+"q": "Which company does Dev's landlord work at?",
+"gold": [
+"Biocon"
+],
+"stale": [],
+"withheld": 1,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 156
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 2151
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2837
+}
+},
+{
+"i": 349,
+"cat": "multi",
+"kind": "hop3-upd",
+"q": "In which city is the company where Rhea's landlord works headquartered?",
+"gold": [
+"Ranchi"
+],
+"stale": [
+"Suresha works at Narayana."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 116
+},
+"base2": {
+"gold": true,
+"stale": true,
+"tokens": 2112
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 3080
+}
+},
+{
+"i": 350,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"strong filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 351,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"strong biryani"
+],
+"stale": [
+"I like strong masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 352,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"strong Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 353,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"strong window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 354,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"strong rainy days"
+],
+"stale": [
+"I like strong cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 355,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"strong cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 356,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"strong green tea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 357,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"strong idli"
+],
+"stale": [
+"I like strong pav bhaji."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 358,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"strong lo-fi beats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 359,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"strong front-row seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 360,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"strong warm evenings"
+],
+"stale": [
+"I like strong winter mornings."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 361,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"strong tennis"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 362,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"strong buttermilk"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 363,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"strong pani puri"
+],
+"stale": [
+"I like strong rajma chawal."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 364,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"strong indie rock"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 365,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"strong corner tables"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 366,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"strong sea breezes"
+],
+"stale": [
+"I like strong misty hills."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 367,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"strong chess"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 368,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"strong lemonade"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 369,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"strong thali"
+],
+"stale": [
+"I like strong momos."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 370,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"strong techno"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 371,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"strong balcony seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 372,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"strong crisp autumn air"
+],
+"stale": [
+"I like strong monsoon afternoons."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 373,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"strong swimming"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 374,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"mild filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 375,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"mild biryani"
+],
+"stale": [
+"I like mild masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 376,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"mild Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 377,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"mild window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 378,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"mild rainy days"
+],
+"stale": [
+"I like mild cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 379,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"mild cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 380,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"mild green tea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 381,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"mild idli"
+],
+"stale": [
+"I like mild pav bhaji."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 382,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"mild lo-fi beats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 383,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"mild front-row seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 384,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"mild warm evenings"
+],
+"stale": [
+"I like mild winter mornings."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 385,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"mild tennis"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 386,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"mild buttermilk"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 387,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"mild pani puri"
+],
+"stale": [
+"I like mild rajma chawal."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 388,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"mild indie rock"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 389,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"mild corner tables"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 390,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"mild sea breezes"
+],
+"stale": [
+"I like mild misty hills."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 391,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"mild chess"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 392,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"mild lemonade"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 393,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"mild thali"
+],
+"stale": [
+"I like mild momos."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 394,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"mild techno"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 395,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"mild balcony seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 396,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"mild crisp autumn air"
+],
+"stale": [
+"I like mild monsoon afternoons."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 397,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"mild swimming"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 398,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"iced filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 399,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"iced biryani"
+],
+"stale": [
+"I like iced masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 400,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"iced Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 401,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"iced window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 402,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"iced rainy days"
+],
+"stale": [
+"I like iced cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 403,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"iced cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 404,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"iced green tea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 405,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"iced idli"
+],
+"stale": [
+"I like iced pav bhaji."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 406,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"iced lo-fi beats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 407,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"iced front-row seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 408,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"iced warm evenings"
+],
+"stale": [
+"I like iced winter mornings."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 409,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"iced tennis"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 410,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"iced buttermilk"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 411,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"iced pani puri"
+],
+"stale": [
+"I like iced rajma chawal."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 412,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"iced indie rock"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 413,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"iced corner tables"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 414,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"iced sea breezes"
+],
+"stale": [
+"I like iced misty hills."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 415,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"iced chess"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 416,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"iced lemonade"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 417,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"iced thali"
+],
+"stale": [
+"I like iced momos."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 418,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"iced techno"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 419,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"iced balcony seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 420,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"iced crisp autumn air"
+],
+"stale": [
+"I like iced monsoon afternoons."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 421,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"iced swimming"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 422,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"spicy filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 423,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"spicy biryani"
+],
+"stale": [
+"I like spicy masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 424,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"spicy Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 425,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"spicy window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 426,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"spicy rainy days"
+],
+"stale": [
+"I like spicy cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 427,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"spicy cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 428,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"spicy green tea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 429,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"spicy idli"
+],
+"stale": [
+"I like spicy pav bhaji."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 430,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"spicy lo-fi beats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 431,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"spicy front-row seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 432,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"spicy warm evenings"
+],
+"stale": [
+"I like spicy winter mornings."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 433,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"spicy tennis"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 434,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"spicy buttermilk"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 435,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"spicy pani puri"
+],
+"stale": [
+"I like spicy rajma chawal."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 436,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"spicy indie rock"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 437,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"spicy corner tables"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 438,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"spicy sea breezes"
+],
+"stale": [
+"I like spicy misty hills."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 439,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"spicy chess"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 440,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"spicy lemonade"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 441,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"spicy thali"
+],
+"stale": [
+"I like spicy momos."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 442,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"spicy techno"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 443,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"spicy balcony seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 444,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"spicy crisp autumn air"
+],
+"stale": [
+"I like spicy monsoon afternoons."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 445,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"spicy swimming"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 446,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"classic filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 447,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"classic biryani"
+],
+"stale": [
+"I like classic masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 448,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"classic Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 449,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"classic window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 450,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"classic rainy days"
+],
+"stale": [
+"I like classic cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 451,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"classic cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 452,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"classic green tea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 453,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"classic idli"
+],
+"stale": [
+"I like classic pav bhaji."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 454,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"classic lo-fi beats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 455,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"classic front-row seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 456,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"classic warm evenings"
+],
+"stale": [
+"I like classic winter mornings."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 457,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"classic tennis"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 458,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"classic buttermilk"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 459,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"classic pani puri"
+],
+"stale": [
+"I like classic rajma chawal."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 460,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"classic indie rock"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 461,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"classic corner tables"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 462,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"classic sea breezes"
+],
+"stale": [
+"I like classic misty hills."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 463,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"classic chess"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 464,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"classic lemonade"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 465,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"classic thali"
+],
+"stale": [
+"I like classic momos."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 466,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"classic techno"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 467,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"classic balcony seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 468,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"classic crisp autumn air"
+],
+"stale": [
+"I like classic monsoon afternoons."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 469,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"classic swimming"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 470,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"homemade filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 471,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"homemade biryani"
+],
+"stale": [
+"I like homemade masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 472,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"homemade Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 473,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"homemade window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 474,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"homemade rainy days"
+],
+"stale": [
+"I like homemade cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 475,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"homemade cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 476,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"homemade green tea"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 477,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"homemade idli"
+],
+"stale": [
+"I like homemade pav bhaji."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 478,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"homemade lo-fi beats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 479,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"homemade front-row seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 480,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"homemade warm evenings"
+],
+"stale": [
+"I like homemade winter mornings."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 481,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"homemade tennis"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 482,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"homemade buttermilk"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 483,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"homemade pani puri"
+],
+"stale": [
+"I like homemade rajma chawal."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 484,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"homemade indie rock"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 485,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"homemade corner tables"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 486,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"homemade sea breezes"
+],
+"stale": [
+"I like homemade misty hills."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 487,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"homemade chess"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 488,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"homemade lemonade"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 489,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"homemade thali"
+],
+"stale": [
+"I like homemade momos."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 490,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"homemade techno"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 491,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"homemade balcony seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 492,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"homemade crisp autumn air"
+],
+"stale": [
+"I like homemade monsoon afternoons."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 493,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"homemade swimming"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 494,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a drink option for the user.",
+"gold": [
+"late-night filter coffee"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 495,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a food the user would enjoy.",
+"gold": [
+"late-night biryani"
+],
+"stale": [
+"I like late-night masala dosa."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+},
+{
+"i": 496,
+"cat": "pref",
+"kind": "repeated",
+"q": "What music does the user go for?",
+"gold": [
+"late-night Carnatic music"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 119
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 203
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2497
+}
+},
+{
+"i": 497,
+"cat": "pref",
+"kind": "stable",
+"q": "Recommend a seat option for the user.",
+"gold": [
+"late-night window seats"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": true,
+"stale": false,
+"tokens": 105
+},
+"base2": {
+"gold": true,
+"stale": false,
+"tokens": 202
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2500
+}
+},
+{
+"i": 498,
+"cat": "pref",
+"kind": "retracted",
+"q": "Suggest a weather the user would enjoy.",
+"gold": [
+"late-night rainy days"
+],
+"stale": [
+"I like late-night cool weather."
+],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 144
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2509
+}
+},
+{
+"i": 499,
+"cat": "pref",
+"kind": "repeated",
+"q": "What sport does the user go for?",
+"gold": [
+"late-night cricket"
+],
+"stale": [],
+"withheld": 0,
+"base1": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"base2": {
+"gold": false,
+"stale": false,
+"tokens": 163
+},
+"adapter": {
+"gold": true,
+"stale": false,
+"tokens": 2528
+}
+}
+]

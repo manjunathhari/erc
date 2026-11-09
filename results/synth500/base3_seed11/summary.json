@@ -4,8 +4,8 @@
  "ingest": {
   "sentences": 1530,
   "filed": 1020,
-  "accepted": 970,
-  "uncertain": 50,
+  "accepted": 1020,
+  "uncertain": 0,
   "rejected": 0
  },
  "total": {
@@ -23,7 +23,7 @@
    "stale_in_context": "220/270",
    "passed": 134,
    "pass_pct": 26.8,
-   "mean_tokens": 1435
+   "mean_tokens": 1428
   },
   "adapter": {
    "n": 500,
@@ -31,7 +31,7 @@
    "stale_in_context": "0/270",
    "passed": 500,
    "pass_pct": 100.0,
-   "mean_tokens": 2640
+   "mean_tokens": 2638
   }
  },
  "pref": {
@@ -49,7 +49,7 @@
    "stale_in_context": "0/50",
    "passed": 7,
    "pass_pct": 4.7,
-   "mean_tokens": 166
+   "mean_tokens": 152
   },
   "adapter": {
    "n": 150,
@@ -75,7 +75,7 @@
    "stale_in_context": "80/80",
    "passed": 77,
    "pass_pct": 48.1,
-   "mean_tokens": 2010
+   "mean_tokens": 2008
   },
   "adapter": {
    "n": 160,
@@ -83,7 +83,7 @@
    "stale_in_context": "0/80",
    "passed": 160,
    "pass_pct": 100.0,
-   "mean_tokens": 2950
+   "mean_tokens": 2947
   }
  },
  "single": {
@@ -101,7 +101,7 @@
    "stale_in_context": "140/140",
    "passed": 50,
    "pass_pct": 26.3,
-   "mean_tokens": 1954
+   "mean_tokens": 1948
   },
   "adapter": {
    "n": 190,
@@ -109,7 +109,7 @@
    "stale_in_context": "0/140",
    "passed": 190,
    "pass_pct": 100.0,
-   "mean_tokens": 2492
+   "mean_tokens": 2489
   }
  },
  "by_kind_current": {

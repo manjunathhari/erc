@@ -1,5 +1,14 @@
 # Engram → ERC adapter: requirements (second pass, 9 November 2026)
 
+## Status (10 November 2026): base 3 implemented on branch `fable-erc-adapter`
+
+The five base-2 changes recommended after pass 2 are in: relations stored at filing (F1, F2, F6), retractions filed as facts
+(F7), one record per statement (F10), ERC's verdict written into P1 at filing and re-decided on forget (F9, change 5), and
+the `find()` zero-division guarded in the adapter's call path so base 1 stays frozen (F8). The adapter shrank from 404 to
+~280 lines: no read-time `relate()` (legacy base-2 rows only), no review-queue reading, no P1 overrides. Regression:
+21 adapter tests, base-2 suite with four tests rewritten for the new contract plus four new ones, 500-question lab 100% on
+two seeds with every retraction now `accepted` (was `uncertain`).
+
 ## Why this document exists
 
 The MemoryAgentBench test (arms A–E, 32K) showed C − B = +1 on single-hop and −3 on multi-hop, which the

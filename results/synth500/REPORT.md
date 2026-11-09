@@ -20,7 +20,12 @@ Three contexts are built on the same memory for every question:
 | base2 | structure-layer walk, every version, + excerpts, no gate (what MAB arm B did) |
 | adapter | `Adapter.context_for` — ERC verdicts govern profile, linked facts and excerpts |
 
-## Results (light search design; seeds 7 and 11 identical to the point)
+## Base 3 rerun (10 November 2026)
+
+Same generator, base 3 filing (`base3_seed7/`, `base3_seed11/`): ingest 1,020 filed / **1,020 accepted / 0 uncertain** (base 2:
+970 / 50 uncertain — the retractions), adapter **100% / 100% / 100%**, stale 0/270, mean 2,596 tokens; base1 and base2 arms unchanged.
+
+## Results, pass 2 (light search design; seeds 7 and 11 identical to the point)
 
 | | base1 | base2 | adapter |
 |---|---|---|---|
