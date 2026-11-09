@@ -31,6 +31,14 @@ VERSION = "adapter-2"
 U = timezone.utc
 
 
+HISTORY_WORDS = re.compile(r"\b(before|previously|used to|earlier|formerly|originally|at first|history|ever|first)\b", re.I)
+
+
+def asks_history(question: str) -> bool:
+    """'Where did X live before moving to Y?' - the past is asked for without a date (R6: history on request)."""
+    return bool(HISTORY_WORDS.search(question or ""))
+
+
 def parse_as_of(question: str) -> datetime | None:
     """'in March 2024' / 'in 2024' / 'before 2025' -> the last instant of that period, else None."""
     q = question.lower()
@@ -239,6 +247,22 @@ class Adapter:
                 lines.append(l); u += t; shown_sids.update(f.sids)
                 for sib in f.siblings: shown_sids.update(st.facts[sib].sids)
                 info["shown"].append(dict(fact=fid, entity=f.entity, relation=f.relation, value=f.value, sids=f.sids, valid=[f.start and f.start.date().isoformat(), f.end and f.end.date().isoformat()]))
+            if asks_history(question) and as_of is None:   # history on request: the earlier versions of what was reached, with their dates
+                hist = []
+                for fid in reached:
+                    f = st.facts[fid]
+                    for g in st.groups.get((f.entity, f.relation), []):
+                        x = st.facts[g]
+                        if g != fid and not x.hidden and not self.current(st, x) and x.sids[0] not in shown_sids:
+                            hist.append(x)
+                hist.sort(key=lambda x: (x.start or datetime.min.replace(tzinfo=U)))
+                if hist:
+                    lines.append("[Earlier versions of the above, no longer in force: each with the dates it held]")
+                    for x in hist:
+                        until = x.end.date().isoformat() if x.end else "?"
+                        l = f"- (until {until}) {self._line(x)}"; t = self._tok(l)
+                        if u + t > b: break
+                        lines.append(l); u += t; shown_sids.update(x.sids); info["history"] = info.get("history", 0) + 1
             if len(lines) > 1: facts_part = "\n".join(lines); used += u; info["sections"]["facts"] = u
         # profile (R7): its floor is profile_share; when the walk left room it may grow, keeping a reserve for excerpts
         prof = self.profile(st)
@@ -267,7 +291,9 @@ class Adapter:
             t = self.m._tokens(sid) + 8
             if used + u + t > self.budget: break
             keep.append(sid); u += t
-        if keep: parts.append(self.m.text_of(sorted(keep))); info["sections"]["excerpts"] = u
+        if keep:
+            parts.append("[Other sentences the search found. These are raw excerpts, not checked facts; a different name is a different person.]\n" + self.m.text_of(sorted(keep)))
+            info["sections"]["excerpts"] = u
         info["sids"] = sids; info["reached"] = len(reached)
         return "\n\n".join(parts) or "(nothing found)", info
 
@@ -278,4 +304,4 @@ class Adapter:
                     current=self.current(st, f), superseded_by=f.superseded_by, reason=f.reason, evidence=f.evidence)
 
 
-__all__ = ["Adapter", "State", "Fact", "relate", "norm", "parse_as_of", "MULTI_VALUED", "VERSION"]
+__all__ = ["Adapter", "State", "Fact", "relate", "norm", "parse_as_of", "asks_history", "MULTI_VALUED", "VERSION"]

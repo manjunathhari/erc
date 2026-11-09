@@ -1,0 +1,2044 @@
+[
+ {
+  "i": 0,
+  "cat": "single",
+  "kind": "same-day",
+  "q": "Where does Asha live?",
+  "gold": [
+   "Delhi"
+  ],
+  "hyp": "Delhi",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 230,
+   "profile": 447,
+   "excerpts": 27
+  },
+  "reached": 14,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 1,
+  "cat": "single",
+  "kind": "same-day",
+  "q": "Where does Ravi live?",
+  "gold": [
+   "Kochi"
+  ],
+  "hyp": "Kochi",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 195,
+   "profile": 447
+  },
+  "reached": 12,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 2,
+  "cat": "single",
+  "kind": "same-day",
+  "q": "Where does Meera live?",
+  "gold": [
+   "Indore"
+  ],
+  "hyp": "Indore",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 159,
+   "profile": 447,
+   "excerpts": 56
+  },
+  "reached": 9,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 3,
+  "cat": "single",
+  "kind": "same-day",
+  "q": "Where does Karan live?",
+  "gold": [
+   "Jaipur"
+  ],
+  "hyp": "Jaipur",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 209,
+   "profile": 447,
+   "excerpts": 27
+  },
+  "reached": 12,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 4,
+  "cat": "single",
+  "kind": "temporal-same-month",
+  "q": "Where did Divya live in May 2024?",
+  "gold": [
+   "Hubli"
+  ],
+  "hyp": "Hubli",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 209,
+   "profile": 437
+  },
+  "reached": 12,
+  "withheld": 4,
+  "note": "value in force at the end of May"
+ },
+ {
+  "i": 5,
+  "cat": "single",
+  "kind": "temporal-same-month",
+  "q": "Where did Arjun live in May 2024?",
+  "gold": [
+   "Ranchi"
+  ],
+  "hyp": "Ranchi",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 133,
+   "profile": 437
+  },
+  "reached": 7,
+  "withheld": 4,
+  "note": "value in force at the end of May"
+ },
+ {
+  "i": 6,
+  "cat": "single",
+  "kind": "temporal-same-month",
+  "q": "Where did Nisha live in May 2024?",
+  "gold": [
+   "Dehradun"
+  ],
+  "hyp": "Dehradun",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 54,
+   "profile": 437
+  },
+  "reached": 2,
+  "withheld": 4,
+  "note": "value in force at the end of May"
+ },
+ {
+  "i": 7,
+  "cat": "single",
+  "kind": "temporal-same-month",
+  "q": "Where did Rohan live in May 2024?",
+  "gold": [
+   "Agra"
+  ],
+  "hyp": "Agra",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 40,
+   "profile": 437,
+   "excerpts": 13
+  },
+  "reached": 1,
+  "withheld": 4,
+  "note": "value in force at the end of May"
+ },
+ {
+  "i": 8,
+  "cat": "single",
+  "kind": "temporal-middle",
+  "q": "Where did Priya live in June 2024?",
+  "gold": [
+   "Lucknow"
+  ],
+  "hyp": "Lucknow",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 477
+  },
+  "reached": 3,
+  "withheld": 6,
+  "note": ""
+ },
+ {
+  "i": 9,
+  "cat": "single",
+  "kind": "temporal-middle",
+  "q": "Where did Vikram live in June 2024?",
+  "gold": [
+   "Chennai"
+  ],
+  "hyp": "Chennai",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 477
+  },
+  "reached": 3,
+  "withheld": 6,
+  "note": ""
+ },
+ {
+  "i": 10,
+  "cat": "single",
+  "kind": "temporal-middle",
+  "q": "Where did Sneha live in June 2024?",
+  "gold": [
+   "Thrissur"
+  ],
+  "hyp": "Thrissur",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 55,
+   "profile": 477
+  },
+  "reached": 2,
+  "withheld": 6,
+  "note": ""
+ },
+ {
+  "i": 11,
+  "cat": "single",
+  "kind": "temporal-middle",
+  "q": "Where did Aditya live in June 2024?",
+  "gold": [
+   "Bhopal"
+  ],
+  "hyp": "Bhopal",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 41,
+   "profile": 477
+  },
+  "reached": 1,
+  "withheld": 7,
+  "note": ""
+ },
+ {
+  "i": 12,
+  "cat": "single",
+  "kind": "before-no-date",
+  "q": "Where did Kavya live before moving to Pune?",
+  "gold": [
+   "Nagpur"
+  ],
+  "hyp": "not mentioned",
+  "auto": false,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 186,
+   "profile": 447,
+   "excerpts": 28
+  },
+  "reached": 11,
+  "withheld": 2,
+  "note": "history asked without a date"
+ },
+ {
+  "i": 13,
+  "cat": "single",
+  "kind": "before-no-date",
+  "q": "Where did Rahul live before moving to Mumbai?",
+  "gold": [
+   "Delhi"
+  ],
+  "hyp": "not mentioned",
+  "auto": false,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 447,
+   "excerpts": 36
+  },
+  "reached": 3,
+  "withheld": 2,
+  "note": "history asked without a date"
+ },
+ {
+  "i": 14,
+  "cat": "single",
+  "kind": "before-no-date",
+  "q": "Where did Ananya live before moving to Udaipur?",
+  "gold": [
+   "Jaipur"
+  ],
+  "hyp": "not mentioned",
+  "auto": false,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 56,
+   "profile": 447,
+   "excerpts": 36
+  },
+  "reached": 2,
+  "withheld": 3,
+  "note": "history asked without a date"
+ },
+ {
+  "i": 15,
+  "cat": "single",
+  "kind": "before-no-date",
+  "q": "Where did Siddharth live before moving to Mysuru?",
+  "gold": [
+   "Hubli"
+  ],
+  "hyp": "not mentioned",
+  "auto": false,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 447,
+   "excerpts": 12
+  },
+  "reached": 3,
+  "withheld": 4,
+  "note": "history asked without a date"
+ },
+ {
+  "i": 16,
+  "cat": "single",
+  "kind": "count-update",
+  "q": "How many cats does Pooja have?",
+  "gold": [
+   "3"
+  ],
+  "hyp": "3",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 55,
+   "profile": 447
+  },
+  "reached": 2,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 17,
+  "cat": "single",
+  "kind": "count-update",
+  "q": "How many cars does Manish have?",
+  "gold": [
+   "2"
+  ],
+  "hyp": "2",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 56,
+   "profile": 447
+  },
+  "reached": 2,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 18,
+  "cat": "single",
+  "kind": "count-update",
+  "q": "How many bikes does Lakshmi have?",
+  "gold": [
+   "5"
+  ],
+  "hyp": "5",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 57,
+   "profile": 447
+  },
+  "reached": 2,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 19,
+  "cat": "single",
+  "kind": "count-update",
+  "q": "How many guitars does Varun have?",
+  "gold": [
+   "2"
+  ],
+  "hyp": "2",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 42,
+   "profile": 447
+  },
+  "reached": 1,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 20,
+  "cat": "single",
+  "kind": "not-mentioned",
+  "q": "Who is Isha married to?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 447
+  },
+  "reached": 3,
+  "withheld": 0,
+  "note": "fact never stated"
+ },
+ {
+  "i": 21,
+  "cat": "single",
+  "kind": "not-mentioned",
+  "q": "Who is Nikhil married to?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 447
+  },
+  "reached": 3,
+  "withheld": 0,
+  "note": "fact never stated"
+ },
+ {
+  "i": 22,
+  "cat": "single",
+  "kind": "not-mentioned",
+  "q": "Who is Tara married to?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 447
+  },
+  "reached": 3,
+  "withheld": 0,
+  "note": "fact never stated"
+ },
+ {
+  "i": 23,
+  "cat": "single",
+  "kind": "not-mentioned",
+  "q": "Who is Dev married to?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 56,
+   "profile": 447,
+   "excerpts": 14
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": "fact never stated"
+ },
+ {
+  "i": 24,
+  "cat": "single",
+  "kind": "look-alike",
+  "q": "Where does Rhea live?",
+  "gold": [
+   "Goa"
+  ],
+  "hyp": "Pune",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": true,
+  "sections": {
+   "facts": 54,
+   "profile": 447,
+   "excerpts": 28
+  },
+  "reached": 2,
+  "withheld": 4,
+  "note": "the look-alike must not overwrite"
+ },
+ {
+  "i": 25,
+  "cat": "single",
+  "kind": "look-alike",
+  "q": "Where does Kabir live?",
+  "gold": [
+   "Delhi"
+  ],
+  "hyp": "Kochi",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": true,
+  "sections": {
+   "facts": 54,
+   "profile": 447,
+   "excerpts": 27
+  },
+  "reached": 2,
+  "withheld": 4,
+  "note": "the look-alike must not overwrite"
+ },
+ {
+  "i": 26,
+  "cat": "single",
+  "kind": "look-alike",
+  "q": "Where does Zara live?",
+  "gold": [
+   "Surat"
+  ],
+  "hyp": "Agra",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": true,
+  "sections": {
+   "facts": 54,
+   "profile": 447,
+   "excerpts": 27
+  },
+  "reached": 2,
+  "withheld": 4,
+  "note": "the look-alike must not overwrite"
+ },
+ {
+  "i": 27,
+  "cat": "single",
+  "kind": "look-alike",
+  "q": "Where does Aman live?",
+  "gold": [
+   "Indore"
+  ],
+  "hyp": "Bhopal",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": true,
+  "sections": {
+   "facts": 41,
+   "profile": 447,
+   "excerpts": 26
+  },
+  "reached": 1,
+  "withheld": 4,
+  "note": "the look-alike must not overwrite"
+ },
+ {
+  "i": 28,
+  "cat": "single",
+  "kind": "restated",
+  "q": "Where does Leela live?",
+  "gold": [
+   "Pune"
+  ],
+  "hyp": "Pune",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 144,
+   "profile": 447
+  },
+  "reached": 8,
+  "withheld": 4,
+  "note": ""
+ },
+ {
+  "i": 29,
+  "cat": "single",
+  "kind": "restated",
+  "q": "Where does Farhan live?",
+  "gold": [
+   "Goa"
+  ],
+  "hyp": "Goa",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 145,
+   "profile": 447
+  },
+  "reached": 8,
+  "withheld": 4,
+  "note": ""
+ },
+ {
+  "i": 30,
+  "cat": "single",
+  "kind": "restated",
+  "q": "Where does Gauri live?",
+  "gold": [
+   "Jaipur"
+  ],
+  "hyp": "Jaipur",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 146,
+   "profile": 447
+  },
+  "reached": 8,
+  "withheld": 4,
+  "note": ""
+ },
+ {
+  "i": 31,
+  "cat": "single",
+  "kind": "restated",
+  "q": "Where does Harish live?",
+  "gold": [
+   "Mysuru"
+  ],
+  "hyp": "Mysuru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 131,
+   "profile": 447
+  },
+  "reached": 7,
+  "withheld": 4,
+  "note": ""
+ },
+ {
+  "i": 32,
+  "cat": "single",
+  "kind": "current-3",
+  "q": "Which company does Ira work at?",
+  "gold": [
+   "Wipro"
+  ],
+  "hyp": "Wipro",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 89,
+   "profile": 447
+  },
+  "reached": 4,
+  "withheld": 6,
+  "note": ""
+ },
+ {
+  "i": 33,
+  "cat": "single",
+  "kind": "current-3",
+  "q": "Which company does Jay work at?",
+  "gold": [
+   "Ola"
+  ],
+  "hyp": "Ola",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 89,
+   "profile": 447
+  },
+  "reached": 4,
+  "withheld": 6,
+  "note": ""
+ },
+ {
+  "i": 34,
+  "cat": "single",
+  "kind": "current-3",
+  "q": "Which company does Kiran work at?",
+  "gold": [
+   "Cred"
+  ],
+  "hyp": "Cred",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 91,
+   "profile": 447
+  },
+  "reached": 4,
+  "withheld": 6,
+  "note": ""
+ },
+ {
+  "i": 35,
+  "cat": "single",
+  "kind": "current-3",
+  "q": "Which company does Maya work at?",
+  "gold": [
+   "Udaan"
+  ],
+  "hyp": "Udaan",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 85,
+   "profile": 447,
+   "excerpts": 14
+  },
+  "reached": 4,
+  "withheld": 5,
+  "note": ""
+ },
+ {
+  "i": 36,
+  "cat": "single",
+  "kind": "paraphrase",
+  "q": "Who is Neel's employer?",
+  "gold": [
+   "Razorpay"
+  ],
+  "hyp": "Razorpay",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 91,
+   "profile": 447
+  },
+  "reached": 4,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 37,
+  "cat": "single",
+  "kind": "paraphrase",
+  "q": "Who is Omar's employer?",
+  "gold": [
+   "Groww"
+  ],
+  "hyp": "Groww",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 90,
+   "profile": 447
+  },
+  "reached": 4,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 38,
+  "cat": "single",
+  "kind": "paraphrase",
+  "q": "Who is Pallavi's employer?",
+  "gold": [
+   "Zerodha"
+  ],
+  "hyp": "Zerodha",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 91,
+   "profile": 447
+  },
+  "reached": 4,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 39,
+  "cat": "single",
+  "kind": "paraphrase",
+  "q": "Who is Rishi's employer?",
+  "gold": [
+   "Dream11"
+  ],
+  "hyp": "Dream11",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 59,
+   "profile": 447,
+   "excerpts": 12
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 40,
+  "cat": "multi",
+  "kind": "hop3",
+  "q": "In which city is the company where Asha's manager works headquartered?",
+  "gold": [
+   "Chennai"
+  ],
+  "hyp": "Chennai",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 324,
+   "profile": 447
+  },
+  "reached": 20,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 41,
+  "cat": "multi",
+  "kind": "hop3-upd",
+  "q": "In which city is the company where Ravi's mentor works headquartered?",
+  "gold": [
+   "Gurugram"
+  ],
+  "hyp": "Gurugram",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 455,
+   "profile": 447
+  },
+  "reached": 29,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 42,
+  "cat": "multi",
+  "kind": "hop3-two-updates",
+  "q": "In which city is the company where Meera's neighbour works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 648,
+   "profile": 447
+  },
+  "reached": 41,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 43,
+  "cat": "multi",
+  "kind": "hop4-upd",
+  "q": "Which state is the headquarters of the company where Karan's landlord works in?",
+  "gold": [
+   "Haryana"
+  ],
+  "hyp": "Haryana",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 303,
+   "profile": 447
+  },
+  "reached": 18,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 44,
+  "cat": "multi",
+  "kind": "hub-rel",
+  "q": "Where is my brother's employer headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 175,
+   "profile": 447
+  },
+  "reached": 9,
+  "withheld": 4,
+  "note": "no entity named; hub relation seed"
+ },
+ {
+  "i": 45,
+  "cat": "multi",
+  "kind": "chain-gap",
+  "q": "In which city is the company where Arjun's manager works headquartered?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 254,
+   "profile": 447
+  },
+  "reached": 15,
+  "withheld": 0,
+  "note": "employer never stated"
+ },
+ {
+  "i": 46,
+  "cat": "multi",
+  "kind": "hop3",
+  "q": "In which city is the company where Asha's mentor works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 326,
+   "profile": 447
+  },
+  "reached": 20,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 47,
+  "cat": "multi",
+  "kind": "hop3-upd",
+  "q": "In which city is the company where Ravi's neighbour works headquartered?",
+  "gold": [
+   "Mumbai"
+  ],
+  "hyp": "Mumbai",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 460,
+   "profile": 447
+  },
+  "reached": 29,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 48,
+  "cat": "multi",
+  "kind": "hop3-two-updates",
+  "q": "In which city is the company where Meera's landlord works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 707,
+   "profile": 447
+  },
+  "reached": 45,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 49,
+  "cat": "multi",
+  "kind": "hop4-upd",
+  "q": "Which state is the headquarters of the company where Karan's trainer works in?",
+  "gold": [
+   "Karnataka"
+  ],
+  "hyp": "Karnataka",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 288,
+   "profile": 447
+  },
+  "reached": 17,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 50,
+  "cat": "multi",
+  "kind": "hub-rel",
+  "q": "Where is my brother's employer headquartered?",
+  "gold": [
+   "Gurugram"
+  ],
+  "hyp": "Bengaluru",
+  "auto": false,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 175,
+   "profile": 447
+  },
+  "reached": 9,
+  "withheld": 4,
+  "note": "no entity named; hub relation seed"
+ },
+ {
+  "i": 51,
+  "cat": "multi",
+  "kind": "chain-gap",
+  "q": "In which city is the company where Arjun's mentor works headquartered?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 255,
+   "profile": 447
+  },
+  "reached": 15,
+  "withheld": 0,
+  "note": "employer never stated"
+ },
+ {
+  "i": 52,
+  "cat": "multi",
+  "kind": "hop3",
+  "q": "In which city is the company where Asha's neighbour works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 326,
+   "profile": 447
+  },
+  "reached": 20,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 53,
+  "cat": "multi",
+  "kind": "hop3-upd",
+  "q": "In which city is the company where Ravi's landlord works headquartered?",
+  "gold": [
+   "Mumbai"
+  ],
+  "hyp": "Mumbai",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 610,
+   "profile": 447
+  },
+  "reached": 39,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 54,
+  "cat": "multi",
+  "kind": "hop3-two-updates",
+  "q": "In which city is the company where Meera's trainer works headquartered?",
+  "gold": [
+   "Chennai"
+  ],
+  "hyp": "Chennai",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 663,
+   "profile": 447
+  },
+  "reached": 42,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 55,
+  "cat": "multi",
+  "kind": "hop4-upd",
+  "q": "Which state is the headquarters of the company where Karan's manager works in?",
+  "gold": [
+   "Karnataka"
+  ],
+  "hyp": "Karnataka",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 304,
+   "profile": 447
+  },
+  "reached": 18,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 56,
+  "cat": "multi",
+  "kind": "hub-rel",
+  "q": "Where is my brother's employer headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 175,
+   "profile": 447
+  },
+  "reached": 9,
+  "withheld": 4,
+  "note": "no entity named; hub relation seed"
+ },
+ {
+  "i": 57,
+  "cat": "multi",
+  "kind": "chain-gap",
+  "q": "In which city is the company where Arjun's neighbour works headquartered?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 255,
+   "profile": 447
+  },
+  "reached": 15,
+  "withheld": 0,
+  "note": "employer never stated"
+ },
+ {
+  "i": 58,
+  "cat": "multi",
+  "kind": "hop3",
+  "q": "In which city is the company where Asha's landlord works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 325,
+   "profile": 447
+  },
+  "reached": 20,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 59,
+  "cat": "multi",
+  "kind": "hop3-upd",
+  "q": "In which city is the company where Ravi's trainer works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 564,
+   "profile": 447
+  },
+  "reached": 36,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 60,
+  "cat": "multi",
+  "kind": "hop3-two-updates",
+  "q": "In which city is the company where Meera's manager works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 816,
+   "profile": 447
+  },
+  "reached": 52,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 61,
+  "cat": "multi",
+  "kind": "hop4-upd",
+  "q": "Which state is the headquarters of the company where Karan's mentor works in?",
+  "gold": [
+   "Karnataka"
+  ],
+  "hyp": "Karnataka",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 288,
+   "profile": 447
+  },
+  "reached": 17,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 62,
+  "cat": "multi",
+  "kind": "hub-rel",
+  "q": "Where is my brother's employer headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 175,
+   "profile": 447
+  },
+  "reached": 9,
+  "withheld": 4,
+  "note": "no entity named; hub relation seed"
+ },
+ {
+  "i": 63,
+  "cat": "multi",
+  "kind": "chain-gap",
+  "q": "In which city is the company where Arjun's landlord works headquartered?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 256,
+   "profile": 447
+  },
+  "reached": 15,
+  "withheld": 0,
+  "note": "employer never stated"
+ },
+ {
+  "i": 64,
+  "cat": "multi",
+  "kind": "hop3",
+  "q": "In which city is the company where Asha's trainer works headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 311,
+   "profile": 447
+  },
+  "reached": 19,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 65,
+  "cat": "multi",
+  "kind": "hop3-upd",
+  "q": "In which city is the company where Ravi's manager works headquartered?",
+  "gold": [
+   "Mumbai"
+  ],
+  "hyp": "Mumbai",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 487,
+   "profile": 447
+  },
+  "reached": 31,
+  "withheld": 1,
+  "note": ""
+ },
+ {
+  "i": 66,
+  "cat": "multi",
+  "kind": "hop3-two-updates",
+  "q": "In which city is the company where Meera's mentor works headquartered?",
+  "gold": [
+   "Gurugram"
+  ],
+  "hyp": "Gurugram",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 646,
+   "profile": 447
+  },
+  "reached": 41,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 67,
+  "cat": "multi",
+  "kind": "hop4-upd",
+  "q": "Which state is the headquarters of the company where Karan's neighbour works in?",
+  "gold": [
+   "Karnataka"
+  ],
+  "hyp": "Karnataka",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 290,
+   "profile": 447
+  },
+  "reached": 17,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 68,
+  "cat": "multi",
+  "kind": "hub-rel",
+  "q": "Where is my brother's employer headquartered?",
+  "gold": [
+   "Bengaluru"
+  ],
+  "hyp": "Bengaluru",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 175,
+   "profile": 447
+  },
+  "reached": 9,
+  "withheld": 4,
+  "note": "no entity named; hub relation seed"
+ },
+ {
+  "i": 69,
+  "cat": "multi",
+  "kind": "chain-gap",
+  "q": "In which city is the company where Arjun's trainer works headquartered?",
+  "gold": [
+   "not mentioned"
+  ],
+  "hyp": "not mentioned",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 256,
+   "profile": 447
+  },
+  "reached": 15,
+  "withheld": 0,
+  "note": "employer never stated"
+ },
+ {
+  "i": 70,
+  "cat": "pref",
+  "kind": "retract-relike",
+  "q": "Pick a drink for the user.",
+  "gold": [
+   "strong filter coffee"
+  ],
+  "hyp": "Strong filter coffee",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "profile": 447,
+   "excerpts": 195
+  },
+  "reached": 0,
+  "withheld": 0,
+  "note": "re-liked after retraction"
+ },
+ {
+  "i": 71,
+  "cat": "pref",
+  "kind": "retract-other-speaker",
+  "q": "Suggest a food the user would enjoy.",
+  "gold": [
+   "plain idli"
+  ],
+  "hyp": "Upma",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 64,
+   "profile": 447,
+   "excerpts": 51
+  },
+  "reached": 3,
+  "withheld": 1,
+  "note": "Ravi's taste must not leak as the user's"
+ },
+ {
+  "i": 72,
+  "cat": "pref",
+  "kind": "double-negation",
+  "q": "What music does the user like?",
+  "gold": [
+   "Carnatic music"
+  ],
+  "hyp": "Carnatic music",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 79,
+   "profile": 447,
+   "excerpts": 38
+  },
+  "reached": 4,
+  "withheld": 2,
+  "note": "'don't ... stop liking' is not a retraction"
+ },
+ {
+  "i": 73,
+  "cat": "pref",
+  "kind": "repeated-vs-once",
+  "q": "Which seat does the user mention most?",
+  "gold": [
+   "window seats"
+  ],
+  "hyp": "Window seats",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 136,
+   "profile": 447,
+   "excerpts": 14
+  },
+  "reached": 8,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 74,
+  "cat": "pref",
+  "kind": "avoid",
+  "q": "Which weather should be avoided for the user?",
+  "gold": [
+   "winter mornings"
+  ],
+  "hyp": "Winter mornings",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "profile": 447,
+   "excerpts": 150
+  },
+  "reached": 0,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 75,
+  "cat": "pref",
+  "kind": "retract-relike",
+  "q": "Pick a sport for the user.",
+  "gold": [
+   "badminton"
+  ],
+  "hyp": "Badminton",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "profile": 447,
+   "excerpts": 195
+  },
+  "reached": 0,
+  "withheld": 0,
+  "note": "re-liked after retraction"
+ },
+ {
+  "i": 76,
+  "cat": "pref",
+  "kind": "retract-other-speaker",
+  "q": "Suggest a dessert the user would enjoy.",
+  "gold": [
+   "gulab jamun"
+  ],
+  "hyp": "Gulab jamun",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": "Ravi's taste must not leak as the user's"
+ },
+ {
+  "i": 77,
+  "cat": "pref",
+  "kind": "double-negation",
+  "q": "What fruit does the user like?",
+  "gold": [
+   "mangoes"
+  ],
+  "hyp": "Mangoes",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": "'don't ... stop liking' is not a retraction"
+ },
+ {
+  "i": 78,
+  "cat": "pref",
+  "kind": "repeated-vs-once",
+  "q": "Which snack does the user mention most?",
+  "gold": [
+   "murukku"
+  ],
+  "hyp": "Murukku (tied with banana chips)",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 79,
+  "cat": "pref",
+  "kind": "avoid",
+  "q": "Which tea should be avoided for the user?",
+  "gold": [
+   "lemon tea"
+  ],
+  "hyp": "Lemon tea",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 77,
+   "profile": 447,
+   "excerpts": 38
+  },
+  "reached": 4,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 80,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a coffee for the user.",
+  "gold": [
+   "cold brew"
+  ],
+  "hyp": "Strong filter coffee",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 70,
+   "profile": 447,
+   "excerpts": 47
+  },
+  "reached": 3,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 81,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a pizza for the user.",
+  "gold": [
+   "thin crust"
+  ],
+  "hyp": "Thin crust",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 82,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a holiday for the user.",
+  "gold": [
+   "hill stations"
+  ],
+  "hyp": "Hill stations",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 83,
+  "cat": "pref",
+  "kind": "retracted-only",
+  "q": "Does the user like detective novels?",
+  "gold": [
+   "no"
+  ],
+  "hyp": "No",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 97,
+   "profile": 447,
+   "excerpts": 49
+  },
+  "reached": 5,
+  "withheld": 1,
+  "note": "only a retraction stands; expected answer: no / not any more"
+ },
+ {
+  "i": 84,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a exercise for the user.",
+  "gold": [
+   "morning runs"
+  ],
+  "hyp": "Morning runs",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 85,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a car for the user.",
+  "gold": [
+   "small hatchbacks"
+  ],
+  "hyp": "Small hatchback",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 79,
+   "profile": 447,
+   "excerpts": 38
+  },
+  "reached": 4,
+  "withheld": 2,
+  "note": ""
+ },
+ {
+  "i": 86,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a phone for the user.",
+  "gold": [
+   "compact phones"
+  ],
+  "hyp": "Compact phones",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 76,
+   "profile": 447,
+   "excerpts": 51
+  },
+  "reached": 4,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 87,
+  "cat": "pref",
+  "kind": "retracted-only",
+  "q": "Does the user like deep green?",
+  "gold": [
+   "no"
+  ],
+  "hyp": "No",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 98,
+   "profile": 447,
+   "excerpts": 49
+  },
+  "reached": 5,
+  "withheld": 1,
+  "note": "only a retraction stands; expected answer: no / not any more"
+ },
+ {
+  "i": 88,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a film for the user.",
+  "gold": [
+   "slow cinema"
+  ],
+  "hyp": "Slow cinema",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 89,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a hobby for the user.",
+  "gold": [
+   "woodworking"
+  ],
+  "hyp": "Woodworking",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 90,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a cuisine for the user.",
+  "gold": [
+   "Chettinad food"
+  ],
+  "hyp": "Chettinad food",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 91,
+  "cat": "pref",
+  "kind": "retracted-only",
+  "q": "Does the user like trains over flights?",
+  "gold": [
+   "no"
+  ],
+  "hyp": "No",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 84,
+   "profile": 447,
+   "excerpts": 49
+  },
+  "reached": 4,
+  "withheld": 2,
+  "note": "only a retraction stands; expected answer: no / not any more"
+ },
+ {
+  "i": 92,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a breakfast for the user.",
+  "gold": [
+   "upma"
+  ],
+  "hyp": "upma",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 93,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a workspace for the user.",
+  "gold": [
+   "quiet cafes"
+  ],
+  "hyp": "quiet cafes",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 94,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a pet for the user.",
+  "gold": [
+   "indie dogs"
+  ],
+  "hyp": "indie dogs",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 95,
+  "cat": "pref",
+  "kind": "retracted-only",
+  "q": "Does the user like late monsoon?",
+  "gold": [
+   "no"
+  ],
+  "hyp": "No",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 59,
+   "profile": 447,
+   "excerpts": 67
+  },
+  "reached": 2,
+  "withheld": 2,
+  "note": "only a retraction stands; expected answer: no / not any more"
+ },
+ {
+  "i": 96,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a game for the user.",
+  "gold": [
+   "carrom"
+  ],
+  "hyp": "badminton",
+  "auto": false,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 97,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a newspaper for the user.",
+  "gold": [
+   "The Hindu"
+  ],
+  "hyp": "The Hindu",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 98,
+  "cat": "pref",
+  "kind": "indirect",
+  "q": "Recommend a shoes for the user.",
+  "gold": [
+   "leather sandals"
+  ],
+  "hyp": "leather sandals",
+  "auto": true,
+  "gold_in_ctx": true,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 50,
+   "profile": 447,
+   "excerpts": 107
+  },
+  "reached": 2,
+  "withheld": 0,
+  "note": ""
+ },
+ {
+  "i": 99,
+  "cat": "pref",
+  "kind": "retracted-only",
+  "q": "Does the user like fountain pens?",
+  "gold": [
+   "no"
+  ],
+  "hyp": "No",
+  "auto": true,
+  "gold_in_ctx": false,
+  "stale_in_ctx": false,
+  "sections": {
+   "facts": 66,
+   "profile": 447,
+   "excerpts": 64
+  },
+  "reached": 3,
+  "withheld": 1,
+  "note": "only a retraction stands; expected answer: no / not any more"
+ }
+]

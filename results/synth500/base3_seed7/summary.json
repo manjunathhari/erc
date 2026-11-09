@@ -31,7 +31,7 @@
    "stale_in_context": "0/270",
    "passed": 500,
    "pass_pct": 100.0,
-   "mean_tokens": 2596
+   "mean_tokens": 2616
   }
  },
  "pref": {
@@ -57,7 +57,7 @@
    "stale_in_context": "0/50",
    "passed": 150,
    "pass_pct": 100.0,
-   "mean_tokens": 2515
+   "mean_tokens": 2544
   }
  },
  "multi": {
@@ -83,7 +83,7 @@
    "stale_in_context": "0/80",
    "passed": 160,
    "pass_pct": 100.0,
-   "mean_tokens": 2921
+   "mean_tokens": 2934
   }
  },
  "single": {
@@ -109,7 +109,7 @@
    "stale_in_context": "0/140",
    "passed": 190,
    "pass_pct": 100.0,
-   "mean_tokens": 2387
+   "mean_tokens": 2404
   }
  },
  "by_kind_current": {
