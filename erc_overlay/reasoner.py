@@ -62,9 +62,29 @@ class Reasoner:
         else: when = f"valid {t.start.date().isoformat() if t.start else '?'} to {t.end.date().isoformat() if t.end else '?'}"
         return f"state: status {q['status']}, validation {q['validation_status']}, source {q['source_type']}; {sent}; {when}"
 
+    @staticmethod
+    def _time_line(p) -> str:
+        """What is known about a fact's time and where it came from (B2a): a stated boundary, with its range when it was stated only
+        to a year or month; a start that was never stated, only first said; how Engram ended the period. An end is shown, as on the
+        state line, as the first day the state no longer holds."""
+        q, t = p.qualifiers, p.valid_time
+        day = lambda moment: moment.date().isoformat()
+        if t is None: return "time: not known"
+        if q.get("time_kind") == "event":
+            return f"time: event stated {day(t.start)}" if q["start_basis"] == "stated" else f"time: event not stated (first said {day(t.start)})"
+        if t.start is None: start = "start not known"  # a known end with no start: nothing was stated and nothing first said
+        elif q["start_basis"] == "first_said": start = f"start not stated (first said {day(t.start)})"
+        elif t.start_latest: start = f"start stated, between {day(t.start)} and {day(t.start_latest)}"
+        else: start = f"start stated {day(t.start)}"
+        if q["end_basis"] == "open": end = "end open"
+        elif t.end_earliest: end = f"end {q['end_basis']}, between {day(t.end_earliest)} and {day(t.end)}"
+        else: end = f"end {q['end_basis']} {day(t.end)}"
+        return f"time: {start}; {end}"
+
     def explain(self, reasoning: Reasoning) -> list[str]:
         """Plain lines: the strategy, each conclusion with its decision and the facts under it (each with its Engram state, how it was
-        sent and its dates, then its sentences), every fact sent, conflicts, what is unknown, and every fact left out and why."""
+        sent and its dates, a `time:` line saying what is stated and what is only first said, then its sentences), every fact sent
+        with its `time:` line, conflicts, what is unknown, and every fact left out and why."""
         r, props, request = reasoning.result, {p.id: p for p in reasoning.result.propositions}, reasoning.adapted.request
         lines = [f"strategy {reasoning.orchestration.selected_strategy.strategy_id}@{reasoning.orchestration.selected_strategy.version}, "
                  f"status {r.status.value}, as of {reasoning.adapted.request.as_of.date().isoformat()}, overall {reasoning.evaluation.overall_decision.value}"]
@@ -73,9 +93,11 @@ class Reasoner:
             for leaf in ev.premise_coverage.leaf_premise_ids:
                 lines.append(f"  because: {self._claim(props[leaf])}")
                 if leaf.startswith("fact:"): lines.append(f"    {self._state_line(props[leaf], request)}")
+                if leaf.startswith("fact:"): lines.append(f"    {self._time_line(props[leaf])}")
                 lines += [f"    {s}" for s in self._sentences(leaf)]
         for p in request.propositions:
             lines.append(f"fact: {self._claim(p)}; {self._state_line(p, request)}")
+            lines.append(f"  {self._time_line(p)}")
         for c in reasoning.orchestration.contradictions:
             lines.append(f"{c.certainty.value} contradiction: {self._claim(props[c.left_id])} / {self._claim(props[c.right_id])}")
         for u in r.uncertainty:

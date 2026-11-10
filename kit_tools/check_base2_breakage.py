@@ -67,6 +67,23 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ("event dated by the period's start, not its own sentence", "erc_overlay/knowledge.py", "if x.fact.valid_from: return x.fact.valid_from\n        days = []", "if x.fact.valid_from: return x.fact.valid_from\n        return None\n        days = []"),
  ("state predicates counted as events", "erc_overlay/knowledge.py", "EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)", "EVENTS = frozenset({**OPENS, **CLOSES})"),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
+ # B2a: adapter enrichment (claude/erc-b2a-spec.md, section 8). Additive only: each breakage either drops or falsifies an addition,
+ # or lets a later increment's change (B2b) arrive early.
+ ("B2a: observation date not sent with sentence evidence", "erc_overlay/knowledge.py", "**self._observed(e)", ""),
+ ("B2a: observation date put on the adapter's own state record", "erc_overlay/knowledge.py", "evidence_kind=EvidenceKind.OTHER,", "evidence_kind=EvidenceKind.OTHER, observed_at=as_of,"),
+ ("B2a: a date invented for a sentence with no readable date", "erc_overlay/knowledge.py", "if not day: return {}", 'if not day: day = "1970"'),
+ ("B2a: latest start is the next period's first instant, not this period's last", "erc_overlay/knowledge.py", "return _day(span(stated)[1]) + LAST_INSTANT if _coarse(stated) else None", "return _day(span(stated)[1]) + ONE_DAY if _coarse(stated) else None"),
+ ("B2a: bound added to a first-said start", "erc_overlay/knowledge.py", '_start_latest(start) if start_basis == "stated" else None', "_start_latest(start)"),
+ ("B2a: bound added to an event's interval", "erc_overlay/knowledge.py", "return TimeInterval(begin, None) if begin else None, labels", "return TimeInterval(begin, None, start_latest=_start_latest(self._event_date(x))) if begin else None, labels"),
+ ("B2a: bound added to a closed or replaced end", "erc_overlay/knowledge.py", '_end_earliest(end) if end_basis == "stated" else None', "_end_earliest(end)"),
+ ("B2a: start_basis always stated", "erc_overlay/knowledge.py", '"stated" if p.start else "first_said", p.end_kind)', '"stated", p.end_kind)'),
+ ("B2a: end_basis not taken from Engram's end_kind", "erc_overlay/knowledge.py", '"stated" if p.start else "first_said", p.end_kind)', '"stated" if p.start else "first_said", "open" if p.end is None else "stated")'),
+ ("B2a: a day made into an instant outside the one function", "erc_overlay/knowledge.py", '"observed_at": _day(first)', '"observed_at": dt.datetime(first.year, first.month, first.day, tzinfo=dt.timezone.utc)'),
+ ("B2a: B2b arriving early - a first-said start sent with no start", "erc_overlay/knowledge.py", "begin = _start(start)\n        if begin is None and end is None: return None, {}", 'begin = _start(start) if start_basis == "stated" else None\n        if begin is None and end is None: return None, {}'),
+ ("B2a: an existing qualifier renamed", "erc_overlay/knowledge.py", '"fact_type": f.fact_type,', '"type": f.fact_type,'),
+ # review of bd6d977: a known end with no start
+ ("B2a: a start label attached where there is no start", "erc_overlay/knowledge.py", 'if begin is None: del labels["start_basis"]', "pass"),
+ ("B2a: explain assumes every interval has a start", "erc_overlay/reasoner.py", 'if t.start is None: start = "start not known"', 'if False: start = "start not known"'),
 ]
 # ERC temporal contract foundation, increment B1 (ERC 0.5.0)
 ERC = [

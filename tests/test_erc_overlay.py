@@ -641,3 +641,465 @@ def test_an_event_with_no_establishable_date_is_time_unknown_not_dated_from_the_
     # the state engine, by its own rule, still closes the period from the sentence it can date (none here): the period stays open
     assert props[f"fact:{pune}"].valid_time.end > AS_OF
     assert left not in {l.fact_id for l in a.left_out}
+
+
+# ---------- B2a: adapter enrichment (claude/erc-b2a-spec.md, frozen 10 Nov 2026) ----------
+# Additive only. The adapter passes on what Engram already knows and ERC does not yet read: when a sentence was said (A), how
+# precisely a stated date is known (B), where each boundary came from (C), and the same for events without changing them (D).
+# Nothing ERC reads today may move: starts, ends, what is sent, what is left out, the guards (G), the request id (I). One place
+# turns a day into an instant (Z). explain() gains separate "time:" lines and loses nothing (X).
+import hashlib
+import json
+
+from engram_erc import BoundaryStatus
+import erc_overlay.knowledge as overlay_knowledge
+from erc_overlay.knowledge import PLAYED
+
+UTC = dt.timezone.utc
+END_OF_DAY = (23, 59, 59, 999999)
+SAID = dt.datetime(2024, 3, 5, tzinfo=UTC)                     # every test sentence is said on 5 March 2024 (DAY)
+SAID_LATEST = "2024-03-05T23:59:59.999999+00:00"
+AT_2020 = dt.datetime(2020, 6, 1, tzinfo=UTC)
+OLD_QUALIFIERS = ("status", "validation_status", "source_type", "fact_type", "time_kind", "valid_time")
+
+
+def _t(*parts):
+    return dt.datetime(*parts, tzinfo=UTC)
+
+
+def _sent(world, as_of=AS_OF, who="Asha"):
+    a = KnowledgeAdapter(world.kb).request_for(who, as_of=as_of)
+    return a, {p.id: p for p in a.request.propositions}
+
+
+def _evidence(a, evidence_id):
+    return next(e for e in a.request.evidence if e.id == evidence_id)
+
+
+# ----- A: the observation date on sentence evidence -----
+def test_b2a_sentence_evidence_carries_the_day_it_was_said_as_an_anchor_with_the_days_last_instant_beside_it(world):
+    """A1. observed_at is the first instant of the said day: a date anchor, not a claim the sentence was said at midnight.
+    observed_latest keeps the rest of the day. The source is the sentence's date, never the fact's recorded_at."""
+    fid, sid = world.obs("Asha", "works_at", "Apollo", valid_from="2021")
+    a, _ = _sent(world)
+    e = _evidence(a, f"sentence:{sid}")
+    assert e.observed_at == SAID
+    assert e.metadata["observed_latest"] == SAID_LATEST
+    assert world.kb.get(fid).fact.recorded_at[:10] != "2024-03-05", "the fact was recorded today, not on the day the sentence was said"
+
+
+def test_b2a_a_sentence_with_no_readable_date_gets_no_observation_date_none_is_invented(world):
+    """A2."""
+    world.m.open_chat(DAY); sid = world.m.add("Asha", "Asha works_at Apollo.", date="sometime"); world.m.close_chat(write_note=False)
+    world.obs("Asha", "works_at", "Apollo", valid_from="2021", sid=sid)
+    _, dated = world.obs("Asha", "hobby", "chess")
+    a, _ = _sent(world)
+    e = _evidence(a, f"sentence:{sid}")
+    assert e.observed_at is None and "observed_latest" not in e.metadata
+    assert _evidence(a, f"sentence:{dated}").observed_at == SAID, "the sentence beside it, which has a date, gets one"
+
+
+def test_b2a_the_adapters_own_state_record_has_no_observation_date_while_the_sentence_beside_it_has(world):
+    """A3. A state record is the adapter's control signal, not something observed."""
+    fid, sid = world.obs("Asha", "hobby", "chess", source_type="inferred")
+    a, _ = _sent(world)
+    rec = _evidence(a, f"state:{fid}")
+    assert rec.observed_at is None and "observed_latest" not in rec.metadata
+    assert _evidence(a, f"sentence:{sid}").observed_at == SAID
+
+
+def test_b2a_one_sentence_supporting_two_facts_is_one_evidence_record_with_one_observation_date(world):
+    """A4."""
+    sid = world.say("Asha", "I work at Manipal and I play chess.")
+    world.obs("Asha", "works_at", "Manipal", sid=sid)
+    world.obs("Asha", "hobby", "chess", sid=sid)
+    a, _ = _sent(world)
+    assert [(e.id, e.observed_at, e.metadata.get("observed_latest")) for e in a.request.evidence] == [(f"sentence:{sid}", SAID, SAID_LATEST)]
+
+
+# ----- B: precision bounds on a state's interval; start and end themselves do not move -----
+def test_b2a_a_start_stated_to_the_year_keeps_its_start_and_gains_the_years_last_instant(world):
+    """B1. Open state: the stand-in end (as_of + 1 day) is untouched and carries no bound."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2021")
+    _, props = _sent(world)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.start == _t(2021, 1, 1) and v.start_latest == _t(2021, 12, 31, *END_OF_DAY)
+    assert v.start_status == BoundaryStatus.WITHIN
+    assert v.end == AS_OF + dt.timedelta(days=1) and v.end_earliest is None
+
+
+def test_b2a_a_start_stated_to_the_month_gains_the_months_last_instant(world):
+    """B2."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2021-04")
+    _, props = _sent(world)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.start == _t(2021, 4, 1) and v.start_latest == _t(2021, 4, 30, *END_OF_DAY)
+
+
+def test_b2a_a_start_stated_to_the_day_stays_exact(world):
+    """B3 (OP-2). A day's own window waits for the time-zone decision at B2b."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2021-04-10")
+    _, props = _sent(world)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.start == _t(2021, 4, 10) and v.start_latest is None and v.start_status == BoundaryStatus.EXACT
+    assert props[f"fact:{fid}"].qualifiers["start_basis"] == "stated", "exact because it was stated to the day, and labelled so"
+
+
+@pytest.mark.parametrize("predicate", ["works_at", "located_in"], ids=["a fact the state engine plays in a slot", "a fact outside every slot"])
+def test_b2a_an_end_stated_to_the_month_keeps_its_end_and_gains_the_earliest_it_could_be(world, predicate):
+    """B4 (OP-3). 'To March 2021': the last day it held lies in March, so it stopped holding between 2 March and 1 April."""
+    fid, _ = world.obs("Asha", predicate, "Apollo", valid_from="2019", valid_to="2021-03")
+    _, props = _sent(world, AT_2020)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.start == _t(2019, 1, 1) and v.start_latest == _t(2019, 12, 31, *END_OF_DAY)
+    assert v.end == _t(2021, 4, 1) and v.end_earliest == _t(2021, 3, 2)
+    assert v.end_status == BoundaryStatus.WITHIN
+
+
+def test_b2a_an_end_stated_to_the_year_runs_from_the_second_of_january_to_the_next_first_of_january(world):
+    """B5 (OP-3)."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021")
+    _, props = _sent(world, AT_2020)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.end == _t(2022, 1, 1) and v.end_earliest == _t(2021, 1, 2)
+
+
+def test_b2a_an_end_stated_to_the_day_stays_exact(world):
+    """B6."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021-03-15")
+    _, props = _sent(world, AT_2020)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.end == _t(2021, 3, 16) and v.end_earliest is None and v.end_status == BoundaryStatus.EXACT
+    assert v.start_latest == _t(2019, 12, 31, *END_OF_DAY), "the enrichment is present on the same interval"
+
+
+# ----- C: where each boundary came from -----
+def test_b2a_a_state_dated_only_by_when_it_was_said_keeps_that_start_gets_no_bound_and_is_labelled_first_said(world):
+    """C1 (OP-4, TAD-15). The interval is exactly today's; only the label is new. B2b changes the interval, not B2a."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo")
+    _, props = _sent(world)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time == TimeInterval(SAID, AS_OF + dt.timedelta(days=1)), "start, end and no bound of any kind"
+    assert p.qualifiers["start_basis"] == "first_said"
+
+
+def test_b2a_a_state_first_said_in_a_sentence_dated_only_to_the_month_gets_no_bound_from_the_sentences_precision(world):
+    """C1, strengthened at build (10 Nov): the deliberate breakage 'bound added to a first-said start' was missed, because every
+    other test sentence is dated to the day. Here the sentence is dated 'March 2024'. The coarse date is the sentence's, not a
+    stated start, so the state's interval gets no bound; the sentence's own month goes on its evidence, where it belongs."""
+    world.m.open_chat(DAY); sid = world.m.add("Asha", "Asha works_at Apollo.", date="March 2024"); world.m.close_chat(write_note=False)
+    fid, _ = world.obs("Asha", "works_at", "Apollo", sid=sid)
+    period = world.engine.get_history(world.kb.resolve("Asha"), "works_at", **PLAYED)["periods"][0]
+    assert (period.start, period.first_said) == (None, "2024-03")
+    a, props = _sent(world)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time == TimeInterval(_t(2024, 3, 1), AS_OF + dt.timedelta(days=1)), "today's interval, and no bound"
+    assert p.qualifiers["start_basis"] == "first_said"
+    e = _evidence(a, f"sentence:{sid}")
+    assert e.observed_at == _t(2024, 3, 1) and e.metadata["observed_latest"] == "2024-03-31T23:59:59.999999+00:00"
+
+
+@pytest.mark.parametrize("predicate", ["works_at", "located_in"], ids=["slot fact", "fact outside every slot"])
+def test_b2a_a_stated_start_is_labelled_stated(world, predicate):
+    """C2."""
+    fid, _ = world.obs("Asha", predicate, "Apollo", valid_from="2021")
+    _, props = _sent(world)
+    assert props[f"fact:{fid}"].qualifiers["start_basis"] == "stated"
+
+
+def _open(w):
+    return w.obs("Asha", "works_at", "Apollo", valid_from="2019")[0], "works_at"
+
+
+def _stated_end(w):
+    return w.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021-03")[0], "works_at"
+
+
+def _closed(w):
+    fid, _ = w.obs("Asha", "works_at", "Apollo", valid_from="2019")
+    w.obs("Asha", "left_job", "Apollo", valid_from="2021")
+    return fid, "works_at"
+
+
+def _replaced(w):
+    fid, _ = w.obs("Asha", "lives_in", "Pune", valid_from="2019")
+    w.obs("Asha", "lives_in", "Bengaluru", valid_from="2022")
+    return fid, "lives_in"
+
+
+@pytest.mark.parametrize("build,kind", [(_open, "open"), (_stated_end, "stated"), (_closed, "closed"), (_replaced, "replaced")],
+                         ids=["open", "stated", "closed", "replaced"])
+def test_b2a_end_basis_is_engrams_own_word_for_how_the_period_ended(world, build, kind):
+    """C3 (OP-5, OP-10). No second vocabulary: the label is the state engine's end_kind for the period the fact is in."""
+    fid, slot = build(world)
+    period = next(p for p in world.engine.get_history(world.kb.resolve("Asha"), slot, **PLAYED)["periods"] if fid in p.fact_ids)
+    assert period.end_kind == kind, "what Engram says"
+    _, props = _sent(world, AT_2020)
+    assert props[f"fact:{fid}"].qualifiers["end_basis"] == kind
+
+
+def test_b2a_a_period_closed_by_a_dated_statement_keeps_its_end_and_gets_no_bound(world):
+    """C4 (OP-5). 'Left in 2021' closes the job: Engram's period end is the closing statement's date, not the fact's own stated end."""
+    fid, _ = _closed(world)
+    _, props = _sent(world, AT_2020)
+    v = props[f"fact:{fid}"].valid_time
+    assert v.end == _t(2022, 1, 1) and v.end_earliest is None
+    assert v.start_latest == _t(2019, 12, 31, *END_OF_DAY), "the start, which was stated, still gets its bound"
+
+
+def test_b2a_a_period_closed_by_an_undated_statement_keeps_the_said_day_end_and_gets_no_bound(world):
+    """C4, finding F5. 'I left Apollo', said 5 March 2024 with no date: Engram ends the job on the said day and the adapter still
+    sends that end (corrected at B2b, TAD-17). B2a labels it and invents nothing."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2019")
+    world.obs("Asha", "left_job", "Apollo")
+    _, props = _sent(world, _t(2023, 1, 1))
+    p = props[f"fact:{fid}"]
+    assert p.valid_time.end == _t(2024, 3, 6) and p.valid_time.end_earliest is None
+    assert p.qualifiers["end_basis"] == "closed"
+
+
+def test_b2a_a_period_replaced_by_an_undated_new_value_keeps_its_end_and_gets_no_bound(world):
+    """C4, finding F5. Pune from 2019, then 'lives in Delhi' with no date: Engram ends Pune the day before the sentence was said."""
+    fid, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019")
+    world.obs("Asha", "lives_in", "Delhi")
+    _, props = _sent(world, _t(2023, 1, 1))
+    p = props[f"fact:{fid}"]
+    assert p.valid_time.end == _t(2024, 3, 5) and p.valid_time.end_earliest is None
+    assert p.qualifiers["end_basis"] == "replaced"
+
+
+def test_b2a_a_fact_with_no_valid_time_carries_neither_label_and_its_sentence_still_has_its_date(world):
+    """C5. Unknown stays unknown: no interval, no basis to describe."""
+    fid, sid = world.obs("Asha", "located_in", "Bengaluru")
+    a, props = _sent(world)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time is None and p.qualifiers["valid_time"] == "unknown"
+    assert "start_basis" not in p.qualifiers and "end_basis" not in p.qualifiers
+    assert _evidence(a, f"sentence:{sid}").observed_at == SAID
+
+
+def test_b2a_the_one_day_minimum_is_labelled_adjusted_and_gets_no_bound(world):
+    """C6. Reproduced 10 Nov: a job first said on 5 March 2024 with a stated end of 2021. Engram's end (2021) falls before the
+    first-said start, so the adapter's one-day minimum makes the end 6 March 2024. That end is the adapter's, not Engram's."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_to="2021")
+    period = world.engine.get_history(world.kb.resolve("Asha"), "works_at", **PLAYED)["periods"][0]
+    assert (period.start, period.first_said, period.end, period.end_kind) == (None, "2024-03-05", "2021", "stated")
+    _, props = _sent(world)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time == TimeInterval(SAID, _t(2024, 3, 6)), "today's interval, with no bound added"
+    assert p.qualifiers["start_basis"] == "first_said" and p.qualifiers["end_basis"] == "adjusted"
+
+
+def _only_an_end(w):
+    return w.obs("Asha", "located_in", "Pune", valid_to="2021")[0]
+
+
+def _only_an_end_in_a_slot_with_an_unreadable_sentence(w):
+    w.m.open_chat(DAY); sid = w.m.add("Asha", "Asha works_at Apollo.", date="sometime"); w.m.close_chat(write_note=False)
+    return w.obs("Asha", "works_at", "Apollo", valid_to="2021", sid=sid)[0]
+
+
+def _only_an_end_superseded(w):
+    return w.obs("Asha", "located_in", "Pune", valid_to="2021", status="superseded")[0]
+
+
+@pytest.mark.parametrize("build", [_only_an_end, _only_an_end_in_a_slot_with_an_unreadable_sentence, _only_an_end_superseded],
+                         ids=["fact outside every slot", "slot fact whose sentence has no readable date", "superseded fact sent as history"])
+def test_b2a_a_fact_with_a_known_end_and_no_start_gets_no_start_label_and_explain_still_works(world, build):
+    """Review of bd6d977 (10 Nov): Engram can hold a stated end with neither a stated start nor a readable first-said day. The
+    adapter sends that as an interval with no start, as it did before B2a. There is then nothing for a start label to describe,
+    so none is attached (the first build attached 'stated' or 'first_said', and explain() failed on the missing date). The end
+    keeps its label and its bound; explain() says the start is not known and keeps its existing line."""
+    fid = build(world)
+    r = Reasoner(world.kb)
+    run = r.reason("Asha", as_of=AT_2020)
+    p = next(x for x in run.adapted.request.propositions if x.id == f"fact:{fid}")
+    assert p.valid_time == TimeInterval(None, _t(2022, 1, 1), end_earliest=_t(2021, 1, 2))
+    assert "start_basis" not in p.qualifiers and p.qualifiers["end_basis"] == "stated" and p.qualifiers["valid_time"] == "known"
+    lines = r.explain(run)
+    at = next(i for i, l in enumerate(lines) if l.startswith("fact:"))
+    assert lines[at].endswith("; valid ? to 2022-01-01"), "the line explain() gave before B2a"
+    assert lines[at + 1] == "  time: start not known; end stated, between 2021-01-02 and 2022-01-01"
+
+
+# ----- D: events are labelled and otherwise untouched (they move to `occurred` at B2b) -----
+def test_b2a_an_event_with_a_stated_year_keeps_exactly_its_interval_and_is_labelled_stated(world):
+    """D1 (OP-6). No precision bound on an event's interval in B2a."""
+    moved, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2022")
+    _, props = _sent(world, _t(2023, 6, 1))
+    p = props[f"fact:{moved}"]
+    assert p.valid_time == TimeInterval(_t(2022, 1, 1), None) and p.occurred is None
+    assert p.qualifiers["time_kind"] == "event" and p.qualifiers["start_basis"] == "stated" and "end_basis" not in p.qualifiers
+
+
+def test_b2a_an_event_dated_only_by_its_sentence_keeps_exactly_its_interval_and_is_labelled_first_said(world):
+    """D2."""
+    world.obs("Asha", "works_at", "Apollo", valid_from="2019")
+    left, _ = world.obs("Asha", "left_job", "Apollo")
+    _, props = _sent(world, _t(2025, 6, 1))
+    p = props[f"fact:{left}"]
+    assert p.valid_time == TimeInterval(SAID, None) and p.occurred is None
+    assert p.qualifiers["start_basis"] == "first_said" and "end_basis" not in p.qualifiers
+
+
+# ----- G: the guards decide exactly as before, with the bounds present -----
+def test_b2a_guard_a_fact_from_this_year_is_still_sent_and_a_fact_from_next_year_is_still_left_out(world):
+    """G1. Known limitation until B2b / B6: 'from 2026' asked on 1 March 2026 is sent as if it had begun on 1 January. The honest
+    bound now travels with it, later than the stand-in end (finding F11, OP-9); the guard still reads the start alone."""
+    this_year, _ = world.obs("Asha", "lives_in", "Mysore", valid_from="2026")
+    next_year, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2027")
+    as_of = _t(2026, 3, 1)
+    a, props = _sent(world, as_of)
+    v = props[f"fact:{this_year}"].valid_time
+    assert (v.start, v.end) == (_t(2026, 1, 1), _t(2026, 3, 2))
+    assert v.start_latest == _t(2026, 12, 31, *END_OF_DAY) and v.start_latest > v.end
+    assert f"fact:{next_year}" not in props
+    assert {l.fact_id: l.reason for l in a.left_out} == {next_year: "starts after as_of"}
+
+
+def test_b2a_guard_a_fact_whose_stated_end_has_passed_is_still_left_out_and_is_still_sent_before_it(world):
+    """G2. The guard reads the end (1 January 2022), never the earliest it could be (2 January 2021)."""
+    fid, _ = world.obs("Asha", "located_in", "Pune", valid_from="2019", valid_to="2021")
+    a, props = _sent(world, _t(2022, 6, 1))
+    assert f"fact:{fid}" not in props and {l.fact_id: l.reason for l in a.left_out} == {fid: "ended before as_of"}
+    a, props = _sent(world, _t(2021, 6, 1))
+    v = props[f"fact:{fid}"].valid_time
+    assert (v.start, v.end, v.end_earliest) == (_t(2019, 1, 1), _t(2022, 1, 1), _t(2021, 1, 2)) and not a.left_out
+
+
+def test_b2a_guard_two_values_held_at_once_are_still_one_definite_contradiction_with_the_bounds_present(world):
+    """G3. ERC's comparison reads start and end only; the bounds change nothing it decides."""
+    pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    delhi, _ = world.obs("Asha", "works_at", "Hospital Delhi", valid_from="2020", speaker="Ravi")
+    r = Reasoner(world.kb).reason("Asha", as_of=AT_2023)
+    assert [c.certainty for c in r.orchestration.contradictions] == [ContradictionCertainty.DEFINITE]
+    assert r.result.status == ReasoningStatus.CONFLICT
+    props = {p.id: p for p in r.adapted.request.propositions}
+    assert props[f"fact:{pune}"].valid_time.start_latest == _t(2019, 12, 31, *END_OF_DAY)
+    assert props[f"fact:{delhi}"].valid_time.start_latest == _t(2020, 12, 31, *END_OF_DAY)
+
+
+# ----- I: identity of what was already sent -----
+def test_b2a_the_request_id_is_the_same_recipe_while_the_request_carries_the_enrichment(world):
+    """I1 (OP-11). The id is recomputed here from the documented recipe: entity, as_of, task, each fact's id, status, validation,
+    source type and recorded_at, and the rule set. The new fields are in the request and not in the id."""
+    chain(world)
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF, ruleset=CITY)
+    facts = sorted((f.fact_id, f.status, f.validation_status, f.source_type, f.recorded_at) for f in (world.kb.get(i).fact for i in a.fact_ids))
+    digest = hashlib.sha256(json.dumps(dict(
+        entity=world.kb.resolve("Asha"), as_of=AS_OF.isoformat(), task="state_question", facts=facts,
+        rules=[CITY.version] + sorted((r.rule_id, r.version) for r in CITY.rules)), sort_keys=True).encode()).hexdigest()[:24]
+    assert a.request.id == f"erc_req_{digest}"
+    assert all(e.observed_at == SAID for e in a.request.evidence) and len(a.request.evidence) == 2
+    assert all(p.valid_time.start_latest is not None for p in a.request.propositions)
+
+
+def test_b2a_every_qualifier_sent_before_is_still_sent_with_the_same_value_and_only_the_two_labels_are_new(world):
+    """I2."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2021")
+    _, props = _sent(world)
+    q = dict(props[f"fact:{fid}"].qualifiers)
+    assert {k: q[k] for k in OLD_QUALIFIERS} == dict(status="active", validation_status="accepted", source_type="explicit",
+                                                     fact_type="attribute", time_kind="state", valid_time="known")
+    assert set(q) == set(OLD_QUALIFIERS) | {"start_basis", "end_basis"}
+    assert (q["start_basis"], q["end_basis"]) == ("stated", "open")
+
+
+# ----- Z: one place turns a day into an instant -----
+def test_b2a_every_instant_made_from_a_day_follows_the_adapters_one_zone(world, monkeypatch):
+    """Z1 (E4). With the adapter's zone set to +05:30 for this test, every day-derived instant moves with it: start, stated end,
+    both bounds and the observation date. Nothing is left at UTC midnight, so B2b's zone decision is one line."""
+    ist = dt.timezone(dt.timedelta(hours=5, minutes=30))
+    monkeypatch.setattr(overlay_knowledge, "DAY_ZONE", ist)
+    fid, sid = world.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021-03")
+    a, props = _sent(world, AT_2020)
+    v = props[f"fact:{fid}"].valid_time
+    at = lambda *parts: dt.datetime(*parts, tzinfo=ist)
+    assert (v.start, v.start_latest) == (at(2019, 1, 1), at(2019, 12, 31, *END_OF_DAY))
+    assert (v.end_earliest, v.end) == (at(2021, 3, 2), at(2021, 4, 1))
+    assert all(x.utcoffset() == dt.timedelta(hours=5, minutes=30) for x in (v.start, v.start_latest, v.end_earliest, v.end))
+    e = _evidence(a, f"sentence:{sid}")
+    assert e.observed_at == at(2024, 3, 5) and e.observed_at.utcoffset() == dt.timedelta(hours=5, minutes=30)
+    assert e.metadata["observed_latest"] == "2024-03-05T23:59:59.999999+05:30"
+
+
+# ----- X: explain() says what is stated and what is only first said, and loses no line -----
+STATE = "state: status active, validation accepted, source explicit; sent as assertion"
+
+
+def _explained(lines):
+    """explain()'s output as (the heading lines, the 'because' blocks, the 'fact' blocks). ERC orders a conclusion's premises by
+    proposition id, and fact ids are random, so the blocks are compared as sets of blocks; inside a block the order is exact."""
+    heading, because, facts = [], [], []
+    for l in lines:
+        if l.startswith("  because:"):
+            assert not facts, "premises are explained before the list of facts"
+            because.append([l])
+        elif l.startswith("fact:"): facts.append([l])
+        elif facts or because: (facts or because)[-1].append(l)
+        else: heading.append(l)
+    return heading, sorted(map(tuple, because)), sorted(map(tuple, facts))
+
+
+def test_b2a_explain_adds_a_time_line_under_each_fact_and_every_other_line_is_exactly_as_before(world):
+    """X1 (OP-8). `before` is explain()'s output for this world at e6e6a9d, block for block. With the time lines taken out, the
+    output must equal it; with them in, each sits directly under the state it describes."""
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2021")          # sentence 1: stated to the year
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")   # sentence 2
+    world.obs("Asha", "lives_in", "Mysore")                              # sentence 3: dated only by when it was said
+    world.obs("Asha", "left_job", "Apollo", valid_from="2022")           # sentence 4: an event
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", ruleset=CITY, as_of=AS_OF))
+    said = "1:00 pm on 5 March, 2024"
+    heading = ["strategy rule_reasoning@1.0, status complete, as of 2024-03-05, overall accepted",
+               "conclusion: Asha works_in_city Bengaluru -> accepted (PREMISE_LINEAGE_COMPLETE_AND_SUPPORT_THRESHOLD_MET)"]
+    located = ("  because: Manipal located_in Bengaluru", f"    {STATE}; valid 2010-01-01 to 2024-03-06",
+               f'    sentence 2 (Manipal, {said}): "Manipal located_in Bengaluru."')
+    works = ("  because: Asha works_at Manipal", f"    {STATE}; valid 2021-01-01 to 2024-03-06",
+             f'    sentence 1 (Asha, {said}): "Asha works_at Manipal."')
+    facts = [f"fact: Asha works_at Manipal; {STATE}; valid 2021-01-01 to 2024-03-06",
+             f"fact: Asha lives_in Mysore; {STATE}; valid 2024-03-05 to 2024-03-06",
+             f"fact: Asha left_job Apollo; {STATE}; event on 2022-01-01",
+             f"fact: Manipal located_in Bengaluru; {STATE}; valid 2010-01-01 to 2024-03-06"]
+    before = (heading, sorted([located, works]), sorted((f,) for f in facts))
+    assert _explained([l for l in lines if not l.lstrip().startswith("time:")]) == before
+    in_2010 = "time: start stated, between 2010-01-01 and 2010-12-31; end open"
+    in_2021 = "time: start stated, between 2021-01-01 and 2021-12-31; end open"
+    times = [f"  {in_2021}", "  time: start not stated (first said 2024-03-05); end open", "  time: event stated 2022-01-01", f"  {in_2010}"]
+    after = (heading,
+             sorted([(located[0], located[1], f"    {in_2010}", located[2]), (works[0], works[1], f"    {in_2021}", works[2])]),
+             sorted(zip(facts, times)))
+    assert _explained(lines) == after
+
+
+@pytest.mark.parametrize("how,as_of,expected", [
+    (dict(valid_from="2021-04-10"), AS_OF, "  time: start stated 2021-04-10; end open"),
+    (dict(valid_from="2019", valid_to="2021-03"), AT_2020, "  time: start stated, between 2019-01-01 and 2019-12-31; end stated, between 2021-03-02 and 2021-04-01"),
+    (dict(valid_from="2019", valid_to="2021-03-15"), AT_2020, "  time: start stated, between 2019-01-01 and 2019-12-31; end stated 2021-03-16"),
+    (dict(valid_to="2021"), AS_OF, "  time: start not stated (first said 2024-03-05); end adjusted 2024-03-06"),
+], ids=["exact start", "end known to the month", "exact end", "adjusted end"])
+def test_b2a_explain_time_line_for_each_kind_of_state_boundary(world, how, as_of, expected):
+    """X1, the remaining wordings. An end is shown as the first day the state no longer holds, as the existing 'valid … to …' line does."""
+    world.obs("Asha", "works_at", "Apollo", **how)
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", as_of=as_of))
+    assert [l for l in lines if l.lstrip().startswith("time:")] == [expected]
+
+
+def test_b2a_explain_time_lines_for_a_closed_period_its_closing_event_and_a_fact_with_no_time(world):
+    """X1. A closed end is shown with Engram's word; an event dated only by its sentence says so; unknown time says so."""
+    world.obs("Asha", "works_at", "Apollo", valid_from="2019")
+    world.obs("Asha", "left_job", "Apollo")                               # said 5 March 2024, no stated date
+    world.obs("Asha", "located_in", "Bengaluru")                          # no valid time at all
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", as_of=AS_OF))
+    assert _explained(lines)[2] == sorted([
+        (f"fact: Asha works_at Apollo; {STATE}; valid 2019-01-01 to 2024-03-06",
+         "  time: start stated, between 2019-01-01 and 2019-12-31; end closed 2024-03-06"),
+        (f"fact: Asha left_job Apollo; {STATE}; event on 2024-03-05",
+         "  time: event not stated (first said 2024-03-05)"),
+        ("fact: Asha located_in Bengaluru; state: status active, validation accepted, source explicit; sent as assertion with a qualifying "
+         "state record (valid time unknown); valid time unknown",
+         "  time: not known"),
+    ])
