@@ -5,6 +5,7 @@ from .contracts import (
     ReasoningRequest, ReasoningResult, ReasoningStatus, SourceKind, TimeInterval,
     TraceEntry, UncertaintyItem, UncertaintyKind, new_id,
 )
+from .contracts import BoundaryStatus, Occurrence  # ERC 0.5.0 temporal contract (B1)
 from .graph import ReasoningGraphBuilder, ReasoningGraphView
 from .validation import (
     find_inference_cycle, inference_dependencies, topological_inferences,
@@ -19,6 +20,7 @@ __all__ = [
     "ReasoningGraph", "ReasoningRequest", "ReasoningResult", "ReasoningStatus",
     "SourceKind", "TimeInterval", "TraceEntry", "UncertaintyItem",
     "UncertaintyKind", "new_id", "validate_graph_bindings",
+    "BoundaryStatus", "Occurrence",
     "ReasoningGraphBuilder", "ReasoningGraphView", "find_inference_cycle",
     "inference_dependencies", "topological_inferences",
     "ComparisonKind", "ComparisonResult", "TemporalRelation",

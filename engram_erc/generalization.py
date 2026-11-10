@@ -115,12 +115,24 @@ def _snapshot_fingerprint(case: RegressionCase) -> str:
         if p.valid_time is not None:
             interval = {"start": p.valid_time.start.isoformat() if p.valid_time.start else None,
                         "end": p.valid_time.end.isoformat() if p.valid_time.end else None}
-        propositions.append({
+            # ERC 0.5.0 temporal contract: a field enters the fingerprint only when it is set, so every
+            # fingerprint computed before 0.5.0 is unchanged and two different intervals never share one.
+            for name in ("start_latest", "end_earliest"):
+                if getattr(p.valid_time, name) is not None:
+                    interval[name] = getattr(p.valid_time, name).isoformat()
+            for name in ("start_unbounded", "end_unbounded", "start_is_lower_bound", "end_is_upper_bound"):
+                if getattr(p.valid_time, name):
+                    interval[name] = True
+        item = {
             "subject": p.subject, "predicate": p.predicate,
             "object": p.object_value, "polarity": p.polarity,
             "kind": p.kind.value, "source_refs": sorted(p.source_refs),
             "valid_time": interval, "qualifiers": dict(p.qualifiers),
-        })
+        }
+        if p.occurred is not None:
+            item["occurred"] = {"earliest": p.occurred.earliest.isoformat() if p.occurred.earliest else None,
+                                "latest": p.occurred.latest.isoformat() if p.occurred.latest else None}
+        propositions.append(item)
     propositions.sort(key=lambda item: json.dumps(item, sort_keys=True, default=str))
     proposition_by_id = {p.id: {"subject": p.subject, "predicate": p.predicate,
         "object": p.object_value, "polarity": p.polarity, "kind": p.kind.value,

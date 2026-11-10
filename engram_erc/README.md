@@ -1,9 +1,9 @@
 # Engram Reasoning Core (ERC) — ERC-4.0 General Core
 
 **Milestone:** General-domain case intelligence (surgery becomes a profile)  
-**Version:** 0.4.1  
+**Version:** 0.5.0 (0.4.1 plus the temporal contract foundation, increment B1: additive types, no behaviour change; see RELEASE_NOTES.md)  
 **Status:** Cumulative local implementation, ERC-1.1 through ERC-4.0 General Core.
-**Naming:** "ERC-4.0" now means this general core. The earlier surgical release that carried the 4.0 label is referred to by its package version, **0.4.0**; its notes are kept in the ERC_4_0_General_Core release zip. The package version here is 0.4.1, so it still sorts above 0.4.0.  
+**Naming:** "ERC-4.0" now means this general core. The earlier surgical release that carried the 4.0 label is referred to by its package version, **0.4.0**; its notes are kept in the ERC_4_0_General_Core release zip. The General Core was released as package version 0.4.1, so it sorts above 0.4.0; the current package version is 0.5.0.  
 **Test runner:** pytest only (`python -m pytest`). Tests from ERC-3.1 on are plain pytest functions, which `python -m unittest discover` does not collect.
 
 ERC applies governed knowledge to a **case**, watches events over time, compares the case with past cases, and structures the options a **reviewer** decides between. The core is the same for any field: a matter for a lawyer, an incident for an engineer, a student's progress for a teacher, a patient for a surgeon. Every check, threshold, rule and comparison works the same whatever the subject.

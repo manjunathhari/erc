@@ -599,9 +599,41 @@ ERC_1X_SHA256_AT_0_4_0 = {
 }
 
 
-@pytest.mark.parametrize("rel", sorted(ERC_1X_SHA256_AT_0_4_0))
+# The table above is the historical record of the 0.4.0 release and is never edited: its own digest is pinned below.
+# A file changed on purpose after 0.4.0 is listed here with the release that changed it and the reason, and is held
+# to that release pin instead. Every other file stays held to its 0.4.0 bytes.
+ERC_1X_HISTORICAL_TABLE_SHA256 = "1d72e781ec1dcd5fcbbf20ad1580cd28d6321047cf1498d33049fe1763e53dda"
+ERC_1X_RELEASE_PINS = {
+    # file: (sha256, release, increment and reason)
+    "contracts.py": ("9cd38af24d120cf2120082ab12d11650b645fdb9e87968cefe38e359579e2c00", "0.5.0",
+                     "B1 temporal contract: additive keyword-only TimeInterval fields, BoundaryStatus, Occurrence, "
+                     "Proposition.occurred. No existing behaviour changed."),
+}
+ERC_1X_FILES_CHANGED_SINCE_0_4_0 = {"contracts.py"}
+
+
+def test_the_0_4_0_hash_table_is_kept_as_an_unedited_historical_record():
+    assert len(ERC_1X_SHA256_AT_0_4_0) == 14
+    canonical = "\n".join(f"{rel} {digest}" for rel, digest in sorted(ERC_1X_SHA256_AT_0_4_0.items()))
+    assert hashlib.sha256(canonical.encode()).hexdigest() == ERC_1X_HISTORICAL_TABLE_SHA256
+
+
+def test_only_the_approved_erc_1x_files_have_changed_since_0_4_0():
+    assert set(ERC_1X_RELEASE_PINS) == ERC_1X_FILES_CHANGED_SINCE_0_4_0
+    assert set(ERC_1X_RELEASE_PINS) <= set(ERC_1X_SHA256_AT_0_4_0)
+    for rel, (digest, release, reason) in ERC_1X_RELEASE_PINS.items():
+        assert digest != ERC_1X_SHA256_AT_0_4_0[rel], f"{rel} is listed as changed but still has its 0.4.0 bytes"
+        assert release and reason.strip(), f"{rel}: a changed file needs its release and its reason"
+
+
+@pytest.mark.parametrize("rel", sorted(set(ERC_1X_SHA256_AT_0_4_0) - set(ERC_1X_RELEASE_PINS)))
 def test_erc_1x_files_are_byte_identical_to_0_4_0(rel):
     assert hashlib.sha256((PKG / rel).read_bytes()).hexdigest() == ERC_1X_SHA256_AT_0_4_0[rel]
+
+
+@pytest.mark.parametrize("rel", sorted(ERC_1X_RELEASE_PINS))
+def test_erc_1x_files_changed_since_0_4_0_match_their_release_pin(rel):
+    assert hashlib.sha256((PKG / rel).read_bytes()).hexdigest() == ERC_1X_RELEASE_PINS[rel][0]
 
 
 # --------------------------------------------------------------------------
@@ -795,7 +827,7 @@ def test_legacy_request_runs_end_to_end_with_old_names():
 
 
 def test_version_comes_from_version_file():
-    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.4.1"
+    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.5.0"
 
 
 @pytest.mark.parametrize("module", ["engram_erc.examples.general_incident",

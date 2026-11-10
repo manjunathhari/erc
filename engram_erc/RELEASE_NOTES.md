@@ -1,3 +1,54 @@
+# ERC 0.5.0 — Temporal Contract Foundation (increment B1)
+
+**Package version:** 0.5.0  
+**Status:** Implemented and locally tested. Types and validation only; **no reasoning behaviour changes**.
+**Baseline:** `f175f03` (tag `erc-adapter-step1a`). Specification and decisions: `claude/erc-b1-spec-validation.md`.
+
+## What 0.5.0 adds
+
+ERC could hold a state with two exact, known ends and nothing else. It could not tell apart a time that is unknown, a state that is still going, a date known only to a month or year, or the moment an event happened. 0.5.0 lets a caller *say* each of these. Nothing in ERC *reads* the additions yet: comparison, contradiction detection, rules and evaluation behave exactly as in 0.4.1. Later increments (B3 to B6) use them.
+
+| Addition | Where | What it says |
+|---|---|---|
+| `TimeInterval` keyword-only fields `start_latest`, `end_earliest`, `start_unbounded`, `end_unbounded`, `start_is_lower_bound`, `end_is_upper_bound` | `contracts.py` | Each boundary can be exact, within a window, bounded on one side only, unknown, or explicitly unbounded |
+| `TimeInterval.start_status`, `.end_status` and `BoundaryStatus` | `contracts.py` | The status of a boundary, derived from the fields and never stored, so contradictory combinations cannot be built |
+| `Occurrence(earliest, latest)` | `contracts.py` | When an event happened: one instant, exact when the two are equal |
+| `Proposition.occurred` (keyword-only) | `contracts.py` | An event carries `occurred`; a state carries `valid_time`; never both |
+
+One spelling for each case:
+
+| Case | Spelling |
+|---|---|
+| No temporal statement (every caller before 0.5.0) | `valid_time=None` and `occurred=None` |
+| A time that is unknown | `TimeInterval()` |
+| Still going | `TimeInterval(start, end_unbounded=True)` |
+| Ended at a moment not known | `TimeInterval(start)` — unchanged from 0.4.1 |
+| Began some time in 2021 | `TimeInterval(1 Jan 2021, start_latest=1 Jan 2022)` |
+| Had begun by 5 March 2024, start not known | `TimeInterval(start_latest=5 Mar 2024)` |
+| Happened at an exact moment | `Occurrence(t, t)` |
+
+ERC holds only bounding instants. It holds no original date text and no precision label, and it parses no dates: the system that owns the facts computes the bounds.
+
+## Compatibility
+
+- `TimeInterval(start, end)`, `.start`, `.end`, equality and hashing of existing values are unchanged. The new fields are keyword-only, so no positional call changes meaning.
+- A non-datetime passed as a boundary is now refused with a clear `ValueError` (it used to fail with an internal `AttributeError`).
+- `engram_erc/generalization.py`: the snapshot fingerprint includes a new field only when it is set. Every fingerprint computed before 0.5.0 is unchanged; two intervals that differ only in a new field no longer share one.
+- **`contracts.py` is no longer byte-identical to 0.4.0.** The 0.4.0 hash table is kept unedited as a historical record (its own digest is pinned). A separate release-pin table lists each file changed since 0.4.0 with the release and the reason; `contracts.py` is its only entry. The other 13 ERC 1.x files are still held to their 0.4.0 bytes.
+- The deprecated 0.4.0 names (`compat.py`) are **kept** in 0.5.0. The 0.4.1 notes planned their removal "in the next release"; that removal is not part of this increment.
+
+## Known limitations carried forward
+
+- Every result still reports `engine_version` `0.1.8` (hard-coded in `orchestration.py`, which this increment does not touch). To be corrected in the first increment that changes that file.
+- Nothing reads the new fields yet. In particular the rule engine still ignores time, a derived conclusion still has no time, and `as_of` is still not enforced (increments B3 to B6).
+- The Engram adapter (`erc_overlay/`) is unchanged: it does not yet send any of the new fields.
+
+## Tests
+
+`engram_erc/tests/test_temporal_contracts.py` (83 tests). `engram_erc/tests/test_domain_profiles.py`: the byte-pin guard split into historical record and release pins; version assertion 0.5.0. Deliberate breakages: `python kit_tools/check_base2_breakage.py --suite erc`.
+
+---
+
 # ERC-4.0 General Core — General-Domain Case Intelligence
 
 *Naming: this release was built as "ERC-4.1" to the spec `claude/erc-4-1-general-domain-spec.md` and relabelled ERC-4.0 General Core. "0.4.0" below means the earlier surgical release that carried the 4.0 label.*

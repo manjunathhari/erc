@@ -1,9 +1,13 @@
 """Deliberate-breakage check: breaks each rule in turn, runs the tests, restores the file. Every breakage must make a test fail.
-Two suites: "base2" (Engram base 2, the default) and "adapter" (the Engram -> ERC adapter, erc_overlay). Run from the repository root
-with a clean tree:
+Three suites: "base2" (Engram base 2, the default), "adapter" (the Engram -> ERC adapter, erc_overlay) and "erc" (ERC's own
+contracts, engram_erc). Run from the repository root with a clean tree:
 
   python kit_tools/check_base2_breakage.py            # base 2
   python kit_tools/check_base2_breakage.py --suite adapter
+  python kit_tools/check_base2_breakage.py --suite erc
+
+The "erc" suite runs only the behavioural contract tests. The byte-pin test is left out on purpose: it fails on any edit to a
+pinned file, so it would "catch" every breakage without showing that a rule is actually tested.
 """
 import subprocess, sys
 BASE2 = [
@@ -64,8 +68,41 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ("state predicates counted as events", "erc_overlay/knowledge.py", "EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)", "EVENTS = frozenset({**OPENS, **CLOSES})"),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
 ]
+# ERC temporal contract foundation, increment B1 (ERC 0.5.0)
+ERC = [
+ ("unbounded start accepted with a date", "engram_erc/contracts.py", "if self.start_unbounded and (self.start or self.start_latest or self.start_is_lower_bound):", "if False:"),
+ ("unbounded end accepted with a date", "engram_erc/contracts.py", "if self.end_unbounded and (self.end or self.end_earliest or self.end_is_upper_bound):", "if False:"),
+ ("start window order unchecked", "engram_erc/contracts.py", "if self.start and self.start_latest and self.start_latest <= self.start:", "if False:"),
+ ("end window order unchecked", "engram_erc/contracts.py", "if self.end and self.end_earliest and self.end_earliest >= self.end:", "if False:"),
+ ("zero-width start window accepted (a second spelling of exact)", "engram_erc/contracts.py", "self.start_latest <= self.start:", "self.start_latest < self.start:"),
+ ("zero-width end window accepted (a second spelling of exact)", "engram_erc/contracts.py", "self.end_earliest >= self.end:", "self.end_earliest > self.end:"),
+ ("lower-bound start accepted with no start", "engram_erc/contracts.py", "if self.start_is_lower_bound and (self.start is None or self.start_latest is not None):", "if False:"),
+ ("upper-bound end accepted with no end", "engram_erc/contracts.py", "if self.end_is_upper_bound and (self.end is None or self.end_earliest is not None):", "if False:"),
+ ("start-before-end check off", "engram_erc/contracts.py", "if self.start and self.end and self.start >= self.end:", "if False:"),
+ ("new interval fields not validated (naive or non-datetime accepted)", "engram_erc/contracts.py", 'for name in ("start", "end", "start_latest", "end_earliest"):', 'for name in ("start", "end"):'),
+ ("non-boolean flag accepted", "engram_erc/contracts.py", "if not isinstance(getattr(self, name), bool):", "if False:"),
+ ("new interval field made positional", "engram_erc/contracts.py", "start_latest: datetime | None = field(default=None, kw_only=True)", "start_latest: datetime | None = None"),
+ ("occurred made positional", "engram_erc/contracts.py", "occurred: Occurrence | None = field(default=None, kw_only=True)", "occurred: Occurrence | None = None"),
+ ("unknown end reported as unbounded", "engram_erc/contracts.py", "return BoundaryStatus.UNKNOWN if self.end_earliest is None else BoundaryStatus.NO_EARLIER_THAN", "return BoundaryStatus.UNBOUNDED if self.end_earliest is None else BoundaryStatus.NO_EARLIER_THAN"),
+ ("unbounded end reported as unknown", "engram_erc/contracts.py", "        if self.end_unbounded:\n            return BoundaryStatus.UNBOUNDED", "        if self.end_unbounded:\n            return BoundaryStatus.UNKNOWN"),
+ ("one-sided start reported as unknown", "engram_erc/contracts.py", "return BoundaryStatus.UNKNOWN if self.start_latest is None else BoundaryStatus.NO_LATER_THAN", "return BoundaryStatus.UNKNOWN"),
+ ("lower-bound start reported as exact", "engram_erc/contracts.py", "return BoundaryStatus.NO_EARLIER_THAN if self.start_is_lower_bound else BoundaryStatus.EXACT", "return BoundaryStatus.EXACT"),
+ ("upper-bound end reported as exact", "engram_erc/contracts.py", "return BoundaryStatus.NO_LATER_THAN if self.end_is_upper_bound else BoundaryStatus.EXACT", "return BoundaryStatus.EXACT"),
+ ("window start reported as exact", "engram_erc/contracts.py", "        if self.start_latest is not None:\n            return BoundaryStatus.WITHIN", "        if self.start_latest is not None:\n            return BoundaryStatus.EXACT"),
+ ("an event cannot be an exact moment", "engram_erc/contracts.py", "self.earliest > self.latest:", "self.earliest >= self.latest:"),
+ ("occurrence order unchecked", "engram_erc/contracts.py", "if self.earliest and self.latest and self.earliest > self.latest:", "if False:"),
+ ("exact occurrence reported as a window", "engram_erc/contracts.py", "return BoundaryStatus.EXACT if self.earliest == self.latest else BoundaryStatus.WITHIN", "return BoundaryStatus.WITHIN"),
+ ("a proposition may be both a state and an event", "engram_erc/contracts.py", "if self.valid_time is not None and self.occurred is not None:", "if False:"),
+ ("occurred of the wrong type accepted", "engram_erc/contracts.py", "if self.occurred is not None and not isinstance(self.occurred, Occurrence):", "if False:"),
+ ("fingerprint blind to the window fields", "engram_erc/generalization.py", 'for name in ("start_latest", "end_earliest"):', "for name in ():"),
+ ("fingerprint blind to the unbounded and one-sided flags", "engram_erc/generalization.py", 'for name in ("start_unbounded", "end_unbounded", "start_is_lower_bound", "end_is_upper_bound"):', "for name in ():"),
+ ("fingerprint blind to an occurrence", "engram_erc/generalization.py", "        if p.occurred is not None:", "        if False:"),
+ ("fingerprint of existing intervals changed (new keys always written)", "engram_erc/generalization.py", "                if getattr(p.valid_time, name):\n                    interval[name] = True", "                interval[name] = bool(getattr(p.valid_time, name))"),
+ ("new contract names not exported", "engram_erc/__init__.py", '    "BoundaryStatus", "Occurrence",\n', ""),
+]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
-          "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py")}
+          "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py"),
+          "erc": (ERC, "engram_erc/tests/test_temporal_contracts.py")}
 B, TESTS = SUITES[sys.argv[sys.argv.index("--suite") + 1] if "--suite" in sys.argv else "base2"]
 caught = 0
 GUARD = subprocess.run(f"{sys.executable} -m pytest -q -p no:cacheprovider {TESTS}", shell=True, capture_output=True, text=True).returncode
