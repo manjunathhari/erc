@@ -164,7 +164,7 @@ def test_explain_shows_the_conclusion_and_the_sentences_under_it(world):
 
 
 # ---------- step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md) ----------
-from engram_erc import EvidenceRelation
+from engram_erc import EvidenceRelation, TimeInterval
 from erc_overlay.knowledge import LeftOut, map_state
 
 # The handover's table, as data: each row is checked against the adapter's mapping, so the document, the test and the code
@@ -573,7 +573,7 @@ def test_as_of_2022_the_employment_is_out_and_the_2021_closing_event_is_availabl
     assert f"fact:{pune}" not in props and out[pune] == "ended before as_of"
     t = props[f"fact:{left}"].valid_time
     assert t.start == dt.datetime(2021, 1, 1, tzinfo=dt.timezone.utc), "the event has its own date, not the period's start"
-    assert t.end > dt.datetime(2022, 6, 1, tzinfo=dt.timezone.utc), "an event does not stop having happened"
+    assert t.end is None, "an event does not stop having happened: no end, not even a synthetic one at as_of"
     assert props[f"fact:{left}"].qualifiers["time_kind"] == "event"
     props_2020, _ = _at(world, 2020)
     assert props_2020[f"fact:{pune}"].qualifiers["time_kind"] == "state"
@@ -586,14 +586,15 @@ def test_an_undated_closing_event_takes_its_date_from_its_sentence_not_from_the_
     assert f"fact:{left}" not in props and out[left] == "starts after as_of"
     props, _ = _at(world, 2025)
     assert f"fact:{pune}" not in props
-    assert props[f"fact:{left}"].valid_time.start == dt.datetime(2024, 3, 5, tzinfo=dt.timezone.utc)
+    assert props[f"fact:{left}"].valid_time == TimeInterval(dt.datetime(2024, 3, 5, tzinfo=dt.timezone.utc), None)
 
 
 def test_an_opening_event_keeps_its_own_date_and_outlives_the_state_it_opened(world):
     moved, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2022")
     world.obs("Asha", "lives_in", "Mysore", valid_from="2024")
     props, out = _at(world, 2023)
-    assert props[f"fact:{moved}"].qualifiers["time_kind"] == "event" and props[f"fact:{moved}"].valid_time.start == dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc)
+    assert props[f"fact:{moved}"].qualifiers["time_kind"] == "event"
+    assert props[f"fact:{moved}"].valid_time == TimeInterval(dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc), None)
     props, out = _at(world, 2025)
     assert f"fact:{moved}" in props, "the move still happened in 2025, even though living in Delhi ended in 2024"
     lives = [p for p in props.values() if p.predicate == "lives_in"]
@@ -605,3 +606,18 @@ def test_explain_tells_an_event_from_a_state(world):
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", as_of=dt.datetime(2022, 6, 1, tzinfo=dt.timezone.utc)))
     assert any(l.startswith("fact: Asha left_job Hospital Pune; state:") and l.endswith("; event on 2021-01-01") for l in lines), lines
+
+
+@pytest.mark.parametrize("stated", [True, False], ids=["started_job stated 2021", "started_job dated only by its sentence"])
+def test_an_opening_event_appended_to_an_existing_period_keeps_its_own_date_not_the_periods_start(world, stated):
+    """P1 files a same-value observation into the existing period without moving the period's start; the event's date must still
+    come from its own observation (its valid_from, else the day its sentence was said), never from the period's 2019 start."""
+    pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    started, _ = world.obs("Asha", "started_job", "Hospital Pune", valid_from="2021" if stated else None)  # said on 5 March 2024
+    props, out = _at(world, 2025)
+    expected = dt.datetime(2021, 1, 1, tzinfo=dt.timezone.utc) if stated else dt.datetime(2024, 3, 5, tzinfo=dt.timezone.utc)
+    assert props[f"fact:{started}"].valid_time == TimeInterval(expected, None)
+    assert props[f"fact:{pune}"].valid_time.start == dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc), "the state keeps the period's start"
+    assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].start == "2019", "P1 unchanged"
+    props, out = _at(world, 2020)
+    assert f"fact:{started}" not in props and out[started] == "starts after as_of"

@@ -58,8 +58,9 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ("pending or needs_review observations set period boundaries", "erc_overlay/knowledge.py", 'PLAYED = dict(statuses=("active",), validations=("accepted",))', 'PLAYED = dict(statuses=("active", "needs_review"), validations=None)'),
  ("state engine ignores the validations it was given", "engram_knowledge/state_engine.py", 'valid = f.validation_status != "rejected" if validations is None else f.validation_status in validations', 'valid = f.validation_status != "rejected"'),
  # 1A follow-up 3: an event keeps its own date; only the state takes the period's span
- ("closing event inherits the period's span", "erc_overlay/knowledge.py", "if pred in EVENTS and pred in CLOSES: out[fid] = (p.end, None, True)", "if False: pass"),
- ("opening event given the period's end", "erc_overlay/knowledge.py", "elif pred in EVENTS: out[fid] = (p.start or p.first_said, None, True)", "elif pred in EVENTS: out[fid] = (p.start or p.first_said, p.end, p.end_kind == \"open\")"),
+ ("events dated like states", "erc_overlay/knowledge.py", "if fact.predicate in EVENTS:  # an event happened on a day", "if False:  # an event happened on a day"),
+ ("event given a synthetic end at as_of", "erc_overlay/knowledge.py", "return TimeInterval(begin, None) if begin else None", "return TimeInterval(begin, as_of + ONE_DAY) if begin else None"),
+ ("event dated by the period's start, not its own sentence", "erc_overlay/knowledge.py", "if x.fact.valid_from: return x.fact.valid_from\n        days = []", "if x.fact.valid_from: return x.fact.valid_from\n        return None\n        days = []"),
  ("state predicates counted as events", "erc_overlay/knowledge.py", "EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)", "EVENTS = frozenset({**OPENS, **CLOSES})"),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
 ]

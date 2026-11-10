@@ -39,7 +39,7 @@ from typing import NamedTuple
 from engram_erc import Evidence, EvidenceKind, EvidenceLink, EvidenceRelation, Proposition, PropositionKind, ReasoningRequest, SourceKind, TimeInterval
 from engram_knowledge.models import FactWithEvidence
 from engram_knowledge.state_engine import COUNTED, StateEngine
-from engram_knowledge.temporal import span
+from engram_knowledge.temporal import said_on, span
 from engram_knowledge.transition import CLOSES, OPENS, SINGLE, slot_of
 
 FUNCTIONAL = frozenset(SINGLE) | frozenset(p for p, s in {**OPENS, **CLOSES}.items() if s in SINGLE)
@@ -149,7 +149,7 @@ class KnowledgeAdapter:
                     rule = map_state(f.status, f.validation_status, f.source_type)
                     if rule.action == "leave_out":
                         left_out.append(LeftOut(f.fact_id, rule.reason, state, rule.needs)); continue
-                    interval = self._interval(f, periods, as_of)
+                    interval = self._interval(x, periods, as_of)
                     if rule.action == "history" and not (f.valid_to and interval and interval.end):
                         left_out.append(LeftOut(f.fact_id, "superseded: end date unknown", state, "date")); continue
                     if interval and interval.start and interval.start > as_of:
@@ -169,25 +169,38 @@ class KnowledgeAdapter:
     # ---------- time ----------
     def _periods(self, entity_id: str) -> dict:
         """fact_id -> (start, end, open) from the state engine's periods for every slot of this entity.
-        A state fact takes its period's span. An event fact (an opening or closing predicate, P1's OPENS/CLOSES) is filed in the period
-        as provenance but is not true throughout it: it keeps its own date, the boundary it set (the period's start for an opener, its end
-        for a closer, which the engine takes from the sentence date when none is stated), and has no end: an event does not stop
-        having happened."""
+        Only state facts are dated by their period. An event fact (a predicate whose slot is another predicate: started_job, left_job,
+        moved_to...) is filed in a period as provenance but is not true throughout it, and the period's start may predate it (an event
+        appended to an existing same-value period); it is dated by _event_date from its own observation instead."""
         out = {}
         for slot in sorted({slot_of(x.fact.predicate) for x in self.kb.about_entity(entity_id, statuses=PLAYED["statuses"]) if slot_of(x.fact.predicate)}):
             for p in self.engine.get_history(entity_id, slot, **PLAYED)["periods"]:
                 for fid in p.fact_ids:
-                    pred = self.kb.get(fid).fact.predicate
-                    if pred in EVENTS and pred in CLOSES: out[fid] = (p.end, None, True)
-                    elif pred in EVENTS: out[fid] = (p.start or p.first_said, None, True)
-                    else: out[fid] = (p.start or p.first_said, p.end, p.end_kind == "open")
+                    if self.kb.get(fid).fact.predicate not in EVENTS:
+                        out[fid] = (p.start or p.first_said, p.end, p.end_kind == "open")
         return out
+
+    def _event_date(self, x) -> str | None:
+        """When an event happened: its stated valid_from, else the day its earliest supporting sentence was said (the same rule the
+        state engine uses to place an observation). Never the period's boundary, which another observation may have set."""
+        if x.fact.valid_from: return x.fact.valid_from
+        days = []
+        for e in x.evidence:
+            if e.evidence_role != "supports" or e.source_kind != "sentence": continue
+            row = self.kb.db.execute("SELECT date FROM sentences WHERE sid=?", (int(e.source_id),)).fetchone()
+            day = said_on(row[0]) if row else None
+            if day: days.append(day)
+        return min(days) if days else None
 
     @staticmethod
     def _time_kind(fact) -> str:
         return "event" if fact.predicate in EVENTS else "state"
 
-    def _interval(self, fact, periods: dict, as_of: dt.datetime) -> TimeInterval | None:
+    def _interval(self, x, periods: dict, as_of: dt.datetime) -> TimeInterval | None:
+        fact = x.fact
+        if fact.predicate in EVENTS:  # an event happened on a day and does not stop having happened: no end, not "still open"
+            begin = _start(self._event_date(x))
+            return TimeInterval(begin, None) if begin else None
         if fact.fact_id in periods:
             start, end, still_open = periods[fact.fact_id]
         else:
