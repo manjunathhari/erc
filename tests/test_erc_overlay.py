@@ -621,3 +621,23 @@ def test_an_opening_event_appended_to_an_existing_period_keeps_its_own_date_not_
     assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].start == "2019", "P1 unchanged"
     props, out = _at(world, 2020)
     assert f"fact:{started}" not in props and out[started] == "starts after as_of"
+
+
+# ---------- 1A sign-off: an event whose date cannot be established ----------
+def test_an_event_with_no_establishable_date_is_time_unknown_not_dated_from_the_period(world):
+    """left_job with no stated date and a sentence whose date cannot be read: the adapter must not borrow the employment period's
+    boundary. The event is sent, marked valid time unknown, with a qualifying state record, so nothing resting on it is established."""
+    pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    world.m.open_chat(DAY); sid = world.m.add("Ravi", "Asha left_job Hospital Pune.", date="sometime"); world.m.close_chat(write_note=False)
+    left, _ = world.obs("Asha", "left_job", "Hospital Pune", sid=sid)
+    assert world.m.db.execute("SELECT date FROM sentences WHERE sid=?", (int(sid),)).fetchone()[0] == "sometime"
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    props = {p.id: p for p in a.request.propositions}
+    p = props[f"fact:{left}"]
+    assert p.valid_time is None and p.qualifiers["valid_time"] == "unknown" and p.qualifiers["time_kind"] == "event"
+    rec = next(e for e in a.request.evidence if e.id == f"state:{left}")
+    assert rec.metadata["qualified_for"] == ("valid time unknown",)
+    assert _state_links(a, left) == [EvidenceRelation.QUALIFIES]
+    # the state engine, by its own rule, still closes the period from the sentence it can date (none here): the period stays open
+    assert props[f"fact:{pune}"].valid_time.end > AS_OF
+    assert left not in {l.fact_id for l in a.left_out}
