@@ -1,0 +1,183 @@
+# Runs the test suite on every push to erc-adapter-1, so results can be read by anyone and do not depend on a
+# reported run. Verification only: it changes no application code and adds no runtime dependency.
+#
+# The environment mirrors the one in which the baseline numbers were recorded (f175f03: 1,277 passed, 4 failed):
+# Python 3.13 with pytest, numpy, scipy, scikit-learn and pandas, and without wordllama, spacy, openai or the
+# benchmark data clone. Installing those would change which tests skip or fail and make the comparison unlike.
+# Exact versions are not pinned; the versions actually installed are printed in every run.
+name: tests
+
+on:
+  push:
+    branches: [erc-adapter-1]
+  pull_request:
+    branches: [erc-adapter-1]
+  workflow_dispatch:
+    inputs:
+      breakages:
+        description: "Also run the deliberate-breakage suites (ERC and adapter)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Test suite
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest numpy scipy scikit-learn pandas
+
+      - name: Record the environment
+        run: |
+          echo "commit:  $(git rev-parse HEAD)"
+          echo "python:  $(python --version)"
+          echo "system:  $(uname -srm)"
+          echo "erc:     $(cat engram_erc/VERSION)"
+          echo "--- installed packages"
+          python -m pip freeze
+
+      # Every test runs, including the four recorded as failing. The step fails if any test fails that is not in
+      # .github/known-test-failures.txt, and reports any listed test that now passes.
+      - name: Full suite (fails on any failure not in the recorded list)
+        run: |
+          set +e
+          python -m pytest -q -p no:cacheprovider -rA 2>&1 | tee full-suite.log
+          export PYTEST_EXIT=${PIPESTATUS[0]}
+          set -e
+          python - <<'PY'
+          import os, re, sys
+
+          log = open("full-suite.log", encoding="utf-8", errors="replace").read().splitlines()
+          known = [l.strip() for l in open(".github/known-test-failures.txt", encoding="utf-8")
+                   if l.strip() and not l.lstrip().startswith("#")]
+          exit_code = int(os.environ["PYTEST_EXIT"])
+
+          def ids(prefix):
+              return {l[len(prefix):].split(" - ")[0].strip() for l in log if l.startswith(prefix)}
+
+          passed, failed = ids("PASSED "), ids("FAILED ") | ids("ERROR ")
+          totals = next((l for l in reversed(log) if re.search(r"\d+ (passed|failed|error)", l)), "(no totals line)")
+          new = sorted(failed - set(known))
+          still = [k for k in known if k in failed]
+          now_passing = [k for k in known if k in passed]
+          missing = [k for k in known if k not in failed and k not in passed]
+
+          problems = []
+          if new:
+              problems.append(f"{len(new)} failure(s) not in the recorded list")
+          if exit_code not in (0, 1):
+              problems.append(f"pytest ended abnormally (exit code {exit_code})")
+          if not passed:
+              problems.append("no test was reported as passed")
+          if exit_code == 1 and not failed:
+              problems.append("pytest reported failure but no failed test was listed")
+
+          out = ["## Full suite", "",
+                 f"- Commit: `{os.environ.get('GITHUB_SHA', 'local')}`",
+                 f"- Python: {sys.version.split()[0]}",
+                 "- Command: `python -m pytest -q -p no:cacheprovider -rA`",
+                 f"- pytest totals: `{totals.strip('= ')}` (exit code {exit_code})",
+                 f"- Passed: {len(passed)} · failed or errored: {len(failed)}",
+                 f"- Recorded known failures: {len(known)}", "",
+                 f"### Failures NOT in the recorded list: {len(new)}"]
+          out += [f"- `{n}`" for n in new] or ["- none"]
+          out += ["", f"### Recorded failures still failing: {len(still)}"] + ([f"- `{n}`" for n in still] or ["- none"])
+          out += ["", f"### Recorded failures now passing: {len(now_passing)}"]
+          out += [f"- `{n}` (passes here; consider removing it from the list)" for n in now_passing] or ["- none"]
+          if missing:
+              out += ["", f"### Recorded failures that did not run: {len(missing)}"] + [f"- `{n}`" for n in missing]
+          out += ["", "**Result: " + ("FAILED — " + "; ".join(problems) if problems else
+                                      "no failure outside the recorded list") + "**", ""]
+          text = "\n".join(out)
+          print(text)
+          if os.environ.get("GITHUB_STEP_SUMMARY"):
+              open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8").write(text + "\n")
+          sys.exit(1 if problems else 0)
+          PY
+
+      - name: ERC temporal contract tests (must all pass)
+        if: always()
+        run: python -m pytest engram_erc/tests/test_temporal_contracts.py -q -p no:cacheprovider
+
+      - name: ERC package tests on their own (must all pass)
+        if: always()
+        run: python -m pytest engram_erc/tests -q -p no:cacheprovider
+
+      - name: Adapter and state-engine tests (must all pass)
+        if: always()
+        run: python -m pytest tests/test_erc_overlay.py tests/test_state_engine.py -q -p no:cacheprovider
+
+      - name: Keep the full log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: full-suite-log
+          path: full-suite.log
+
+  breakages:
+    name: Deliberate breakages (manual)
+    if: github.event_name == 'workflow_dispatch' && inputs.breakages
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest numpy scipy scikit-learn pandas
+          python --version
+          python -m pip freeze
+
+      # Each suite breaks one rule at a time and expects a test to fail. A breakage that no test catches
+      # ("MISSED"), or a pattern the script can no longer find ("!!"), fails the job.
+      - name: ERC breakages (every one must be caught)
+        run: |
+          python kit_tools/check_base2_breakage.py --suite erc | tee breakages-erc.log
+          python - breakages-erc.log <<'PY'
+          import os, re, sys
+          lines = [l for l in open(sys.argv[1], encoding="utf-8").read().splitlines() if l.strip()]
+          bad = [l for l in lines if l.startswith(("MISSED", "!!"))]
+          m = re.fullmatch(r"(\d+) of (\d+) breakages caught", lines[-1]) if lines else None
+          ok = bool(m) and m.group(1) == m.group(2) and int(m.group(2)) > 0 and not bad
+          text = f"## {sys.argv[1]}\n\n- {lines[-1] if lines else 'no output'}\n" + "".join(f"- `{b}`\n" for b in bad)
+          print(text)
+          if os.environ.get("GITHUB_STEP_SUMMARY"):
+              open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8").write(text + "\n")
+          sys.exit(0 if ok else 1)
+          PY
+          git diff --exit-code
+
+      - name: Adapter breakages (every one must be caught)
+        if: always()
+        run: |
+          python kit_tools/check_base2_breakage.py --suite adapter | tee breakages-adapter.log
+          python - breakages-adapter.log <<'PY'
+          import os, re, sys
+          lines = [l for l in open(sys.argv[1], encoding="utf-8").read().splitlines() if l.strip()]
+          bad = [l for l in lines if l.startswith(("MISSED", "!!"))]
+          m = re.fullmatch(r"(\d+) of (\d+) breakages caught", lines[-1]) if lines else None
+          ok = bool(m) and m.group(1) == m.group(2) and int(m.group(2)) > 0 and not bad
+          text = f"## {sys.argv[1]}\n\n- {lines[-1] if lines else 'no output'}\n" + "".join(f"- `{b}`\n" for b in bad)
+          print(text)
+          if os.environ.get("GITHUB_STEP_SUMMARY"):
+              open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8").write(text + "\n")
+          sys.exit(0 if ok else 1)
+          PY
+          git diff --exit-code

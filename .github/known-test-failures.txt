@@ -1,0 +1,13 @@
+# Tests recorded as failing at the signed-off baseline f175f03 (10 November 2026) and still failing at B1 (050668b).
+# One test id per line. The workflow fails on any failure NOT listed here, and reports any listed test that passes.
+# Nothing here is skipped or excluded: all four still run on every push and their results are shown.
+# Remove a line only when the test has been fixed on purpose; add one only with a recorded reason.
+
+# Counts the registered domain profiles; fails only in a full run, where the MemoryAgentBench bridge has registered an extra one.
+engram_erc/tests/test_domain_profiles.py::test_two_profiles_ship_and_general_is_default
+# Needs the separate benchmark data clone (locomo/), which is not part of this repository.
+tests/test_base2_structure.py::test_runner_base1_arm_is_unchanged_by_the_switch_and_base2_differs_only_where_facts_are_reached
+# Needs a model or data download that was not available where the baseline was recorded.
+tests/test_erc_bridge.py::test_arm_e_context_never_shows_replaced_facts
+# Needs the WordLlama embedding model, which is not installed in the baseline environment.
+tests/test_memory_default.py::test_the_tested_design_finds_the_answer
