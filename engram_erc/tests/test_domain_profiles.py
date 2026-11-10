@@ -605,7 +605,7 @@ ERC_1X_SHA256_AT_0_4_0 = {
 ERC_1X_HISTORICAL_TABLE_SHA256 = "1d72e781ec1dcd5fcbbf20ad1580cd28d6321047cf1498d33049fe1763e53dda"
 ERC_1X_RELEASE_PINS = {
     # file: (sha256, release, increment and reason)
-    "contracts.py": ("9cd38af24d120cf2120082ab12d11650b645fdb9e87968cefe38e359579e2c00", "0.5.0",
+    "contracts.py": ("64ebe6722c734ad87f6163007b7c403b057765ba0fe1c3a6b7042a058e9fe8cd", "0.5.0",
                      "B1 temporal contract: additive keyword-only TimeInterval fields, BoundaryStatus, Occurrence, "
                      "Proposition.occurred. No existing behaviour changed."),
 }

@@ -25,6 +25,11 @@ def at(year, month=1, day=1, hour=0):
     return dt.datetime(year, month, day, hour, tzinfo=UTC)
 
 
+def last_instant_before(moment):
+    """Every bound is inclusive, so a period's latest instant is its own last one, not the next period's first."""
+    return moment - dt.timedelta(microseconds=1)
+
+
 def contract(name):
     """The B1 names, looked up late so that each test fails on its own before B1 exists."""
     return getattr(engram_erc, name)
@@ -86,8 +91,9 @@ def test_unknown_does_not_become_unbounded_and_unbounded_does_not_become_unknown
 
 
 def test_start_within_a_window():
-    t = TimeInterval(at(2021), start_latest=at(2022))  # "from 2021": began somewhere in that year
-    assert t.start == at(2021) and t.start_latest == at(2022) and t.start_status is status("WITHIN")
+    t = TimeInterval(at(2021), start_latest=last_instant_before(at(2022)))  # "from 2021": began somewhere in that year
+    assert t.start == at(2021) and t.start_status is status("WITHIN")
+    assert t.start_latest == dt.datetime(2021, 12, 31, 23, 59, 59, 999999, tzinfo=UTC)
 
 
 def test_end_within_a_window():
@@ -173,18 +179,40 @@ def test_contradictory_boundary_combinations_are_refused(why, kwargs):
 # --------------------------------------------------------------------------
 
 def test_year_precision_is_kept_as_the_two_bounds_it_was_given():
-    t = TimeInterval(at(2021), at(2024), start_latest=at(2022), end_earliest=at(2023))  # "from 2021 to 2023"
-    assert (t.start, t.start_latest, t.end_earliest, t.end) == (at(2021), at(2022), at(2023), at(2024))
+    """'From 2021 to 2023'. Began on some instant of 2021. The end boundary is the first instant the state no longer
+    holds: at the earliest just after 2023 began, at the latest the first instant of 2024 (it held all of 2023)."""
+    t = TimeInterval(at(2021), at(2024), start_latest=last_instant_before(at(2022)),
+                     end_earliest=at(2023) + dt.timedelta(microseconds=1))
+    assert t.start == dt.datetime(2021, 1, 1, tzinfo=UTC)
+    assert t.start_latest == dt.datetime(2021, 12, 31, 23, 59, 59, 999999, tzinfo=UTC)
+    assert t.end_earliest == dt.datetime(2023, 1, 1, 0, 0, 0, 1, tzinfo=UTC)
+    assert t.end == dt.datetime(2024, 1, 1, tzinfo=UTC)
 
 
 def test_month_precision():
-    t = TimeInterval(at(2021, 3), start_latest=at(2021, 4), end_unbounded=True)
-    assert (t.start, t.start_latest) == (at(2021, 3, 1), at(2021, 4, 1)) and t.start_status is status("WITHIN")
+    t = TimeInterval(at(2021, 3), start_latest=last_instant_before(at(2021, 4)), end_unbounded=True)  # "from March 2021"
+    assert t.start == dt.datetime(2021, 3, 1, tzinfo=UTC) and t.start_status is status("WITHIN")
+    assert t.start_latest == dt.datetime(2021, 3, 31, 23, 59, 59, 999999, tzinfo=UTC)  # still inside March
 
 
 def test_day_precision():
-    t = TimeInterval(at(2021, 3, 5), start_latest=at(2021, 3, 6), end_unbounded=True)
-    assert (t.start, t.start_latest) == (at(2021, 3, 5), at(2021, 3, 6)) and t.start_status is status("WITHIN")
+    t = TimeInterval(at(2021, 3, 5), start_latest=last_instant_before(at(2021, 3, 6)), end_unbounded=True)
+    assert t.start == dt.datetime(2021, 3, 5, tzinfo=UTC) and t.start_status is status("WITHIN")
+    assert t.start_latest == dt.datetime(2021, 3, 5, 23, 59, 59, 999999, tzinfo=UTC)  # still inside 5 March
+
+
+def test_window_bounds_are_inclusive_on_intervals_and_on_occurrences_alike():
+    """One convention everywhere: both instants of a window belong to it. That is what lets earliest == latest mean
+    an exact moment, and why a period's latest instant is its own last one."""
+    march = (at(2021, 3), last_instant_before(at(2021, 4)))
+    began_in_march = TimeInterval(march[0], start_latest=march[1], end_unbounded=True)
+    happened_in_march = contract("Occurrence")(*march)
+    assert (began_in_march.start, began_in_march.start_latest) == (happened_in_march.earliest, happened_in_march.latest)
+    assert happened_in_march.latest.month == 3 and began_in_march.start_latest.month == 3  # never an April instant
+    assert contract("Occurrence")(march[1], march[1]).status is status("EXACT")  # a single instant is a valid window
+    doc = TimeInterval.__doc__ + contract("Occurrence").__doc__
+    assert "includes both of its instants" in TimeInterval.__doc__ and "inclusive" in contract("Occurrence").__doc__
+    assert "last instant" in doc
 
 
 def test_instant_precision():
@@ -341,8 +369,9 @@ def test_an_event_can_be_an_exact_moment():
 
 
 def test_an_event_within_a_window():
-    o = contract("Occurrence")(at(2021), at(2022))  # "left in 2021"
-    assert (o.earliest, o.latest) == (at(2021), at(2022)) and o.status is status("WITHIN")
+    o = contract("Occurrence")(at(2021), last_instant_before(at(2022)))  # "left in 2021"
+    assert o.earliest == at(2021) and o.status is status("WITHIN")
+    assert o.latest == dt.datetime(2021, 12, 31, 23, 59, 59, 999999, tzinfo=UTC)
 
 
 def test_an_event_bounded_on_one_side_or_not_at_all():
@@ -367,9 +396,10 @@ def test_invalid_occurrences_are_refused():
 
 
 def test_an_event_proposition_carries_an_occurrence_and_no_validity_interval():
-    left = Proposition("p1", "asha", "left_job", "manipal", occurred=contract("Occurrence")(at(2021), at(2022)))
+    in_2021 = contract("Occurrence")(at(2021), last_instant_before(at(2022)))
+    left = Proposition("p1", "asha", "left_job", "manipal", occurred=in_2021)
     assert left.valid_time is None  # the event is not turned into a continuing state
-    assert left.occurred.earliest == at(2021) and left.occurred.latest == at(2022)
+    assert left.occurred.earliest == at(2021) and left.occurred.latest == last_instant_before(at(2022))
 
 
 def test_a_proposition_cannot_be_both_a_state_and_an_event():
@@ -437,10 +467,55 @@ def test_snapshot_fingerprint_sees_every_new_interval_field(name, start, end, ex
 def test_snapshot_fingerprint_sees_an_occurrence():
     Occurrence = contract("Occurrence")
     silent = _snapshot_fingerprint(_case(Proposition(**WORKS)))
-    year = _snapshot_fingerprint(_case(Proposition(**WORKS, occurred=Occurrence(at(2021), at(2022)))))
+    year = _snapshot_fingerprint(_case(Proposition(**WORKS, occurred=Occurrence(at(2021), last_instant_before(at(2022))))))
     moment = _snapshot_fingerprint(_case(Proposition(**WORKS, occurred=Occurrence(at(2021), at(2021)))))
     unknown = _snapshot_fingerprint(_case(Proposition(**WORKS, occurred=Occurrence())))
     assert len({silent, year, moment, unknown}) == 4
+
+
+def _evidence_case(validity):
+    evidence = (Evidence("e1", "s1", SourceKind.ENGRAM_MEMORY),
+                Evidence("e2", "s2", SourceKind.ENGRAM_MEMORY, observed_at=at(2024, 3, 5)),
+                Evidence("e3", "s3", SourceKind.ENGRAM_MEMORY, valid_time=validity))
+    link = engram_erc.EvidenceLink("e3", "p1", engram_erc.EvidenceRelation.SUPPORTS)
+    return RegressionCase("c1", (Proposition(**WORKS),), (), evidence=evidence, evidence_links=(link,))
+
+
+# Recorded at the signed-off baseline f175f03, before any B1 change, for the evidence above with validity 2019 to 2021.
+EVIDENCE_FINGERPRINT_AT_F175F03 = "b9f5e9ef00a7e450cc0ca03b9ab51319c1ac07a8a8ab8edf4443da3ba22e565c"
+
+
+def test_snapshot_fingerprint_of_existing_evidence_is_unchanged():
+    assert _snapshot_fingerprint(_evidence_case(TimeInterval(at(2019), at(2021)))) == EVIDENCE_FINGERPRINT_AT_F175F03
+    assert _snapshot_fingerprint(_evidence_case(None)) == EVIDENCE_FINGERPRINT_AT_F175F03
+
+
+@pytest.mark.parametrize("name,start,end,extra", NEW_FIELD_VARIANTS, ids=[v[0] for v in NEW_FIELD_VARIANTS])
+def test_snapshot_fingerprint_sees_every_new_interval_field_on_evidence(name, start, end, extra):
+    """Review finding 1: evidence validity uses the same interval type, so its new fields must be seen too."""
+    enriched, plain = TimeInterval(start, end, **extra), TimeInterval(start, end)
+    assert _snapshot_fingerprint(_evidence_case(enriched)) != _snapshot_fingerprint(_evidence_case(plain))
+
+
+def test_snapshot_fingerprint_tells_two_enriched_evidence_validities_apart():
+    def with_latest(moment):
+        return _snapshot_fingerprint(_evidence_case(TimeInterval(at(2019), at(2021), start_latest=moment)))
+    assert with_latest(at(2020)) != with_latest(at(2020, 6))
+    by_march = _snapshot_fingerprint(_evidence_case(TimeInterval(start_latest=at(2024, 3, 5))))
+    not_before_march = _snapshot_fingerprint(_evidence_case(TimeInterval(at(2019), end_earliest=at(2024, 3, 5))))
+    assert len({by_march, not_before_march, with_latest(at(2020)), EVIDENCE_FINGERPRINT_AT_F175F03}) == 4
+    # once enriched, the whole interval is in the fingerprint: the plain start and the plain end each count
+    earlier_start = _snapshot_fingerprint(_evidence_case(TimeInterval(at(2018), at(2021), start_latest=at(2020))))
+    later_end = _snapshot_fingerprint(_evidence_case(TimeInterval(at(2019), at(2022), start_latest=at(2020))))
+    assert len({with_latest(at(2020)), earlier_start, later_end}) == 3
+
+
+def test_plain_evidence_validity_is_still_outside_the_fingerprint_as_at_the_baseline():
+    """A gap that predates B1 and is recorded, not fixed, here: at f175f03 the fingerprint never read evidence
+    validity at all, so two plain validities share one. Closing it would change existing fingerprints, which B1 must
+    not do; it needs its own decision. This test makes any such change a deliberate one."""
+    assert _snapshot_fingerprint(_evidence_case(TimeInterval(at(2019), at(2021)))) \
+        == _snapshot_fingerprint(_evidence_case(TimeInterval(at(2020), at(2022))))
 
 
 # --------------------------------------------------------------------------

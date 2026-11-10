@@ -106,6 +106,30 @@ class GeneralisationReport:
     limitations: tuple[str, ...]
 
 
+def _evidence_item(e) -> dict:
+    item = {
+        "source_ref": e.source_ref, "source_kind": e.source_kind.value,
+        "evidence_kind": e.evidence_kind.value,
+        "observed_at": e.observed_at.isoformat() if e.observed_at else None,
+        "reliability_score": e.reliability_score,
+        "reliability_method": e.reliability_method,
+        "metadata": dict(e.metadata),
+    }
+    # ERC 0.5.0 temporal contract: evidence validity enters the fingerprint when it uses a field added in 0.5.0,
+    # and then as a whole. Before 0.5.0 evidence validity was never part of the fingerprint; plain start/end
+    # validity still is not, so every earlier fingerprint is unchanged.
+    v = e.valid_time
+    if v is not None:
+        added = {name: getattr(v, name).isoformat() for name in ("start_latest", "end_earliest")
+                 if getattr(v, name) is not None}
+        added.update({name: True for name in ("start_unbounded", "end_unbounded", "start_is_lower_bound",
+                                              "end_is_upper_bound") if getattr(v, name)})
+        if added:
+            item["valid_time"] = {"start": v.start.isoformat() if v.start else None,
+                                  "end": v.end.isoformat() if v.end else None, **added}
+    return item
+
+
 def _snapshot_fingerprint(case: RegressionCase) -> str:
     # Exclude local proposition IDs so the same semantic snapshot cannot evade
     # leakage detection merely by being re-keyed in the second split.
@@ -138,20 +162,9 @@ def _snapshot_fingerprint(case: RegressionCase) -> str:
         "object": p.object_value, "polarity": p.polarity, "kind": p.kind.value,
         "source_refs": sorted(p.source_refs), "qualifiers": dict(p.qualifiers)}
         for p in case.propositions}
-    evidence = [{
-        "source_ref": e.source_ref, "source_kind": e.source_kind.value,
-        "evidence_kind": e.evidence_kind.value,
-        "observed_at": e.observed_at.isoformat() if e.observed_at else None,
-        "reliability_score": e.reliability_score,
-        "reliability_method": e.reliability_method,
-        "metadata": dict(e.metadata),
-    } for e in case.evidence]
+    evidence = [_evidence_item(e) for e in case.evidence]
     evidence.sort(key=lambda item: json.dumps(item, sort_keys=True, default=str))
-    evidence_by_id = {e.id: {"source_ref": e.source_ref, "source_kind": e.source_kind.value,
-        "evidence_kind": e.evidence_kind.value,
-        "observed_at": e.observed_at.isoformat() if e.observed_at else None,
-        "reliability_score": e.reliability_score, "reliability_method": e.reliability_method,
-        "metadata": dict(e.metadata)} for e in case.evidence}
+    evidence_by_id = {e.id: _evidence_item(e) for e in case.evidence}
     links = [{"proposition": proposition_by_id.get(link.proposition_id),
               "evidence": evidence_by_id.get(link.evidence_id),
               "relation": link.relation.value,

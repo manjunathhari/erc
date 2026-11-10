@@ -98,6 +98,12 @@ ERC = [
  ("fingerprint blind to the unbounded and one-sided flags", "engram_erc/generalization.py", 'for name in ("start_unbounded", "end_unbounded", "start_is_lower_bound", "end_is_upper_bound"):', "for name in ():"),
  ("fingerprint blind to an occurrence", "engram_erc/generalization.py", "        if p.occurred is not None:", "        if False:"),
  ("fingerprint of existing intervals changed (new keys always written)", "engram_erc/generalization.py", "                if getattr(p.valid_time, name):\n                    interval[name] = True", "                interval[name] = bool(getattr(p.valid_time, name))"),
+ ("fingerprint blind to enriched evidence validity", "engram_erc/generalization.py", "        if added:\n            item[\"valid_time\"]", "        if False:\n            item[\"valid_time\"]"),
+ ("fingerprint blind to the window fields on evidence", "engram_erc/generalization.py", 'added = {name: getattr(v, name).isoformat() for name in ("start_latest", "end_earliest")', 'added = {name: getattr(v, name).isoformat() for name in ()'),
+ ("fingerprint blind to the flags on evidence", "engram_erc/generalization.py", 'for name in ("start_unbounded", "end_unbounded", "start_is_lower_bound",\n                                              "end_is_upper_bound") if getattr(v, name)})', 'for name in () if getattr(v, name)})'),
+ ("enriched evidence fingerprint omits the plain end", "engram_erc/generalization.py", '"end": v.end.isoformat() if v.end else None, **added}', '**added}'),
+ ("enriched evidence fingerprint omits the plain start", "engram_erc/generalization.py", '            item["valid_time"] = {"start": v.start.isoformat() if v.start else None,\n', '            item["valid_time"] = {\n'),
+ ("fingerprint of existing evidence changed (plain validity now written)", "engram_erc/generalization.py", "        if added:\n            item[\"valid_time\"]", "        if True:\n            item[\"valid_time\"]"),
  ("new contract names not exported", "engram_erc/__init__.py", '    "BoundaryStatus", "Occurrence",\n', ""),
 ]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),

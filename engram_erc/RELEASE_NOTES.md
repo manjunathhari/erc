@@ -23,9 +23,11 @@ One spelling for each case:
 | A time that is unknown | `TimeInterval()` |
 | Still going | `TimeInterval(start, end_unbounded=True)` |
 | Ended at a moment not known | `TimeInterval(start)` — unchanged from 0.4.1 |
-| Began some time in 2021 | `TimeInterval(1 Jan 2021, start_latest=1 Jan 2022)` |
+| Began some time in 2021 | `TimeInterval(1 Jan 2021, start_latest=31 Dec 2021 23:59:59.999999)` |
 | Had begun by 5 March 2024, start not known | `TimeInterval(start_latest=5 Mar 2024)` |
 | Happened at an exact moment | `Occurrence(t, t)` |
+
+Bounds are inclusive everywhere: a window includes both of its instants, on `TimeInterval` and on `Occurrence` alike. A boundary known only to a period has as its latest instant the last instant of that period, never the first instant of the next. The end boundary of a state is still the first instant at which it no longer holds, so the interval itself stays half-open.
 
 ERC holds only bounding instants. It holds no original date text and no precision label, and it parses no dates: the system that owns the facts computes the bounds.
 
@@ -33,7 +35,7 @@ ERC holds only bounding instants. It holds no original date text and no precisio
 
 - `TimeInterval(start, end)`, `.start`, `.end`, equality and hashing of existing values are unchanged. The new fields are keyword-only, so no positional call changes meaning.
 - A non-datetime passed as a boundary is now refused with a clear `ValueError` (it used to fail with an internal `AttributeError`).
-- `engram_erc/generalization.py`: the snapshot fingerprint includes a new field only when it is set. Every fingerprint computed before 0.5.0 is unchanged; two intervals that differ only in a new field no longer share one.
+- `engram_erc/generalization.py`: the snapshot fingerprint includes a new field only when it is set. Every fingerprint computed before 0.5.0 is unchanged; two intervals that differ only in a new field no longer share one. This covers a proposition's validity, its occurrence, and evidence validity. Known gap, older than 0.5.0 and left as it was: plain start/end evidence validity has never been part of the fingerprint, so two pieces of evidence that differ only in plain validity still share one; closing it would change existing fingerprints and needs its own decision.
 - **`contracts.py` is no longer byte-identical to 0.4.0.** The 0.4.0 hash table is kept unedited as a historical record (its own digest is pinned). A separate release-pin table lists each file changed since 0.4.0 with the release and the reason; `contracts.py` is its only entry. The other 13 ERC 1.x files are still held to their 0.4.0 bytes.
 - The deprecated 0.4.0 names (`compat.py`) are **kept** in 0.5.0. The 0.4.1 notes planned their removal "in the next release"; that removal is not part of this increment.
 
@@ -45,7 +47,7 @@ ERC holds only bounding instants. It holds no original date text and no precisio
 
 ## Tests
 
-`engram_erc/tests/test_temporal_contracts.py` (83 tests). `engram_erc/tests/test_domain_profiles.py`: the byte-pin guard split into historical record and release pins; version assertion 0.5.0. Deliberate breakages: `python kit_tools/check_base2_breakage.py --suite erc`.
+`engram_erc/tests/test_temporal_contracts.py` (93 tests). `engram_erc/tests/test_domain_profiles.py`: the byte-pin guard split into historical record and release pins; version assertion 0.5.0. Deliberate breakages: `python kit_tools/check_base2_breakage.py --suite erc`.
 
 ---
 

@@ -127,9 +127,15 @@ class TimeInterval:
     ============== ======================================== ======================================
 
     So ``start`` is always the earliest the state could have begun and ``end`` the latest it could have ended;
-    they are exact unless another field says otherwise. A window includes both of its instants. Unknown and
-    unbounded are different statements: an interval with a start and no end *ended at a moment not known*;
-    only ``end_unbounded`` says it has no end so far.
+    they are exact unless another field says otherwise. Unknown and unbounded are different statements: an
+    interval with a start and no end *ended at a moment not known*; only ``end_unbounded`` says it has no end
+    so far.
+
+    Bounds are inclusive: a window includes both of its instants. A start known only to a period therefore has
+    as ``start_latest`` the last instant of that period (for March 2021: 31 March, 23:59:59.999999), never the
+    first instant of the next. The end boundary is, as always, the first instant at which the state no longer
+    holds (the interval itself stays half-open), so a state that held to the close of a period ends at the
+    first instant of the next, and ``end_earliest`` .. ``end`` bound that instant inclusively.
 
     This type states what is known. It answers no question; nothing in ERC reads the keyword-only fields yet.
     """
@@ -191,6 +197,8 @@ class Occurrence:
 
     Equal values are an exact moment. One value alone is a one-sided bound. Neither means the event has a time
     that is not known. An occurrence is not a period: it says nothing about any state holding before or after.
+    As on ``TimeInterval``, both bounds belong to the window, so an event known only to a period has as
+    ``latest`` the last instant of that period, never the first instant of the next.
     """
     earliest: datetime | None = None
     latest: datetime | None = None
