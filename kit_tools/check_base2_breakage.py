@@ -43,6 +43,12 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ("rejected validation sent", "erc_overlay/knowledge.py", 'STATE_RULES[_st, "rejected", _s] = REJECTED', 'STATE_RULES[_st, "rejected", _s] = ASSERT'),
  ("unmapped state falls through to assertion", "erc_overlay/knowledge.py", "return STATE_RULES.get((status, validation_status, source_type), UNMAPPED)", "return STATE_RULES.get((status, validation_status, source_type), ASSERT)"),
  ("fingerprint blind to validation", "erc_overlay/knowledge.py", "facts=sorted((x.fact.fact_id, x.fact.status, x.fact.validation_status, x.fact.source_type, x.fact.recorded_at)", "facts=sorted((x.fact.fact_id, x.fact.status, x.fact.recorded_at)"),
+ # step 1A: eligibility inside the walk; one point in time
+ ("walk expands through an excluded fact", "erc_overlay/knowledge.py", "                    eligible.append((x, rule, interval))\n                    obj = f.object_entity_id or self._resolved(f)\n                    if obj: nxt.append(obj)", "                    eligible.append((x, rule, interval))\n                    obj = f.object_entity_id or self._resolved(f)\n                    if obj: nxt.append(obj)\n                for x in self.kb.about_entity(ent, statuses=FETCHED, source_types=None):\n                    obj = x.fact.object_entity_id or self._resolved(x.fact)\n                    if obj: nxt.append(obj)"),
+ ("history leaks past as_of", "erc_overlay/knowledge.py", "if interval and interval.end and interval.end <= as_of:", "if False:"),
+ ("future fact enters a present question", "erc_overlay/knowledge.py", "if interval and interval.start and interval.start > as_of:", "if False:"),
+ ("undated fact marked as known time", "erc_overlay/knowledge.py", '"valid_time": "known" if interval else "unknown"', '"valid_time": "known"'),
+ ("included fact's state missing from explain", "erc_overlay/reasoner.py", 'if leaf.startswith("fact:"): lines.append(f"    {self._state_line(props[leaf], request)}")', "pass"),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
 ]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),

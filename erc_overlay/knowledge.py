@@ -4,8 +4,13 @@ How P1 facts become ERC propositions, so that ERC sees what the knowledge layers
 - Time: a fact the state engine plays in a slot takes that period's span, the same span P1 uses to call conflicts. A period still
   open is closed one day after `as_of`, so two values held at once are a definite contradiction in ERC, as they are a conflict in P1.
   Any other fact takes its stated valid_from and valid_to. A fact with no date at all has no valid time: unknown, never invented.
-- as_of: a fact whose span starts after `as_of` is left out. Facts that ended before it stay in, as history.
+- as_of: the request is for one point in time. A fact whose span starts after `as_of` is left out, and so is a fact whose span
+  ended before it ("ended before as_of"): history is asked for by asking with a past `as_of`, which is what keeps a replaced fact
+  out of a present conclusion until ERC itself reasons about time (step 1B). A fact with no valid time stays in, marked
+  "valid_time: unknown" in its qualifiers: unknown is not current, and ERC decides what it means.
 - Entities: the subject is the entity id. A text object becomes an entity id only when exactly one entity has that name or alias.
+- Eligibility is decided inside the walk (step 1A): a fact that is left out for its state or its dates is never a bridge to the
+  entity it points at, so no fact enters the request by a route the policy would refuse.
 - Fact state (step 1 of the adapter, 10 Nov 2026): one explicit table, STATE_RULES, maps (status, validation_status, source_type)
   to what ERC is told. Only an active, accepted, explicit fact is an assertion that can support an accepted conclusion. An inferred,
   pending or needs-review fact is a hypothesis, and gets a second, metadata-only evidence record ("state:<fact id>") linked as
@@ -118,19 +123,36 @@ class KnowledgeAdapter:
         if len(found) != 1: raise LookupError(f"{len(found)} entities are called {entity!r}; pass the entity id")
         return found[0]
 
-    def _facts(self, entity_id: str, hops: int) -> list[FactWithEvidence]:
-        seen, frontier, out = set(), [entity_id], []
+    def _facts(self, entity_id: str, hops: int, as_of: dt.datetime) -> tuple[list, list]:
+        """Walks from the entity, deciding each fact's eligibility (state, then dates) before it can lead anywhere.
+        Returns ([(record, rule, interval)], [LeftOut]). Only a fact that is sent can expand the walk."""
+        seen, frontier, eligible, left_out, periods = set(), [entity_id], [], [], {}
         for _ in range(hops + 1):
             nxt = []
             for ent in frontier:
                 if ent in seen: continue
                 seen.add(ent)
+                periods.update(self._periods(ent))
                 for x in self.kb.about_entity(ent, statuses=FETCHED, source_types=None):
-                    out.append(x)
-                    obj = x.fact.object_entity_id or self._resolved(x.fact)
+                    f = x.fact
+                    state = self._state(f)
+                    if f.fact_type == "plan":
+                        left_out.append(LeftOut(f.fact_id, "plan", state, "none")); continue
+                    rule = map_state(f.status, f.validation_status, f.source_type)
+                    if rule.action == "leave_out":
+                        left_out.append(LeftOut(f.fact_id, rule.reason, state, rule.needs)); continue
+                    interval = self._interval(f, periods, as_of)
+                    if rule.action == "history" and not (f.valid_to and interval and interval.end):
+                        left_out.append(LeftOut(f.fact_id, "superseded: end date unknown", state, "date")); continue
+                    if interval and interval.start and interval.start > as_of:
+                        left_out.append(LeftOut(f.fact_id, "starts after as_of", state, "a later as_of")); continue
+                    if interval and interval.end and interval.end <= as_of:
+                        left_out.append(LeftOut(f.fact_id, "ended before as_of", state, "a past as_of")); continue
+                    eligible.append((x, rule, interval))
+                    obj = f.object_entity_id or self._resolved(f)
                     if obj: nxt.append(obj)
             frontier = nxt
-        return out
+        return eligible, left_out
 
     def _resolved(self, fact) -> str | None:
         if fact.object_entity_id or fact.object_type != "text" or not fact.object_value: return fact.object_entity_id
@@ -167,24 +189,11 @@ class KnowledgeAdapter:
         as_of = as_of or dt.datetime.now(dt.timezone.utc)
         if as_of.tzinfo is None: raise ValueError("as_of must include a time zone")
         root = self.entity_id(entity)
-        records = self._facts(root, hops)
-        periods = {}
-        for ent in dict.fromkeys(x.fact.subject_id for x in records):
-            periods.update(self._periods(ent))
-        props, links, evidence, used, left_out = [], [], {}, [], []
-        for x in records:
+        eligible, left_out = self._facts(root, hops, as_of)
+        props, links, evidence, used = [], [], {}, []
+        for x, rule, interval in eligible:
             f = x.fact
             state = self._state(f)
-            if f.fact_type == "plan":
-                left_out.append(LeftOut(f.fact_id, "plan", state, "none")); continue
-            rule = map_state(f.status, f.validation_status, f.source_type)
-            if rule.action == "leave_out":
-                left_out.append(LeftOut(f.fact_id, rule.reason, state, rule.needs)); continue
-            interval = self._interval(f, periods, as_of)
-            if rule.action == "history" and not (f.valid_to and interval and interval.end):
-                left_out.append(LeftOut(f.fact_id, "superseded: end date unknown", state, "date")); continue
-            if interval and interval.start and interval.start > as_of:
-                left_out.append(LeftOut(f.fact_id, "starts after as_of", state, "none")); continue
             pid = f"fact:{f.fact_id}"
             sids = []
             for e in x.evidence:
@@ -201,12 +210,12 @@ class KnowledgeAdapter:
                 id=pid, subject=f.subject_id, predicate=f.predicate,
                 object_value=self._resolved(f) or f.value,
                 kind=rule.kind, source_refs=tuple(dict.fromkeys(sids)), valid_time=interval,
-                qualifiers={**state, "fact_type": f.fact_type}))
+                qualifiers={**state, "fact_type": f.fact_type, "valid_time": "known" if interval else "unknown"}))
             used.append(f.fact_id)
         digest = hashlib.sha256(json.dumps(dict(
             entity=root, as_of=as_of.isoformat(), task=task_type,
             facts=sorted((x.fact.fact_id, x.fact.status, x.fact.validation_status, x.fact.source_type, x.fact.recorded_at)
-                         for x in records if x.fact.fact_id in used),
+                         for x, _, _ in eligible),
             rules=None if ruleset is None else [ruleset.version] + sorted((r.rule_id, r.version) for r in ruleset.rules),
         ), sort_keys=True).encode()).hexdigest()[:24]
         request = ReasoningRequest(id=f"erc_req_{digest}", task_type=task_type, propositions=tuple(props),

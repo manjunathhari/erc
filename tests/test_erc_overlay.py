@@ -268,16 +268,18 @@ def test_a_disputed_fact_is_left_out_with_a_diagnostic_and_never_becomes_a_propo
 def test_a_superseded_fact_with_an_end_date_is_history_not_current(world):
     old, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2021", status="superseded")
     world.obs("Asha", "lives_in", "Bengaluru", valid_from="2022")
+    # asked today: ended before as_of, so left out of the present question (step 1A), and not a definite contradiction
     a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
-    props = {p.id: p for p in a.request.propositions}
-    assert f"fact:{old}" in props, "history is sent"
-    t = props[f"fact:{old}"].valid_time
-    assert t.start == dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc) and t.end == dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc)
-    assert t.end <= AS_OF, "ended before as_of: past questions only"
-    assert props[f"fact:{old}"].qualifiers["status"] == "superseded"
-    # and it cannot re-enter the current set through the state engine's periods
+    assert f"fact:{old}" not in {p.id for p in a.request.propositions}
+    assert next(l for l in a.left_out if l.fact_id == old).reason == "ended before as_of"
     r = Reasoner(world.kb).reason("Asha", as_of=AS_OF)
     assert not [c for c in r.orchestration.contradictions if c.certainty == ContradictionCertainty.DEFINITE]
+    # asked as of 2020: sent as history, with the dates Engram holds, marked superseded
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=dt.datetime(2020, 6, 1, tzinfo=dt.timezone.utc))
+    props = {p.id: p for p in a.request.propositions}
+    t = props[f"fact:{old}"].valid_time
+    assert t.start == dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc) and t.end == dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc)
+    assert props[f"fact:{old}"].qualifiers["status"] == "superseded"
 
 
 def test_a_superseded_fact_with_no_end_date_is_left_out_not_given_one(world):
@@ -311,3 +313,101 @@ def test_changing_a_facts_validation_status_changes_the_request_id(world):
     assert adapter.request_for("Asha", as_of=AS_OF).request.id != first
     world.kb.set_validation(works, "accepted")
     assert adapter.request_for("Asha", as_of=AS_OF).request.id == first
+
+
+# ---------- step 1A: eligibility decided inside the walk; one point in time (claude/erc-adapter-step1-eng-review.md, audit) ----------
+from engram_knowledge.models import SOURCE_TYPES, STATUSES, VALIDATION
+
+
+def expected_rule(status, validation, source):
+    """The policy written out independently of STATE_RULES, so the test is not the table checking itself."""
+    if validation == "rejected": return ("leave_out", None)
+    if status in ("disputed", "retracted", "invalidated"): return ("leave_out", None)
+    checked = validation == "accepted" and source == "explicit"
+    if status == "superseded": return ("history", PropositionKind.ASSERTION if checked else PropositionKind.HYPOTHESIS)
+    if status == "active": return ("send", PropositionKind.ASSERTION if checked else PropositionKind.HYPOTHESIS)
+    if status == "needs_review": return ("send", PropositionKind.HYPOTHESIS)
+    raise AssertionError(f"the policy has no row for {status!r}: add it here and in STATE_RULES")
+
+
+ALL_STATES = [(s, v, t) for s in STATUSES for v in VALIDATION for t in SOURCE_TYPES]
+assert len(ALL_STATES) == 36
+
+
+@pytest.mark.parametrize("state", ALL_STATES)
+def test_all_36_engram_states_map_to_the_independently_written_policy(state):
+    rule = map_state(*state)
+    assert (rule.action, rule.kind) == expected_rule(*state)
+    assert rule.state_record == (rule.kind == PropositionKind.HYPOTHESIS)
+
+
+def _reaches_manipal(w):
+    a = KnowledgeAdapter(w.kb).request_for("Asha", as_of=AS_OF)
+    return [p for p in a.request.propositions if p.subject == w.kb.resolve("Manipal")], a
+
+
+@pytest.mark.parametrize("how", [dict(status="disputed"), dict(validation="rejected"), dict(plan=True),
+                                 dict(status="superseded", valid_from="2019", valid_to="2021"), dict(valid_from="2030")])
+def test_an_excluded_fact_cannot_bridge_the_walk_to_another_entity(world, how):
+    world.who("Manipal")
+    bridge, _ = world.obs("Asha", "works_at", "Manipal", **how)
+    world.obs("Manipal", "located_in", "Bengaluru")  # reachable only through the excluded fact
+    manipal, a = _reaches_manipal(world)
+    assert manipal == []
+    assert bridge in {l.fact_id for l in a.left_out}
+    assert world.kb.resolve("Manipal") not in {p.subject for p in a.request.propositions}
+
+
+def test_an_eligible_fact_still_bridges_the_walk(world):
+    chain(world)
+    manipal, _ = _reaches_manipal(world)
+    assert [(p.predicate, p.object_value) for p in manipal] == [("located_in", "Bengaluru")]
+
+
+def test_a_fact_that_ended_before_as_of_is_left_out_of_a_present_question(world):
+    world.who("Manipal")
+    old, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2019", valid_to="2021", status="superseded")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2019")
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
+    assert not r.result.conclusion_refs, "history must not leak into a present conclusion"
+    out = next(l for l in r.adapted.left_out if l.fact_id == old)
+    assert out.reason == "ended before as_of" and out.needs == "a past as_of" and out.state["status"] == "superseded"
+
+
+def test_the_same_history_answers_a_question_asked_as_of_2020(world):
+    world.who("Manipal")
+    old, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2019", valid_to="2021", status="superseded")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2019")
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=dt.datetime(2020, 6, 1, tzinfo=dt.timezone.utc))
+    props = {p.id: p for p in r.result.propositions}
+    assert f"fact:{old}" in props and props[f"fact:{old}"].qualifiers["status"] == "superseded"
+    derived = [p for p in r.result.propositions if p.kind == PropositionKind.INFERENCE]
+    assert [(p.predicate, p.object_value) for p in derived] == [("works_in_city", "Bengaluru")]
+
+
+def test_a_current_fact_known_only_since_2024_does_not_answer_a_2020_question(world):
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2019", valid_to="2021", status="superseded")
+    located, _ = world.obs("Manipal", "located_in", "Bengaluru", valid_from="2024")
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=dt.datetime(2020, 6, 1, tzinfo=dt.timezone.utc))
+    assert not r.result.conclusion_refs
+    assert next(l for l in r.adapted.left_out if l.fact_id == located).reason == "starts after as_of"
+
+
+def test_an_undated_fact_is_included_but_marked_time_unknown_never_current(world):
+    fid, _ = world.obs("Asha", "admires", "Ramanujan")  # no state slot: no period, no dates
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    p = {p.id: p for p in a.request.propositions}[f"fact:{fid}"]
+    assert p.valid_time is None and p.qualifiers["valid_time"] == "unknown"
+
+
+def test_explain_shows_each_included_facts_state_and_kind(world):
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2021", validation="pending")
+    world.obs("Manipal", "located_in", "Bengaluru")
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", ruleset=CITY, as_of=AS_OF))
+    i = lines.index("  because: Asha works_at Manipal")
+    assert lines[i + 1] == "    state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record; valid 2021-01-01 to 2024-03-06"
+    assert lines[lines.index("  because: Manipal located_in Bengaluru") + 1] == "    state: status active, validation accepted, source explicit; sent as assertion; valid time unknown"
+    assert "fact: Asha works_at Manipal; state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record; valid 2021-01-01 to 2024-03-06" in lines
