@@ -56,7 +56,7 @@ def chain(w):
     """Asha works at Manipal, and Manipal is in Bengaluru: a two-step rule needs the text 'Manipal' to mean the entity Manipal."""
     w.who("Manipal")
     works = w.obs("Asha", "works_at", "Manipal", valid_from="2021")
-    w.obs("Manipal", "located_in", "Bengaluru")
+    w.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     return works
 
 
@@ -225,7 +225,7 @@ def test_an_accepted_explicit_fact_is_an_assertion_with_no_state_record_and_can_
 def test_an_unchecked_fact_keeps_its_sentence_as_support_and_adds_a_qualifying_state_record(world, how):
     world.who("Manipal")
     works, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2021", **how)
-    world.obs("Manipal", "located_in", "Bengaluru")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
     assert _sentence_links(a, works) == [EvidenceRelation.SUPPORTS]
     assert _state_links(a, works) == [EvidenceRelation.QUALIFIES]
@@ -239,7 +239,7 @@ def test_an_unchecked_fact_keeps_its_sentence_as_support_and_adds_a_qualifying_s
 def test_an_unchecked_fact_can_only_ever_be_provisional_never_accepted(world, how):
     world.who("Manipal")
     world.obs("Asha", "works_at", "Manipal", valid_from="2021", **how)
-    world.obs("Manipal", "located_in", "Bengaluru")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
     assert r.result.conclusion_refs, "the rule still fires"
     assert r.evaluation.overall_decision.value == "provisional"
@@ -250,7 +250,7 @@ def test_an_unchecked_fact_can_only_ever_be_provisional_never_accepted(world, ho
 def test_the_state_record_is_never_counted_as_corroboration(world):
     world.who("Manipal")
     world.obs("Asha", "works_at", "Manipal", valid_from="2021", validation="pending")
-    world.obs("Manipal", "located_in", "Bengaluru")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
     ev = r.evaluation.evaluations[0]
     assert ev.supporting_source_count == 2 and ev.qualifying_source_count == 1  # one sentence per leaf; the record adds no support
@@ -374,15 +374,27 @@ def test_a_fact_that_ended_before_as_of_is_left_out_of_a_present_question(world)
     assert out.reason == "ended before as_of" and out.needs == "a past as_of" and out.state["status"] == "superseded"
 
 
-def test_the_same_history_answers_a_question_asked_as_of_2020(world):
+def test_the_same_history_answers_a_question_asked_as_of_2020_when_both_premises_are_dated(world):
     world.who("Manipal")
     old, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2019", valid_to="2021", status="superseded")
-    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2019")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=dt.datetime(2020, 6, 1, tzinfo=dt.timezone.utc))
     props = {p.id: p for p in r.result.propositions}
     assert f"fact:{old}" in props and props[f"fact:{old}"].qualifiers["status"] == "superseded"
     derived = [p for p in r.result.propositions if p.kind == PropositionKind.INFERENCE]
     assert [(p.predicate, p.object_value) for p in derived] == [("works_in_city", "Bengaluru")]
+    assert r.evaluation.overall_decision.value == "accepted"
+
+
+def test_a_2020_conclusion_that_rests_on_an_undated_fact_is_provisional_not_established(world):
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2019", valid_to="2021", status="superseded")
+    located, _ = world.obs("Manipal", "located_in", "Bengaluru")  # no date: ERC cannot establish it held in 2020
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=dt.datetime(2020, 6, 1, tzinfo=dt.timezone.utc))
+    assert r.result.conclusion_refs
+    ev = r.evaluation.evaluations[0]
+    assert ev.decision.value == "provisional" and "QUALIFYING_EVIDENCE_REQUIRES_INTERPRETATION" in ev.reasons
+    assert any(e.id == f"state:{located}" and e.metadata["valid_time"] == "unknown" for e in r.adapted.request.evidence)
 
 
 def test_a_current_fact_known_only_since_2024_does_not_answer_a_2020_question(world):
@@ -408,6 +420,60 @@ def test_explain_shows_each_included_facts_state_and_kind(world):
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", ruleset=CITY, as_of=AS_OF))
     i = lines.index("  because: Asha works_at Manipal")
-    assert lines[i + 1] == "    state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record; valid 2021-01-01 to 2024-03-06"
-    assert lines[lines.index("  because: Manipal located_in Bengaluru") + 1] == "    state: status active, validation accepted, source explicit; sent as assertion; valid time unknown"
-    assert "fact: Asha works_at Manipal; state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record; valid 2021-01-01 to 2024-03-06" in lines
+    assert lines[i + 1] == "    state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record (validation pending); valid 2021-01-01 to 2024-03-06"
+    assert lines[lines.index("  because: Manipal located_in Bengaluru") + 1] == "    state: status active, validation accepted, source explicit; sent as assertion with a qualifying state record (valid time unknown); valid time unknown"
+    assert "fact: Asha works_at Manipal; state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record (validation pending); valid 2021-01-01 to 2024-03-06" in lines
+
+
+# ---------- 1A follow-up: unknown time is qualifying evidence; excluded facts cannot alter eligible periods ----------
+def _conclusion(r):
+    return r.evaluation.evaluations[0]
+
+
+def test_two_dated_compatible_premises_can_be_accepted(world):
+    chain(world)
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
+    assert _conclusion(r).decision.value == "accepted"
+    assert not any(e.id.startswith("state:") for e in r.adapted.request.evidence)
+
+
+@pytest.mark.parametrize("works_dated", [True, False], ids=["works_at stated 2021", "works_at dated only by when it was said"])
+def test_a_conclusion_resting_on_an_undated_premise_is_provisional_and_names_the_premise(world, works_dated):
+    """located_in is no P1 slot, so with no stated date it has no valid time. works_at is a slot: P1 dates it from when it was said
+    if nothing is stated, so it is never undated; the undated premise is always the location."""
+    world.who("Manipal")
+    works, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2021" if works_dated else None)
+    located, _ = world.obs("Manipal", "located_in", "Bengaluru")
+    r = Reasoner(world.kb)
+    run = r.reason("Asha", ruleset=CITY, as_of=AS_OF)
+    ev = _conclusion(run)
+    assert ev.decision.value == "provisional" and "QUALIFYING_EVIDENCE_REQUIRES_INTERPRETATION" in ev.reasons
+    assert run.evaluation.overall_decision.value == "provisional"
+    recs = {e.id: e for e in run.adapted.request.evidence if e.id.startswith("state:")}
+    assert set(recs) == {f"state:{located}"}, "only the undated premise carries a record"
+    assert recs[f"state:{located}"].metadata["valid_time"] == "unknown" and recs[f"state:{located}"].metadata["qualified_for"] == ("valid time unknown",)
+    props = {p.id: p for p in run.result.propositions}
+    assert props[f"fact:{works}"].valid_time is not None
+    lines = r.explain(run)
+    i = lines.index(f"  because: {r._claim(props[f'fact:{located}'])}")
+    assert lines[i + 1] == "    state: status active, validation accepted, source explicit; sent as assertion with a qualifying state record (valid time unknown); valid time unknown"
+
+
+def test_an_undated_value_against_a_dated_one_is_reported_as_a_conflict_not_resolved(world):
+    world.obs("Asha", "lives_in", "Bengaluru", valid_from="2022")
+    other, _ = world.obs("Asha", "lives_in", "Mysore", speaker="Ravi")  # no date; P1 dates it from when it was said
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
+    assert [c.certainty for c in r.orchestration.contradictions] == [ContradictionCertainty.DEFINITE]
+    assert r.result.status == ReasoningStatus.CONFLICT
+
+
+def test_a_disputed_closing_event_cannot_end_an_eligible_facts_period(world):
+    pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    closing, _ = world.obs("Asha", "left_job", "Hospital Pune", valid_from="2021", speaker="Ravi", status="disputed")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=dt.datetime(2023, 6, 1, tzinfo=dt.timezone.utc))
+    props = {p.id: p for p in a.request.propositions}
+    assert f"fact:{pune}" in props, "the active fact stays eligible"
+    assert props[f"fact:{pune}"].valid_time.end > dt.datetime(2023, 6, 1, tzinfo=dt.timezone.utc)
+    assert next(l for l in a.left_out if l.fact_id == closing).reason == "disputed: needs resolution"
+    # P1 itself still sees the closing event by default: the adapter asked for periods without disputed facts, nothing else changed
+    assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].end == "2021"

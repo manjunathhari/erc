@@ -54,8 +54,8 @@ class Reasoner:
     def _state_line(self, p, request) -> str:
         """A fact's Engram state, how it was sent, and the time it holds for: so a confirmed fact reads differently from an unchecked one."""
         q = p.qualifiers
-        record = any(l.evidence_id == f"state:{p.id[5:]}" for l in request.evidence_links)
-        sent = f"sent as {p.kind.value}" + (" with a qualifying state record" if record else "")
+        record = next((e for e in request.evidence if e.id == f"state:{p.id[5:]}"), None)
+        sent = f"sent as {p.kind.value}" + (f" with a qualifying state record ({', '.join(record.metadata['qualified_for'])})" if record else "")
         t = p.valid_time
         when = f"valid {t.start.date().isoformat() if t.start else '?'} to {t.end.date().isoformat() if t.end else '?'}" if t else "valid time unknown"
         return f"state: status {q['status']}, validation {q['validation_status']}, source {q['source_type']}; {sent}; {when}"

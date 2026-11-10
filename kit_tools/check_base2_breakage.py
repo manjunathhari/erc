@@ -32,7 +32,7 @@ BASE2 = [
 ]
 ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
  ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
- ("state record dropped", "erc_overlay/knowledge.py", "if rule.state_record:", "if False:"),
+ ("state record dropped", "erc_overlay/knowledge.py", "if rule.state_record or interval is None:", "if False:"),
  ("sentence relinked as qualifies", "erc_overlay/knowledge.py", "links.append(EvidenceLink(eid, pid, EvidenceRelation(e.evidence_role)))", "links.append(EvidenceLink(eid, pid, EvidenceRelation.QUALIFIES))"),
  ("pending or inferred sent as assertion", "erc_overlay/knowledge.py", 'STATE_RULES["active", _v, _s] = ASSERT if _checked else HYPOTHESIS', 'STATE_RULES["active", _v, _s] = ASSERT'),
  ("needs_review sent as assertion", "erc_overlay/knowledge.py", 'STATE_RULES["needs_review", _v, _s] = HYPOTHESIS', 'STATE_RULES["needs_review", _v, _s] = ASSERT'),
@@ -47,12 +47,17 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ("walk expands through an excluded fact", "erc_overlay/knowledge.py", "                    eligible.append((x, rule, interval))\n                    obj = f.object_entity_id or self._resolved(f)\n                    if obj: nxt.append(obj)", "                    eligible.append((x, rule, interval))\n                    obj = f.object_entity_id or self._resolved(f)\n                    if obj: nxt.append(obj)\n                for x in self.kb.about_entity(ent, statuses=FETCHED, source_types=None):\n                    obj = x.fact.object_entity_id or self._resolved(x.fact)\n                    if obj: nxt.append(obj)"),
  ("history leaks past as_of", "erc_overlay/knowledge.py", "if interval and interval.end and interval.end <= as_of:", "if False:"),
  ("future fact enters a present question", "erc_overlay/knowledge.py", "if interval and interval.start and interval.start > as_of:", "if False:"),
- ("undated fact marked as known time", "erc_overlay/knowledge.py", '"valid_time": "known" if interval else "unknown"', '"valid_time": "known"'),
+ ("undated fact marked as known time", "erc_overlay/knowledge.py", '"fact_type": f.fact_type, "valid_time": "known" if interval else "unknown"', '"fact_type": f.fact_type, "valid_time": "known"'),
  ("included fact's state missing from explain", "erc_overlay/reasoner.py", 'if leaf.startswith("fact:"): lines.append(f"    {self._state_line(props[leaf], request)}")', "pass"),
+ # 1A follow-up: unknown time is qualifying evidence; excluded facts cannot alter eligible periods
+ ("undated premise sent without a state record", "erc_overlay/knowledge.py", "if rule.state_record or interval is None:", "if rule.state_record:"),
+ ("undated premise's reason missing from its record", "erc_overlay/knowledge.py", 'if interval is None: qualified_for.append("valid time unknown")', "pass"),
+ ("periods built with disputed facts", "erc_overlay/knowledge.py", 'self.engine.get_history(entity_id, slot, statuses=PLAYED)["periods"]', 'self.engine.get_history(entity_id, slot)["periods"]'),
+ ("state engine ignores the statuses it was given", "engram_knowledge/state_engine.py", "if f.status in statuses and", "if f.status in COUNTED and"),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
 ]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
-          "adapter": (ADAPTER, "tests/test_erc_overlay.py")}
+          "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py")}
 B, TESTS = SUITES[sys.argv[sys.argv.index("--suite") + 1] if "--suite" in sys.argv else "base2"]
 caught = 0
 GUARD = subprocess.run(f"{sys.executable} -m pytest -q -p no:cacheprovider {TESTS}", shell=True, capture_output=True, text=True).returncode

@@ -6,8 +6,11 @@ How P1 facts become ERC propositions, so that ERC sees what the knowledge layers
   Any other fact takes its stated valid_from and valid_to. A fact with no date at all has no valid time: unknown, never invented.
 - as_of: the request is for one point in time. A fact whose span starts after `as_of` is left out, and so is a fact whose span
   ended before it ("ended before as_of"): history is asked for by asking with a past `as_of`, which is what keeps a replaced fact
-  out of a present conclusion until ERC itself reasons about time (step 1B). A fact with no valid time stays in, marked
-  "valid_time: unknown" in its qualifiers: unknown is not current, and ERC decides what it means.
+  out of a present conclusion until ERC itself reasons about time (step 1B). `task_type` only selects ERC's strategy; it does not
+  change what the adapter sends. Timeline and cross-period questions are not implemented.
+- Unknown time: a fact with no valid time stays in and is marked "valid_time: unknown", and it also gets the qualifying state record
+  below, so any conclusion resting on it is at most provisional: missing dates do not mean a fact is timeless, false or useless;
+  they mean ERC cannot establish that it held at `as_of`, and the record says so (metadata "qualified_for").
 - Entities: the subject is the entity id. A text object becomes an entity id only when exactly one entity has that name or alias.
 - Eligibility is decided inside the walk (step 1A): a fact that is left out for its state or its dates is never a bridge to the
   entity it points at, so no fact enters the request by a route the policy would refuse.
@@ -42,6 +45,8 @@ from engram_knowledge.transition import CLOSES, OPENS, SINGLE, slot_of
 FUNCTIONAL = frozenset(SINGLE) | frozenset(p for p, s in {**OPENS, **CLOSES}.items() if s in SINGLE)
 ONE_DAY = dt.timedelta(days=1)
 FETCHED = COUNTED + ("superseded",)  # superseded facts are read as history; retracted and invalidated never
+PLAYED = ("active", "needs_review")  # the statuses whose observations build the periods the adapter dates facts by: a disputed fact is
+                                      # left out of the request, so it must not open or close a period of a fact that is sent
 
 
 def _day(value: dt.date) -> dt.datetime:
@@ -162,8 +167,8 @@ class KnowledgeAdapter:
     def _periods(self, entity_id: str) -> dict:
         """fact_id -> (start, end, open) from the state engine's periods for every slot of this entity."""
         out = {}
-        for slot in sorted({slot_of(x.fact.predicate) for x in self.kb.about_entity(entity_id, statuses=COUNTED) if slot_of(x.fact.predicate)}):
-            for p in self.engine.get_history(entity_id, slot)["periods"]:
+        for slot in sorted({slot_of(x.fact.predicate) for x in self.kb.about_entity(entity_id, statuses=PLAYED) if slot_of(x.fact.predicate)}):
+            for p in self.engine.get_history(entity_id, slot, statuses=PLAYED)["periods"]:
                 for fid in p.fact_ids:
                     out[fid] = (p.start or p.first_said, p.end, p.end_kind == "open")
         return out
@@ -201,10 +206,16 @@ class KnowledgeAdapter:
                 evidence.setdefault(eid, Evidence(id=eid, source_ref=eid, source_kind=SourceKind.ENGRAM_MEMORY, evidence_kind=EvidenceKind.OBSERVATION))
                 links.append(EvidenceLink(eid, pid, EvidenceRelation(e.evidence_role)))
                 sids.append(eid)
-            if rule.state_record:  # the fact's Engram state, as qualifying evidence: a control signal, never support
+            qualified_for = []  # why ERC may not treat a conclusion resting on this fact as established
+            if f.source_type == "inferred": qualified_for.append("source inferred")
+            if f.validation_status == "pending": qualified_for.append("validation pending")
+            if f.status == "needs_review": qualified_for.append("status needs_review")
+            if interval is None: qualified_for.append("valid time unknown")
+            if rule.state_record or interval is None:  # the fact's state, as qualifying evidence: a control signal, never support
                 sid = f"state:{f.fact_id}"
                 evidence[sid] = Evidence(id=sid, source_ref=sid, source_kind=SourceKind.ENGRAM_MEMORY, evidence_kind=EvidenceKind.OTHER,
-                                         metadata={**state, "adapter_control": True})
+                                         metadata={**state, "valid_time": "known" if interval else "unknown", "qualified_for": tuple(qualified_for),
+                                                   "adapter_control": True})
                 links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))
             props.append(Proposition(
                 id=pid, subject=f.subject_id, predicate=f.predicate,
