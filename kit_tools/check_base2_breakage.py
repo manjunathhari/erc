@@ -122,10 +122,33 @@ ERC = [
  ("enriched evidence fingerprint omits the plain start", "engram_erc/generalization.py", '            item["valid_time"] = {"start": v.start.isoformat() if v.start else None,\n', '            item["valid_time"] = {\n'),
  ("fingerprint of existing evidence changed (plain validity now written)", "engram_erc/generalization.py", "        if added:\n            item[\"valid_time\"]", "        if True:\n            item[\"valid_time\"]"),
  ("new contract names not exported", "engram_erc/__init__.py", '    "BoundaryStatus", "Occurrence",\n', ""),
+ # ERC temporal comparison, increment B3 (ERC 0.6.0)
+ ('B3: start window ignored (the start read as exact)', 'engram_erc/primitives/comparison.py', '    if interval.start_latest is not None:\n', '    if interval.start_latest is not None and interval.start is None:\n'),
+ ('B3: end window ignored (the end read as exact)', 'engram_erc/primitives/comparison.py', '    if interval.end_earliest is not None:\n', '    if interval.end_earliest is not None and interval.end is None:\n'),
+ ('B3: still going read as an end not known', 'engram_erc/primitives/comparison.py', '    if interval.end_unbounded:\n        return _NEVER', '    if interval.end_unbounded:\n        return None'),
+ ('B3: an end not known read as still going', 'engram_erc/primitives/comparison.py', '    return None  # an end not known, or an upper bound only', '    return _NEVER'),
+ ('B3: lower-bound start read as exact', 'engram_erc/primitives/comparison.py', '    if interval.start is not None and not interval.start_is_lower_bound:', '    if interval.start is not None:'),
+ ('B3: upper-bound end read as exact', 'engram_erc/primitives/comparison.py', '    if interval.end is not None and not interval.end_is_upper_bound:', '    if interval.end is not None:'),
+ ("B3: a start known only as 'no later than' ignored", 'engram_erc/primitives/comparison.py', '    if interval.start_latest is not None:\n', '    if interval.start_latest is not None and interval.start is not None:\n'),
+ ("B3: an end known only as 'no earlier than' ignored", 'engram_erc/primitives/comparison.py', '    if interval.end_earliest is not None:\n', '    if interval.end_earliest is not None and interval.end is not None:\n'),
+ ("B3: the disjoint test moved onto the windows' inner bounds", 'engram_erc/primitives/comparison.py', '    if left.start is not None and right.end is not None and left.start >= right.end:', '    if left.start is not None and right.end is not None and (left.start_latest or left.start) >= (right.end_earliest or right.end):'),
+ ('B3: certain parts that only touch read as overlapping', 'engram_erc/primitives/comparison.py', 'max(begins) < min(ends):', 'max(begins) <= min(ends):'),
+ ('B3: a shared start with ends not known read as a certain overlap', 'engram_erc/primitives/comparison.py', '    if None in begins or None in ends:\n', '    if left.start is not None and left.start == right.start and left.end is None and right.end is None and not left.end_unbounded and not right.end_unbounded:\n        return TemporalRelation.OVERLAP\n    if None in begins or None in ends:\n'),
+ ('B3: a tolerance arriving unapproved (a start window that passes the end read as an exact start)', 'engram_erc/primitives/comparison.py', '    if interval.start_latest is not None:\n', '    if interval.start_latest is not None and not (interval.start is not None and interval.end is not None and interval.end_earliest is None and interval.start_latest >= interval.end):\n'),
+ ('B3: two events not sent to the occurrence comparison', 'engram_erc/primitives/comparison.py', '    if left.occurred is not None and right.occurred is not None:', '    if False:'),
+ ('B3: an event against a state answered as a certain overlap', 'engram_erc/primitives/comparison.py', '    elif left.occurred is not None or right.occurred is not None:\n        temporal_relation = TemporalRelation.UNKNOWN', '    elif left.occurred is not None or right.occurred is not None:\n        temporal_relation = TemporalRelation.OVERLAP'),
+ ('B3: occurrence windows that share an instant read as unable to meet', 'engram_erc/primitives/comparison.py', 'left.latest < right.earliest:', 'left.latest <= right.earliest:'),
+ ('B3: occurrence windows that may meet read as one instant', 'engram_erc/primitives/comparison.py', '    if _is_exact(left) and _is_exact(right):', '    if True:'),
+ ('B3: the comparison reads start_basis', 'engram_erc/primitives/comparison.py', '        temporal_relation = _temporal_relation(left.valid_time, right.valid_time)', '        temporal_relation = TemporalRelation.UNKNOWN if "first_said" in (left.qualifiers.get("start_basis"), right.qualifiers.get("start_basis")) else _temporal_relation(left.valid_time, right.valid_time)'),
+ ('B3: the comparison reads end_basis', 'engram_erc/primitives/comparison.py', '        temporal_relation = _temporal_relation(left.valid_time, right.valid_time)', '        temporal_relation = TemporalRelation.OVERLAP if left.qualifiers.get("end_basis") == right.qualifiers.get("end_basis") == "open" else _temporal_relation(left.valid_time, right.valid_time)'),
+ ('B3: a new public name exported', 'engram_erc/primitives/__init__.py', '    "compare_propositions", "Contradiction", "ContradictionCertainty",\n', '    "compare_propositions", "Contradiction", "ContradictionCertainty", "_temporal_relation",\n'),
 ]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
           "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py"),
-          "erc": (ERC, "engram_erc/tests/test_temporal_contracts.py")}
+          # The byte-pin test is left out on purpose: every mutation of a pinned file changes its bytes, so the pin would
+          # "catch" all of them and prove nothing about behaviour.
+          "erc": (ERC, "engram_erc/tests/test_temporal_contracts.py engram_erc/tests/test_temporal_comparison.py "
+                       "--deselect engram_erc/tests/test_temporal_comparison.py::test_v1_version_and_release_pin")}
 B, TESTS = SUITES[sys.argv[sys.argv.index("--suite") + 1] if "--suite" in sys.argv else "base2"]
 caught = 0
 GUARD = subprocess.run(f"{sys.executable} -m pytest -q -p no:cacheprovider {TESTS}", shell=True, capture_output=True, text=True).returncode

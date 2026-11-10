@@ -1103,3 +1103,135 @@ def test_b2a_explain_time_lines_for_a_closed_period_its_closing_event_and_a_fact
          "state record (valid time unknown); valid time unknown",
          "  time: not known"),
     ])
+
+
+# ======================================================================================================================
+# B3 - ERC's comparison reads the temporal contract. End to end: the adapter is unchanged; what ERC decides is asserted.
+# Specification: claude/erc-b3-spec.md (frozen 10 Nov 2026, SHA-256 a94eb532e5d8bcfb4fb220bdac72a6875bd1515897656ddb56470aa2339e4c86),
+# section 7, tests X1 to X5; the scenario numbers S01 to S21 are its sections 2.4 and 2.5.
+# A test that only says "this stays as it is" passes before B3 exists, so each such test first calls _b3_is_in().
+# ======================================================================================================================
+from engram_erc.primitives.comparison import TemporalRelation, _temporal_relation
+
+
+def _b3_is_in():
+    """A state still going from 2019 certainly overlaps one that held from 2020 to 2022. Before B3: unknown."""
+    assert _temporal_relation(TimeInterval(_t(2019, 1, 1), end_unbounded=True), TimeInterval(_t(2020, 1, 1), _t(2022, 1, 1))) is TemporalRelation.OVERLAP
+
+
+def _undated(world, speaker, text):
+    """A sentence with no readable date: its fact has no first-said day."""
+    world.m.open_chat(DAY); sid = world.m.add(speaker, text, date="sometime"); world.m.close_chat(write_note=False)
+    return sid
+
+
+def _s01(w): w.obs("Asha", "works_at", "Hospital Pune", valid_from="2019"); w.obs("Asha", "works_at", "Hospital Delhi", valid_from="2020", speaker="Ravi")
+def _s02(w): w.obs("Asha", "lives_in", "Bengaluru", valid_from="2024"); w.obs("Asha", "lives_in", "Mysore", valid_from="2024", speaker="Ravi")
+def _s03(w): w.obs("Asha", "lives_in", "Bengaluru", valid_from="2022"); w.obs("Asha", "lives_in", "Mysore", valid_from="2024", speaker="Ravi")
+def _s04(w): w.obs("Asha", "lives_in", "Bengaluru", valid_from="2024-03"); w.obs("Asha", "lives_in", "Mysore", speaker="Ravi")
+def _s05(w): w.obs("Asha", "lives_in", "Bengaluru"); w.obs("Asha", "lives_in", "Mysore", speaker="Ravi")
+def _s06(w): w.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021", status="superseded"); w.obs("Asha", "works_at", "Manipal", valid_from="2021", speaker="Ravi")
+def _s07(w): w.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021"); w.obs("Asha", "works_at", "Manipal", valid_from="2021", speaker="Ravi")
+def _s08(w): w.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021"); w.obs("Asha", "works_at", "Manipal", valid_from="2021")
+def _s09(w):
+    w.obs("Asha", "works_at", "Apollo", valid_to="2021", status="superseded", sid=_undated(w, "Asha", "Asha works_at Apollo."))
+    w.obs("Asha", "works_at", "Manipal", valid_from="2019", speaker="Ravi")
+def _s10(w):
+    w.obs("Asha", "works_at", "Apollo", valid_to="2021", status="superseded", sid=_undated(w, "Asha", "Asha works_at Apollo."))
+    w.obs("Asha", "works_at", "Manipal", valid_to="2021", status="superseded", sid=_undated(w, "Ravi", "Asha works_at Manipal."))
+def _s11(w): w.obs("Asha", "works_at", "Apollo", valid_to="2021"); w.obs("Asha", "works_at", "Manipal", speaker="Ravi")
+def _s12(w): w.obs("Asha", "moved_to", "Pune", valid_from="2022"); w.obs("Asha", "moved_to", "Delhi", valid_from="2023")
+def _s13(w): w.obs("Asha", "lives_in", "Bengaluru", valid_from="2023-02"); w.obs("Asha", "lives_in", "Mysore", valid_from="2023-09", speaker="Ravi")
+def _s14(w): w.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2021-06"); w.obs("Asha", "lives_in", "Delhi", valid_from="2020", speaker="Ravi")
+def _s15(w): w.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2021", status="superseded"); w.obs("Asha", "lives_in", "Delhi", valid_from="2021-02-10", speaker="Ravi")
+def _s16(w): w.obs("Asha", "works_at", "Apollo", valid_from="2024"); w.obs("Asha", "left_job", "Apollo"); w.obs("Asha", "works_at", "Manipal", speaker="Ravi")
+def _s21(w): w.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2021-06-30"); w.obs("Asha", "lives_in", "Delhi", valid_from="2021", speaker="Ravi")
+
+
+AT_JUNE_2021 = dt.datetime(2021, 6, 1, tzinfo=UTC)
+DEFINITE, POTENTIAL = ContradictionCertainty.DEFINITE, ContradictionCertainty.POTENTIAL
+
+
+def _decided(world, build, as_of, ruleset=None):
+    build(world)
+    r = Reasoner(world.kb).reason("Asha", as_of=as_of, ruleset=ruleset)
+    return r, ([c.certainty for c in r.orchestration.contradictions], r.result.status)
+
+
+def test_b3_a_coarse_stated_end_no_longer_makes_a_definite_conflict_with_a_start_inside_its_window(world):
+    """X1 (S15, OP-2). Lived in Pune 2019 to "2021" (history); lives in Delhi from 10 February 2021; asked 1 March 2021.
+    Pune may have ended before 10 February, so the overlap is possible and not certain. At 103d2fd: definite, conflict."""
+    r, decided = _decided(world, _s15, dt.datetime(2021, 3, 1, tzinfo=UTC))
+    assert decided == ([POTENTIAL], ReasoningStatus.INDETERMINATE)
+    assert not r.orchestration.stopped_before_inference
+
+
+@pytest.mark.parametrize("build,as_of", [(_s02, AS_OF), (_s03, AS_OF), (_s04, AS_OF), (_s02, dt.datetime(2024, 2, 1, tzinfo=UTC))],
+                         ids=["S02 both from the asked-in year", "S03 one from the asked-in year", "S04 asked-in month and first said",
+                              "S17 asked before either was said"])
+def test_b3_named_limitation_two_open_values_with_a_coarse_start_reaching_the_asked_at_date_are_potential_until_b2b(world, build, as_of):
+    """X2. THE NAMED LIMITATION OF B3 - TO BE REVISED AT B2b, where the expected value becomes DEFINITE and CONFLICT.
+    Engram holds both values as open and flags the conflict. The adapter still closes an open state the day after as_of, so
+    the coarse start window passes that end and the period has no certain part. ERC's rule is right for what it is given;
+    the adapter corrects the representation at B2b (end_unbounded). The honest spelling is proved definite today, at ERC
+    level, in engram_erc/tests/test_temporal_comparison.py::test_r13_..."""
+    r, decided = _decided(world, build, as_of)
+    assert world.engine.get_current_state(world.kb.resolve("Asha"))["lives_in"].conflict     # Engram is certain
+    assert decided == ([POTENTIAL], ReasoningStatus.INDETERMINATE)                           # ERC, until B2b, is not
+    stand_ins = [p.valid_time for p in r.adapted.request.propositions if p.qualifiers.get("end_basis") == "open"]
+    assert len(stand_ins) == 2 and all(i.end == as_of + dt.timedelta(days=1) for i in stand_ins)  # the cause, visible
+
+
+@pytest.mark.parametrize("build,as_of", [(_s06, AT_JUNE_2021), (_s07, AT_JUNE_2021), (_s08, AT_JUNE_2021), (_s16, AS_OF), (_s21, AT_JUNE_2021)],
+                         ids=["S06 job change in one year, as history", "S07 two speakers", "S08 one speaker, an ordinary change",
+                              "S16 a genuinely closed end", "S21 a closed day-exact end"])
+def test_b3_a_change_inside_one_coarse_period_is_a_potential_conflict_not_a_definite_one(world, build, as_of):
+    """X3. A CORRECTION, NOT REVISED AT B2b: these stay potential. Leaving Apollo some time in 2021 and joining Manipal some
+    time in 2021 is an ordinary change of job. At 103d2fd each was a definite conflict; Engram's own current state has none."""
+    r, decided = _decided(world, build, as_of)
+    assert not any(s.conflict for s in world.engine.get_current_state(world.kb.resolve("Asha")).values())
+    assert decided == ([POTENTIAL], ReasoningStatus.INDETERMINATE)
+
+
+@pytest.mark.parametrize("build,as_of,expected", [
+    (_s01, AT_2023, ([DEFINITE], ReasoningStatus.CONFLICT)),
+    (_s05, AS_OF, ([DEFINITE], ReasoningStatus.CONFLICT)),
+    (_s11, AS_OF, ([DEFINITE], ReasoningStatus.CONFLICT)),      # the one-day minimum (F18): a separate adapter defect, carried to B2b
+    (_s13, AS_OF, ([DEFINITE], ReasoningStatus.CONFLICT)),
+    (_s14, AT_JUNE_2021, ([DEFINITE], ReasoningStatus.CONFLICT)),
+    (_s09, dt.datetime(2020, 6, 1, tzinfo=UTC), ([POTENTIAL], ReasoningStatus.INDETERMINATE)),
+    (_s10, dt.datetime(2020, 6, 1, tzinfo=UTC), ([POTENTIAL], ReasoningStatus.INDETERMINATE)),
+    (_s12, AS_OF, ([POTENTIAL], ReasoningStatus.INDETERMINATE)),
+], ids=["S01 starts already past", "S05 both first said", "S11 one-day minimum", "S13 different months of a past year",
+        "S14 a real overlap of six months", "S09 end with no start", "S10 two ends with no start", "S12 two moves"])
+def test_b3_results_that_do_not_change(world, build, as_of, expected):
+    """X4. Beside the changes of X1 to X3: what ERC decides here is what it decided at 103d2fd."""
+    _b3_is_in()
+    assert _decided(world, build, as_of)[1] == expected
+
+
+def test_b3_named_limitation_a_conclusion_resting_on_such_a_conflict_is_provisional_and_never_accepted_until_b2b(world):
+    """X5 (S19, S20). THE NAMED LIMITATION OF B3 - TO BE REVISED AT B2b, where the run halts on a definite conflict again.
+    Asha works at Apollo from "2024" and at Manipal from "2024" (two speakers); Manipal is in Bengaluru. Until B2b the
+    conflict is potential, so the rule fires; the conclusion is provisional, says why, and is never accepted."""
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Apollo", valid_from="2024")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2024", speaker="Ravi")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
+    r = Reasoner(world.kb).reason("Asha", as_of=AS_OF, ruleset=CITY)
+    assert world.engine.get_current_state(world.kb.resolve("Asha"))["works_at"].conflict
+    assert [c.certainty for c in r.orchestration.contradictions] == [POTENTIAL] and not r.orchestration.stopped_before_inference
+    derived = [p for p in r.result.propositions if p.kind == PropositionKind.INFERENCE]
+    assert [(p.predicate, p.object_value) for p in derived] == [("works_in_city", "Bengaluru")]
+    assert [(e.decision.value, e.reasons) for e in r.evaluation.evaluations] == [("provisional", ("POTENTIAL_CONTRADICTION_REQUIRES_SCOPE_REVIEW",))]
+    assert r.evaluation.overall_decision.value == "provisional" and not r.evaluation.accepted_refs
+
+
+def test_b3_the_same_conclusion_with_no_second_value_is_accepted(world):
+    """X5, the control (S20): with one employer and no conflict the conclusion is accepted, as at 103d2fd."""
+    _b3_is_in()
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2024", speaker="Ravi")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
+    r = Reasoner(world.kb).reason("Asha", as_of=AS_OF, ruleset=CITY)
+    assert not r.orchestration.contradictions and r.evaluation.overall_decision.value == "accepted"

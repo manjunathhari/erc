@@ -349,14 +349,20 @@ def test_comparison_of_every_existing_interval_shape_is_unchanged():
     assert observed == RELATION_AT_F175F03
 
 
-def test_comparison_does_not_read_the_new_fields_in_b1():
-    """Deliberately temporary: B3 teaches comparison the new contract and revises this test with a recorded reason."""
+def test_comparison_reads_the_new_fields_since_b3():
+    """Revised at B3, as B1 recorded it would be. Until 0.6.0 this was test_comparison_does_not_read_the_new_fields_in_b1 and
+    asserted that an enriched interval compared exactly as its plain start and end. Reason for the revision: B3 teaches the
+    comparison the contract (claude/erc-b3-spec.md, release gate). The full behaviour is in test_temporal_comparison.py;
+    here only the two statements the B1 test made are turned round."""
     plain = TimeInterval(at(2019), at(2021))
-    enriched = TimeInterval(at(2019), at(2021), start_latest=at(2020), end_earliest=at(2020, 6))
-    for other in SHAPES.values():
+    enriched = TimeInterval(at(2019), at(2021), start_latest=at(2020), end_earliest=at(2020, 6))  # certain from 2020 to June 2020
+    earlier = TimeInterval(at(2019), at(2020))
+    assert _temporal_relation(plain, earlier).value == "overlap" and _temporal_relation(enriched, earlier).value == "unknown"
+    for other in SHAPES.values():  # against the eight plain shapes its window makes no difference
         assert _temporal_relation(enriched, other) is _temporal_relation(plain, other)
-    assert _temporal_relation(TimeInterval(at(2019), end_unbounded=True), TimeInterval(at(2019), end_unbounded=True)) \
-        is _temporal_relation(TimeInterval(at(2019)), TimeInterval(at(2019)))
+    still_going, ended_unknown = TimeInterval(at(2019), end_unbounded=True), TimeInterval(at(2019))
+    assert _temporal_relation(still_going, still_going).value == "overlap"
+    assert _temporal_relation(ended_unknown, ended_unknown).value == "unknown"
 
 
 # --------------------------------------------------------------------------

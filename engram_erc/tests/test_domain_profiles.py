@@ -608,8 +608,13 @@ ERC_1X_RELEASE_PINS = {
     "contracts.py": ("64ebe6722c734ad87f6163007b7c403b057765ba0fe1c3a6b7042a058e9fe8cd", "0.5.0",
                      "B1 temporal contract: additive keyword-only TimeInterval fields, BoundaryStatus, Occurrence, "
                      "Proposition.occurred. No existing behaviour changed."),
+    "primitives/comparison.py": ("ead6a041f46db99faac626d43493350bcaaae3329316251322484a1411f20d8f", "0.6.0",
+                                 "B3 temporal comparison: the temporal relation reads the 0.5.0 contract (certain overlap only "
+                                 "when the certain parts of both intervals share time; disjointness unchanged), and two events "
+                                 "are compared by their occurrence windows. Intervals with none of the 0.5.0 fields compare "
+                                 "exactly as before."),
 }
-ERC_1X_FILES_CHANGED_SINCE_0_4_0 = {"contracts.py"}
+ERC_1X_FILES_CHANGED_SINCE_0_4_0 = {"contracts.py", "primitives/comparison.py"}
 
 
 def test_the_0_4_0_hash_table_is_kept_as_an_unedited_historical_record():
@@ -827,7 +832,7 @@ def test_legacy_request_runs_end_to_end_with_old_names():
 
 
 def test_version_comes_from_version_file():
-    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.5.0"
+    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.6.0"
 
 
 @pytest.mark.parametrize("module", ["engram_erc.examples.general_incident",
