@@ -47,7 +47,7 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ("walk expands through an excluded fact", "erc_overlay/knowledge.py", "                    eligible.append((x, rule, interval))\n                    obj = f.object_entity_id or self._resolved(f)\n                    if obj: nxt.append(obj)", "                    eligible.append((x, rule, interval))\n                    obj = f.object_entity_id or self._resolved(f)\n                    if obj: nxt.append(obj)\n                for x in self.kb.about_entity(ent, statuses=FETCHED, source_types=None):\n                    obj = x.fact.object_entity_id or self._resolved(x.fact)\n                    if obj: nxt.append(obj)"),
  ("history leaks past as_of", "erc_overlay/knowledge.py", "if interval and interval.end and interval.end <= as_of:", "if False:"),
  ("future fact enters a present question", "erc_overlay/knowledge.py", "if interval and interval.start and interval.start > as_of:", "if False:"),
- ("undated fact marked as known time", "erc_overlay/knowledge.py", '"fact_type": f.fact_type, "valid_time": "known" if interval else "unknown"', '"fact_type": f.fact_type, "valid_time": "known"'),
+ ("undated fact marked as known time", "erc_overlay/knowledge.py", '"time_kind": self._time_kind(f), "valid_time": "known" if interval else "unknown"', '"time_kind": self._time_kind(f), "valid_time": "known"'),
  ("included fact's state missing from explain", "erc_overlay/reasoner.py", 'if leaf.startswith("fact:"): lines.append(f"    {self._state_line(props[leaf], request)}")', "pass"),
  # 1A follow-up: unknown time is qualifying evidence; excluded facts cannot alter eligible periods
  ("undated premise sent without a state record", "erc_overlay/knowledge.py", "if rule.state_record or interval is None:", "if rule.state_record:"),
@@ -57,6 +57,10 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  # 1A follow-up 2: only accepted observations set period boundaries
  ("pending or needs_review observations set period boundaries", "erc_overlay/knowledge.py", 'PLAYED = dict(statuses=("active",), validations=("accepted",))', 'PLAYED = dict(statuses=("active", "needs_review"), validations=None)'),
  ("state engine ignores the validations it was given", "engram_knowledge/state_engine.py", 'valid = f.validation_status != "rejected" if validations is None else f.validation_status in validations', 'valid = f.validation_status != "rejected"'),
+ # 1A follow-up 3: an event keeps its own date; only the state takes the period's span
+ ("closing event inherits the period's span", "erc_overlay/knowledge.py", "if pred in EVENTS and pred in CLOSES: out[fid] = (p.end, None, True)", "if False: pass"),
+ ("opening event given the period's end", "erc_overlay/knowledge.py", "elif pred in EVENTS: out[fid] = (p.start or p.first_said, None, True)", "elif pred in EVENTS: out[fid] = (p.start or p.first_said, p.end, p.end_kind == \"open\")"),
+ ("state predicates counted as events", "erc_overlay/knowledge.py", "EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)", "EVENTS = frozenset({**OPENS, **CLOSES})"),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
 ]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),

@@ -43,6 +43,7 @@ from engram_knowledge.temporal import span
 from engram_knowledge.transition import CLOSES, OPENS, SINGLE, slot_of
 
 FUNCTIONAL = frozenset(SINGLE) | frozenset(p for p, s in {**OPENS, **CLOSES}.items() if s in SINGLE)
+EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)  # started_job, moved_to, left_job...: a happening, not a state
 ONE_DAY = dt.timedelta(days=1)
 FETCHED = COUNTED + ("superseded",)  # superseded facts are read as history; retracted and invalidated never
 # The observations that build the periods the adapter dates facts by: active, accepted (and, in the engine, explicit). A fact the
@@ -167,13 +168,24 @@ class KnowledgeAdapter:
 
     # ---------- time ----------
     def _periods(self, entity_id: str) -> dict:
-        """fact_id -> (start, end, open) from the state engine's periods for every slot of this entity."""
+        """fact_id -> (start, end, open) from the state engine's periods for every slot of this entity.
+        A state fact takes its period's span. An event fact (an opening or closing predicate, P1's OPENS/CLOSES) is filed in the period
+        as provenance but is not true throughout it: it keeps its own date, the boundary it set (the period's start for an opener, its end
+        for a closer, which the engine takes from the sentence date when none is stated), and has no end: an event does not stop
+        having happened."""
         out = {}
         for slot in sorted({slot_of(x.fact.predicate) for x in self.kb.about_entity(entity_id, statuses=PLAYED["statuses"]) if slot_of(x.fact.predicate)}):
             for p in self.engine.get_history(entity_id, slot, **PLAYED)["periods"]:
                 for fid in p.fact_ids:
-                    out[fid] = (p.start or p.first_said, p.end, p.end_kind == "open")
+                    pred = self.kb.get(fid).fact.predicate
+                    if pred in EVENTS and pred in CLOSES: out[fid] = (p.end, None, True)
+                    elif pred in EVENTS: out[fid] = (p.start or p.first_said, None, True)
+                    else: out[fid] = (p.start or p.first_said, p.end, p.end_kind == "open")
         return out
+
+    @staticmethod
+    def _time_kind(fact) -> str:
+        return "event" if fact.predicate in EVENTS else "state"
 
     def _interval(self, fact, periods: dict, as_of: dt.datetime) -> TimeInterval | None:
         if fact.fact_id in periods:
@@ -223,7 +235,7 @@ class KnowledgeAdapter:
                 id=pid, subject=f.subject_id, predicate=f.predicate,
                 object_value=self._resolved(f) or f.value,
                 kind=rule.kind, source_refs=tuple(dict.fromkeys(sids)), valid_time=interval,
-                qualifiers={**state, "fact_type": f.fact_type, "valid_time": "known" if interval else "unknown"}))
+                qualifiers={**state, "fact_type": f.fact_type, "time_kind": self._time_kind(f), "valid_time": "known" if interval else "unknown"}))
             used.append(f.fact_id)
         digest = hashlib.sha256(json.dumps(dict(
             entity=root, as_of=as_of.isoformat(), task=task_type,

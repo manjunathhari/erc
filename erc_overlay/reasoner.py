@@ -57,7 +57,9 @@ class Reasoner:
         record = next((e for e in request.evidence if e.id == f"state:{p.id[5:]}"), None)
         sent = f"sent as {p.kind.value}" + (f" with a qualifying state record ({', '.join(record.metadata['qualified_for'])})" if record else "")
         t = p.valid_time
-        when = f"valid {t.start.date().isoformat() if t.start else '?'} to {t.end.date().isoformat() if t.end else '?'}" if t else "valid time unknown"
+        if t is None: when = "valid time unknown"
+        elif q.get("time_kind") == "event": when = f"event on {t.start.date().isoformat() if t.start else '?'}"
+        else: when = f"valid {t.start.date().isoformat() if t.start else '?'} to {t.end.date().isoformat() if t.end else '?'}"
         return f"state: status {q['status']}, validation {q['validation_status']}, source {q['source_type']}; {sent}; {when}"
 
     def explain(self, reasoning: Reasoning) -> list[str]:

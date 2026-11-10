@@ -546,3 +546,62 @@ def test_two_genuinely_undated_premises_give_a_provisional_conclusion_with_both_
     assert run.evaluation.overall_decision.value == "provisional"
     recs = {e.id for e in run.adapted.request.evidence if e.id.startswith("state:")}
     assert recs == {f"state:{admires}", f"state:{located}"}
+
+
+# ---------- 1A follow-up 3: an event keeps its own date; only the state takes the period's span ----------
+def _pune(world, when):
+    pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    left, _ = world.obs("Asha", "left_job", "Hospital Pune", valid_from=when)
+    return pune, left
+
+
+def _at(world, year):
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=dt.datetime(year, 6, 1, tzinfo=dt.timezone.utc))
+    return {p.id: p for p in a.request.propositions}, {l.fact_id: l.reason for l in a.left_out}
+
+
+def test_as_of_2020_the_employment_is_in_and_the_2021_closing_event_is_not(world):
+    pune, left = _pune(world, "2021")
+    props, out = _at(world, 2020)
+    assert f"fact:{pune}" in props and props[f"fact:{pune}"].valid_time.end == dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc)
+    assert f"fact:{left}" not in props and out[left] == "starts after as_of"
+
+
+def test_as_of_2022_the_employment_is_out_and_the_2021_closing_event_is_available(world):
+    pune, left = _pune(world, "2021")
+    props, out = _at(world, 2022)
+    assert f"fact:{pune}" not in props and out[pune] == "ended before as_of"
+    t = props[f"fact:{left}"].valid_time
+    assert t.start == dt.datetime(2021, 1, 1, tzinfo=dt.timezone.utc), "the event has its own date, not the period's start"
+    assert t.end > dt.datetime(2022, 6, 1, tzinfo=dt.timezone.utc), "an event does not stop having happened"
+    assert props[f"fact:{left}"].qualifiers["time_kind"] == "event"
+    props_2020, _ = _at(world, 2020)
+    assert props_2020[f"fact:{pune}"].qualifiers["time_kind"] == "state"
+
+
+def test_an_undated_closing_event_takes_its_date_from_its_sentence_not_from_the_period(world):
+    pune, left = _pune(world, None)  # said on 5 March 2024
+    props, out = _at(world, 2022)
+    assert f"fact:{pune}" in props and props[f"fact:{pune}"].valid_time.end == dt.datetime(2024, 3, 6, tzinfo=dt.timezone.utc)
+    assert f"fact:{left}" not in props and out[left] == "starts after as_of"
+    props, _ = _at(world, 2025)
+    assert f"fact:{pune}" not in props
+    assert props[f"fact:{left}"].valid_time.start == dt.datetime(2024, 3, 5, tzinfo=dt.timezone.utc)
+
+
+def test_an_opening_event_keeps_its_own_date_and_outlives_the_state_it_opened(world):
+    moved, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2022")
+    world.obs("Asha", "lives_in", "Mysore", valid_from="2024")
+    props, out = _at(world, 2023)
+    assert props[f"fact:{moved}"].qualifiers["time_kind"] == "event" and props[f"fact:{moved}"].valid_time.start == dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc)
+    props, out = _at(world, 2025)
+    assert f"fact:{moved}" in props, "the move still happened in 2025, even though living in Delhi ended in 2024"
+    lives = [p for p in props.values() if p.predicate == "lives_in"]
+    assert [(p.object_value, p.qualifiers["time_kind"]) for p in lives] == [("Mysore", "state")]
+
+
+def test_explain_tells_an_event_from_a_state(world):
+    pune, left = _pune(world, "2021")
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", as_of=dt.datetime(2022, 6, 1, tzinfo=dt.timezone.utc)))
+    assert any(l.startswith("fact: Asha left_job Hospital Pune; state:") and l.endswith("; event on 2021-01-01") for l in lines), lines
