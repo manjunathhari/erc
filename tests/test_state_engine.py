@@ -394,3 +394,28 @@ def test_get_history_can_be_told_which_statuses_play_and_the_default_is_unchange
     assert [(p.start, p.end, p.end_kind) for p in without] == [("2019", None, "open")]
     assert pune in without[0].fact_ids
     m.close()
+
+
+@pytest.mark.parametrize("how", [dict(validation="pending"), dict(status="needs_review")], ids=["pending", "needs_review"])
+def test_get_history_can_require_accepted_observations_for_period_boundaries(tmp_path, how):
+    """The ERC adapter asks for periods built from active, accepted observations only: a closing event it will only send as a
+    hypothesis must not end a period it treats as established. By default (any validation but rejected) P1 still counts it."""
+    import engram_chat as E
+    from engram_records import FactEvidence, FactWithEvidence, KnowledgeBase, KnowledgeFact, Entity
+    from engram_knowledge import StateEngine
+    m = E.ChatMemory(str(tmp_path / "m.db")); kb = KnowledgeBase(m.db); engine = StateEngine(kb)
+    asha = kb.add_entity(Entity.create("Asha", "person")).entity_id
+    def obs(pred, value, when, speaker, validation="accepted", status="active"):
+        m.open_chat("1:00 pm on 5 March, 2024"); sid = m.add(speaker, f"Asha {pred} {value}.", date="1:00 pm on 5 March, 2024"); m.close_chat(write_note=False)
+        f = KnowledgeFact.create(asha, pred, "text", "attribute", "explicit", object_value=value, valid_from=when, validation_status=validation)
+        engine.apply_observation(FactWithEvidence(f, (FactEvidence.create(f.fact_id, sid),)))
+        if status != "active": m.db.execute("UPDATE knowledge_records SET status=? WHERE fact_id=?", (status, f.fact_id)); m.db.commit()
+        return f.fact_id
+    pune = obs("works_at", "Hospital Pune", "2019", "Asha")
+    obs("left_job", "Hospital Pune", "2021", "Ravi", **how)
+    default = engine.get_history(asha, "works_at")["periods"]
+    assert [(p.start, p.end) for p in default] == [("2019", "2021")], "P1's default behaviour is unchanged"
+    accepted_only = engine.get_history(asha, "works_at", statuses=("active",), validations=("accepted",))["periods"]
+    assert [(p.start, p.end, p.end_kind) for p in accepted_only] == [("2019", None, "open")]
+    assert pune in accepted_only[0].fact_ids
+    m.close()

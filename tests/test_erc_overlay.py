@@ -459,7 +459,7 @@ def test_a_conclusion_resting_on_an_undated_premise_is_provisional_and_names_the
     assert lines[i + 1] == "    state: status active, validation accepted, source explicit; sent as assertion with a qualifying state record (valid time unknown); valid time unknown"
 
 
-def test_an_undated_value_against_a_dated_one_is_reported_as_a_conflict_not_resolved(world):
+def test_a_slot_value_dated_only_by_when_it_was_said_conflicts_with_a_dated_one_and_is_not_resolved(world):
     world.obs("Asha", "lives_in", "Bengaluru", valid_from="2022")
     other, _ = world.obs("Asha", "lives_in", "Mysore", speaker="Ravi")  # no date; P1 dates it from when it was said
     r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
@@ -477,3 +477,72 @@ def test_a_disputed_closing_event_cannot_end_an_eligible_facts_period(world):
     assert next(l for l in a.left_out if l.fact_id == closing).reason == "disputed: needs resolution"
     # P1 itself still sees the closing event by default: the adapter asked for periods without disputed facts, nothing else changed
     assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].end == "2021"
+
+
+# ---------- 1A follow-up 2: only accepted observations set period boundaries ----------
+AT_2023 = dt.datetime(2023, 6, 1, tzinfo=dt.timezone.utc)
+
+
+@pytest.mark.parametrize("how", [dict(validation="pending"), dict(status="needs_review")], ids=["pending", "needs_review"])
+def test_an_unaccepted_closing_event_cannot_end_an_accepted_facts_period_but_still_reaches_erc_as_a_hypothesis(world, how):
+    pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    closing, _ = world.obs("Asha", "left_job", "Hospital Pune", valid_from="2021", speaker="Ravi", **how)
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AT_2023)
+    props = {p.id: p for p in a.request.propositions}
+    assert f"fact:{pune}" in props and props[f"fact:{pune}"].valid_time.end > AT_2023, "the accepted fact stays eligible and open"
+    assert props[f"fact:{closing}"].kind == PropositionKind.HYPOTHESIS, "the closing event is still sent, as a hypothesis"
+    assert _state_links(a, closing) == [EvidenceRelation.QUALIFIES]
+    assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].end == "2021", "P1's own default view is unchanged"
+
+
+def test_a_pending_slot_fact_with_no_stated_date_has_no_period_and_is_time_unknown(world):
+    fid, _ = world.obs("Asha", "job_title", "Registrar", validation="pending")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    p = {p.id: p for p in a.request.propositions}[f"fact:{fid}"]
+    assert p.valid_time is None and p.qualifiers["valid_time"] == "unknown"
+    rec = next(e for e in a.request.evidence if e.id == f"state:{fid}")
+    assert rec.metadata["qualified_for"] == ("validation pending", "valid time unknown")
+
+
+def _conflict_report(world, how, when):
+    """Accepted works_at Pune (2019) beside a pending works_at Delhi; returns what ERC made of the competing values."""
+    world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
+    world.obs("Asha", "works_at", "Hospital Delhi", valid_from=when, speaker="Ravi", **how)
+    r = Reasoner(world.kb).reason("Asha", as_of=AT_2023)
+    return r, [c.certainty for c in r.orchestration.contradictions]
+
+
+def test_a_pending_value_with_a_stated_overlapping_date_is_a_definite_conflict(world):
+    """ERC's policy (orchestration.py): a definite conflict stops inference; status CONFLICT; with no conclusion to evaluate, withheld."""
+    r, kinds = _conflict_report(world, dict(validation="pending"), "2021")
+    assert kinds == [ContradictionCertainty.DEFINITE]
+    assert r.result.status == ReasoningStatus.CONFLICT
+    assert r.evaluation.overall_decision.value == "withheld"
+
+
+def test_a_pending_value_with_no_stated_date_is_a_potential_conflict_and_the_run_is_indeterminate(world):
+    """The pending value has no period (not accepted) and no stated date, so ERC cannot establish the overlap: the competing values are
+    still detected, as a potential conflict recorded as uncertainty; status INDETERMINATE, not CONFLICT; nothing is resolved."""
+    r, kinds = _conflict_report(world, dict(validation="pending"), None)
+    assert kinds == [ContradictionCertainty.POTENTIAL]
+    assert r.result.status == ReasoningStatus.INDETERMINATE
+    assert [u.id for u in r.result.uncertainty] == ["uncertainty_potential_conflict_1"]
+    assert r.evaluation.overall_decision.value == "withheld"
+
+
+# a rule over two non-slot predicates, so both premises can truly have no valid time
+X_, Y_, Z_ = Variable("x"), Variable("y"), Variable("z")
+ADMIRES = RuleSet((RuleDefinition("admires_city", "1", (PropositionPattern(X_, "admires", Y_), PropositionPattern(Y_, "located_in", Z_)),
+                                  ConclusionTemplate(X_, "admires_someone_in", Z_)),))
+
+
+def test_two_genuinely_undated_premises_give_a_provisional_conclusion_with_both_named(world):
+    world.who("Ramanujan")
+    admires, _ = world.obs("Asha", "admires", "Ramanujan")
+    located, _ = world.obs("Ramanujan", "located_in", "Kumbakonam")
+    r = Reasoner(world.kb)
+    run = r.reason("Asha", ruleset=ADMIRES, as_of=AS_OF)
+    assert [(p.predicate, p.object_value) for p in run.result.propositions if p.kind == PropositionKind.INFERENCE] == [("admires_someone_in", "Kumbakonam")]
+    assert run.evaluation.overall_decision.value == "provisional"
+    recs = {e.id for e in run.adapted.request.evidence if e.id.startswith("state:")}
+    assert recs == {f"state:{admires}", f"state:{located}"}

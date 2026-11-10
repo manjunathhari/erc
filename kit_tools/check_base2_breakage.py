@@ -52,8 +52,11 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  # 1A follow-up: unknown time is qualifying evidence; excluded facts cannot alter eligible periods
  ("undated premise sent without a state record", "erc_overlay/knowledge.py", "if rule.state_record or interval is None:", "if rule.state_record:"),
  ("undated premise's reason missing from its record", "erc_overlay/knowledge.py", 'if interval is None: qualified_for.append("valid time unknown")', "pass"),
- ("periods built with disputed facts", "erc_overlay/knowledge.py", 'self.engine.get_history(entity_id, slot, statuses=PLAYED)["periods"]', 'self.engine.get_history(entity_id, slot)["periods"]'),
+ ("periods built with disputed facts", "erc_overlay/knowledge.py", 'self.engine.get_history(entity_id, slot, **PLAYED)["periods"]', 'self.engine.get_history(entity_id, slot)["periods"]'),
  ("state engine ignores the statuses it was given", "engram_knowledge/state_engine.py", "if f.status in statuses and", "if f.status in COUNTED and"),
+ # 1A follow-up 2: only accepted observations set period boundaries
+ ("pending or needs_review observations set period boundaries", "erc_overlay/knowledge.py", 'PLAYED = dict(statuses=("active",), validations=("accepted",))', 'PLAYED = dict(statuses=("active", "needs_review"), validations=None)'),
+ ("state engine ignores the validations it was given", "engram_knowledge/state_engine.py", 'valid = f.validation_status != "rejected" if validations is None else f.validation_status in validations', 'valid = f.validation_status != "rejected"'),
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
 ]
 SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),

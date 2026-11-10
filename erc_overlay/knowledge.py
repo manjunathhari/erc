@@ -45,8 +45,10 @@ from engram_knowledge.transition import CLOSES, OPENS, SINGLE, slot_of
 FUNCTIONAL = frozenset(SINGLE) | frozenset(p for p, s in {**OPENS, **CLOSES}.items() if s in SINGLE)
 ONE_DAY = dt.timedelta(days=1)
 FETCHED = COUNTED + ("superseded",)  # superseded facts are read as history; retracted and invalidated never
-PLAYED = ("active", "needs_review")  # the statuses whose observations build the periods the adapter dates facts by: a disputed fact is
-                                      # left out of the request, so it must not open or close a period of a fact that is sent
+# The observations that build the periods the adapter dates facts by: active, accepted (and, in the engine, explicit). A fact the
+# adapter leaves out (disputed) or sends only as a hypothesis (pending, needs_review) must not open or close a period of a fact it
+# treats as established. Such a fact, if it has no stated date, is then "valid time unknown" and can only support a provisional conclusion.
+PLAYED = dict(statuses=("active",), validations=("accepted",))
 
 
 def _day(value: dt.date) -> dt.datetime:
@@ -167,8 +169,8 @@ class KnowledgeAdapter:
     def _periods(self, entity_id: str) -> dict:
         """fact_id -> (start, end, open) from the state engine's periods for every slot of this entity."""
         out = {}
-        for slot in sorted({slot_of(x.fact.predicate) for x in self.kb.about_entity(entity_id, statuses=PLAYED) if slot_of(x.fact.predicate)}):
-            for p in self.engine.get_history(entity_id, slot, statuses=PLAYED)["periods"]:
+        for slot in sorted({slot_of(x.fact.predicate) for x in self.kb.about_entity(entity_id, statuses=PLAYED["statuses"]) if slot_of(x.fact.predicate)}):
+            for p in self.engine.get_history(entity_id, slot, **PLAYED)["periods"]:
                 for fid in p.fact_ids:
                     out[fid] = (p.start or p.first_said, p.end, p.end_kind == "open")
         return out

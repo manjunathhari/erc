@@ -122,16 +122,19 @@ class StateEngine:
                 if day: said.append(day)
         return sorted(said, key=lambda d: span(d)[0]), speakers
 
-    def _observations(self, entity_id, statuses=COUNTED):
+    def _observations(self, entity_id, statuses=COUNTED, validations=None):
         """The observations that play in this entity's slots. `statuses` says which fact statuses count: COUNTED by default (a disputed
-        fact still plays, so its conflict is seen); a caller that will not use disputed facts passes a narrower tuple, so that a fact it
-        leaves out cannot open or close a period it does use."""
+        fact still plays, so its conflict is seen). `validations` says which validation statuses count: None (the default) means any
+        but rejected. A caller that will not treat disputed, pending or needs-review facts as established (the ERC adapter) passes
+        statuses=("active",), validations=("accepted",), so that a fact it does not vouch for cannot open or close a period it uses.
+        The explicit-source, no-plan and slot requirements are unchanged."""
         rows = self.db.execute("SELECT fact_id FROM knowledge_records WHERE subject_id=? ORDER BY recorded_at, fact_id", (entity_id,)).fetchall()
         out = []
         for r in rows:
             x = self.kb.get(r[0])
             f = x.fact
-            if f.status in statuses and f.validation_status != "rejected" and f.source_type == "explicit" and f.fact_type != "plan" and slot_of(f.predicate):
+            valid = f.validation_status != "rejected" if validations is None else f.validation_status in validations
+            if f.status in statuses and valid and f.source_type == "explicit" and f.fact_type != "plan" and slot_of(f.predicate):
                 said, speakers = self._evidence(x)
                 out.append(dict(fact=f, slot=slot_of(f.predicate), said=said, speakers=speakers, when=f.valid_from or (said[0] if said else None)))
         return out
@@ -251,11 +254,11 @@ class StateEngine:
                     pairs.append(Conflict("value", slot, (a.value, b.value), tuple(a.fact_ids + b.fact_ids), tuple(sorted(a.sources | b.sources))))
         return pairs
 
-    def get_history(self, entity_id, predicate, statuses=COUNTED):
+    def get_history(self, entity_id, predicate, statuses=COUNTED, validations=None):
         """Every period of a slot in date order, the conflicts, and what was not counted and why, so nothing is lost silently.
-        `statuses`: which fact statuses play (default COUNTED; see _observations)."""
+        `statuses` and `validations`: which facts play (defaults keep P1's behaviour; see _observations)."""
         slot = slot_of(predicate) or predicate
-        observations = self._observations(entity_id, statuses)
+        observations = self._observations(entity_id, statuses, validations)
         periods, conflicts = self._build(observations, slot)
         periods.sort(key=lambda p: (span(p.start or p.first_said)[0] if (p.start or p.first_said) else span("9999")[0]))
         counted = {o["fact"].fact_id for o in observations}
