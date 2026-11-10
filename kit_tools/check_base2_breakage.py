@@ -1,10 +1,12 @@
-"""Deliberate-breakage check for Engram base 2: breaks each rule in turn, runs the tests, restores the file.
-Every breakage must make a test fail. Run from the repository root with a clean tree:
+"""Deliberate-breakage check: breaks each rule in turn, runs the tests, restores the file. Every breakage must make a test fail.
+Two suites: "base2" (Engram base 2, the default) and "adapter" (the Engram -> ERC adapter, erc_overlay). Run from the repository root
+with a clean tree:
 
-  python kit_tools/check_base2_breakage.py
+  python kit_tools/check_base2_breakage.py            # base 2
+  python kit_tools/check_base2_breakage.py --suite adapter
 """
 import subprocess, sys
-B = [
+BASE2 = [
  ("copy rule off", "engram_structure.py", "if not copied(obj, src.text): return REJECTED", "if False: return REJECTED"),
  ("whole-word copy off", "engram_structure.py", 'r"(?<![a-z0-9])" + re.escape(o.replace("’", "\'")) + r"(?![a-z0-9])"', 're.escape(o.replace("’", "\'"))'),
  ("date rule off", "engram_structure.py", "if is_partial_date(obj): return REJECTED", "if False: return REJECTED"),
@@ -28,7 +30,24 @@ B = [
  ("runner: base 1 arm answers from base 2", "kit_tools/lme_gpt4o.py", 'ctxs["erc" if arm.endswith("+erc") else "b2" if arm.endswith("+b2") else "raw"]', 'ctxs["erc" if arm.endswith("+erc") else "b2" if "b2" in ctxs else "raw"]'),
  ("runner: b2 always rebuilt", "kit_tools/lme_gpt4o.py", 'ctxs["b2"] = ctxs["raw"]  # nothing reached', 'ctxs["b2"] = ("(no excerpts)", 0)  # nothing reached'),
 ]
-TESTS = "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"
+ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
+ ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
+ ("state record dropped", "erc_overlay/knowledge.py", "if rule.state_record:", "if False:"),
+ ("sentence relinked as qualifies", "erc_overlay/knowledge.py", "links.append(EvidenceLink(eid, pid, EvidenceRelation(e.evidence_role)))", "links.append(EvidenceLink(eid, pid, EvidenceRelation.QUALIFIES))"),
+ ("pending or inferred sent as assertion", "erc_overlay/knowledge.py", 'STATE_RULES["active", _v, _s] = ASSERT if _checked else HYPOTHESIS', 'STATE_RULES["active", _v, _s] = ASSERT'),
+ ("needs_review sent as assertion", "erc_overlay/knowledge.py", 'STATE_RULES["needs_review", _v, _s] = HYPOTHESIS', 'STATE_RULES["needs_review", _v, _s] = ASSERT'),
+ ("disputed sent as hypothesis", "erc_overlay/knowledge.py", 'STATE_RULES["disputed", _v, _s] = DISPUTED', 'STATE_RULES["disputed", _v, _s] = HYPOTHESIS'),
+ ("superseded sent as current", "erc_overlay/knowledge.py", 'STATE_RULES["superseded", _v, _s] = HISTORY_ASSERT if _checked else HISTORY_HYPOTHESIS', 'STATE_RULES["superseded", _v, _s] = ASSERT if _checked else HYPOTHESIS'),
+ ("superseded with no end date sent", "erc_overlay/knowledge.py", 'if rule.action == "history" and not (f.valid_to and interval and interval.end):', "if False:"),
+ ("superseded not fetched", "erc_overlay/knowledge.py", "statuses=FETCHED", "statuses=COUNTED"),
+ ("rejected validation sent", "erc_overlay/knowledge.py", 'STATE_RULES[_st, "rejected", _s] = REJECTED', 'STATE_RULES[_st, "rejected", _s] = ASSERT'),
+ ("unmapped state falls through to assertion", "erc_overlay/knowledge.py", "return STATE_RULES.get((status, validation_status, source_type), UNMAPPED)", "return STATE_RULES.get((status, validation_status, source_type), ASSERT)"),
+ ("fingerprint blind to validation", "erc_overlay/knowledge.py", "facts=sorted((x.fact.fact_id, x.fact.status, x.fact.validation_status, x.fact.source_type, x.fact.recorded_at)", "facts=sorted((x.fact.fact_id, x.fact.status, x.fact.recorded_at)"),
+ ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
+]
+SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
+          "adapter": (ADAPTER, "tests/test_erc_overlay.py")}
+B, TESTS = SUITES[sys.argv[sys.argv.index("--suite") + 1] if "--suite" in sys.argv else "base2"]
 caught = 0
 GUARD = subprocess.run(f"{sys.executable} -m pytest -q -p no:cacheprovider {TESTS}", shell=True, capture_output=True, text=True).returncode
 assert GUARD == 0, "tests must pass before breaking anything"

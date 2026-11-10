@@ -6,11 +6,19 @@ How P1 facts become ERC propositions, so that ERC sees what the knowledge layers
   Any other fact takes its stated valid_from and valid_to. A fact with no date at all has no valid time: unknown, never invented.
 - as_of: a fact whose span starts after `as_of` is left out. Facts that ended before it stay in, as history.
 - Entities: the subject is the entity id. A text object becomes an entity id only when exactly one entity has that name or alias.
-- Kinds: a stated fact is an assertion, an inferred one a hypothesis. Plans are left out: a plan is never a state.
+- Fact state (step 1 of the adapter, 10 Nov 2026): one explicit table, STATE_RULES, maps (status, validation_status, source_type)
+  to what ERC is told. Only an active, accepted, explicit fact is an assertion that can support an accepted conclusion. An inferred,
+  pending or needs-review fact is a hypothesis, and gets a second, metadata-only evidence record ("state:<fact id>") linked as
+  *qualifying*, so ERC's gate can make its conclusion at most provisional; the source sentence stays *supporting* evidence, and the
+  state record is an adapter control signal that ERC never counts as support. A disputed fact is left out (Engram holds no opposing
+  claim, and none is invented). A superseded fact is history: sent only with the end date Engram holds, otherwise left out. Rejected,
+  retracted and invalidated facts are left out. Any combination not in the table is left out as "unmapped state": the table fails
+  closed. Every left-out fact is reported with its reason, its state and what it needs. Plans are left out: a plan is never a state.
 - Functional predicates: P1's single-valued slots, and the predicates that open or close them.
 - Evidence: one Evidence per source sentence, linked to each fact it supports, contradicts or qualifies, so a sentence counts once.
-- Ids: the request id is a digest of the entity, as_of, task, every fact used and the rule set, so a different rule set or different
-  facts give a different request id, and so a different ERC result id.
+- Ids: the request id is a digest of the entity, as_of, task, every fact used (id, status, validation, source type, recorded_at) and
+  the rule set. This is the interim step 1 fingerprint; step 4 replaces it with the canonical one (evidence refs and roles, temporal
+  fields, rule contents, adapter and ERC versions).
 """
 from __future__ import annotations
 
@@ -18,6 +26,7 @@ import datetime as dt
 import hashlib
 import json
 from dataclasses import dataclass
+from typing import NamedTuple
 
 from engram_erc import Evidence, EvidenceKind, EvidenceLink, EvidenceRelation, Proposition, PropositionKind, ReasoningRequest, SourceKind, TimeInterval
 from engram_knowledge.models import FactWithEvidence
@@ -27,6 +36,7 @@ from engram_knowledge.transition import CLOSES, OPENS, SINGLE, slot_of
 
 FUNCTIONAL = frozenset(SINGLE) | frozenset(p for p, s in {**OPENS, **CLOSES}.items() if s in SINGLE)
 ONE_DAY = dt.timedelta(days=1)
+FETCHED = COUNTED + ("superseded",)  # superseded facts are read as history; retracted and invalidated never
 
 
 def _day(value: dt.date) -> dt.datetime:
@@ -42,12 +52,57 @@ def _end(stated: str | None) -> dt.datetime | None:
     return _day(span(stated)[1]) + ONE_DAY if stated else None
 
 
+# ---------- the fact-state table ----------
+class StateRule(NamedTuple):
+    action: str                       # "send", "history" or "leave_out"
+    kind: PropositionKind | None      # for send/history
+    state_record: bool                # a qualifying "state:" evidence record goes with the proposition
+    reason: str = ""                  # for leave_out
+    needs: str = ""                   # for leave_out: validation, resolution, date or mapping update
+
+
+class LeftOut(NamedTuple):
+    fact_id: str
+    reason: str
+    state: dict                       # status, validation_status, source_type
+    needs: str
+
+
+ASSERT = StateRule("send", PropositionKind.ASSERTION, False)
+HYPOTHESIS = StateRule("send", PropositionKind.HYPOTHESIS, True)
+HISTORY_ASSERT = StateRule("history", PropositionKind.ASSERTION, False)
+HISTORY_HYPOTHESIS = StateRule("history", PropositionKind.HYPOTHESIS, True)
+DISPUTED = StateRule("leave_out", None, False, "disputed: needs resolution", "resolution")
+REJECTED = StateRule("leave_out", None, False, "validation rejected", "none")
+GONE = StateRule("leave_out", None, False, "retracted or invalidated", "none")
+UNMAPPED = StateRule("leave_out", None, False, "unmapped state", "mapping update")
+
+STATE_RULES: dict[tuple[str, str, str], StateRule] = {}
+for _v in ("accepted", "pending"):
+    for _s in ("explicit", "inferred"):
+        _checked = _v == "accepted" and _s == "explicit"
+        STATE_RULES["active", _v, _s] = ASSERT if _checked else HYPOTHESIS
+        STATE_RULES["needs_review", _v, _s] = HYPOTHESIS
+        STATE_RULES["disputed", _v, _s] = DISPUTED
+        STATE_RULES["superseded", _v, _s] = HISTORY_ASSERT if _checked else HISTORY_HYPOTHESIS
+        STATE_RULES["retracted", _v, _s] = GONE
+        STATE_RULES["invalidated", _v, _s] = GONE
+for _st in ("active", "needs_review", "disputed", "superseded", "retracted", "invalidated"):
+    for _s in ("explicit", "inferred"):
+        STATE_RULES[_st, "rejected", _s] = REJECTED
+
+
+def map_state(status: str, validation_status: str, source_type: str) -> StateRule:
+    """What ERC is told about a fact in this state. A combination the table does not list is left out, never sent."""
+    return STATE_RULES.get((status, validation_status, source_type), UNMAPPED)
+
+
 @dataclass(frozen=True)
 class AdaptedRequest:
     request: ReasoningRequest
     functional_predicates: frozenset
     fact_ids: tuple           # the P1 facts behind each proposition, in order
-    left_out: tuple           # (fact_id, reason) for facts not passed to ERC
+    left_out: tuple           # LeftOut for every fact not passed to ERC
 
 
 class KnowledgeAdapter:
@@ -70,8 +125,7 @@ class KnowledgeAdapter:
             for ent in frontier:
                 if ent in seen: continue
                 seen.add(ent)
-                for x in self.kb.about_entity(ent, statuses=COUNTED, source_types=None):
-                    if x.fact.validation_status == "rejected": continue
+                for x in self.kb.about_entity(ent, statuses=FETCHED, source_types=None):
                     out.append(x)
                     obj = x.fact.object_entity_id or self._resolved(x.fact)
                     if obj: nxt.append(obj)
@@ -104,6 +158,10 @@ class KnowledgeAdapter:
         return TimeInterval(begin, finish)
 
     # ---------- the request ----------
+    @staticmethod
+    def _state(f) -> dict:
+        return {"status": f.status, "validation_status": f.validation_status, "source_type": f.source_type}
+
     def request_for(self, entity: str, *, task_type: str = "state_question", as_of: dt.datetime | None = None,
                     ruleset=None, hops: int = 1) -> AdaptedRequest:
         as_of = as_of or dt.datetime.now(dt.timezone.utc)
@@ -116,11 +174,17 @@ class KnowledgeAdapter:
         props, links, evidence, used, left_out = [], [], {}, [], []
         for x in records:
             f = x.fact
+            state = self._state(f)
             if f.fact_type == "plan":
-                left_out.append((f.fact_id, "plan")); continue
+                left_out.append(LeftOut(f.fact_id, "plan", state, "none")); continue
+            rule = map_state(f.status, f.validation_status, f.source_type)
+            if rule.action == "leave_out":
+                left_out.append(LeftOut(f.fact_id, rule.reason, state, rule.needs)); continue
             interval = self._interval(f, periods, as_of)
+            if rule.action == "history" and not (f.valid_to and interval and interval.end):
+                left_out.append(LeftOut(f.fact_id, "superseded: end date unknown", state, "date")); continue
             if interval and interval.start and interval.start > as_of:
-                left_out.append((f.fact_id, "starts after as_of")); continue
+                left_out.append(LeftOut(f.fact_id, "starts after as_of", state, "none")); continue
             pid = f"fact:{f.fact_id}"
             sids = []
             for e in x.evidence:
@@ -128,16 +192,21 @@ class KnowledgeAdapter:
                 evidence.setdefault(eid, Evidence(id=eid, source_ref=eid, source_kind=SourceKind.ENGRAM_MEMORY, evidence_kind=EvidenceKind.OBSERVATION))
                 links.append(EvidenceLink(eid, pid, EvidenceRelation(e.evidence_role)))
                 sids.append(eid)
+            if rule.state_record:  # the fact's Engram state, as qualifying evidence: a control signal, never support
+                sid = f"state:{f.fact_id}"
+                evidence[sid] = Evidence(id=sid, source_ref=sid, source_kind=SourceKind.ENGRAM_MEMORY, evidence_kind=EvidenceKind.OTHER,
+                                         metadata={**state, "adapter_control": True})
+                links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))
             props.append(Proposition(
                 id=pid, subject=f.subject_id, predicate=f.predicate,
                 object_value=self._resolved(f) or f.value,
-                kind=PropositionKind.ASSERTION if f.source_type == "explicit" else PropositionKind.HYPOTHESIS,
-                source_refs=tuple(dict.fromkeys(sids)), valid_time=interval,
-                qualifiers={"status": f.status, "validation_status": f.validation_status, "fact_type": f.fact_type}))
+                kind=rule.kind, source_refs=tuple(dict.fromkeys(sids)), valid_time=interval,
+                qualifiers={**state, "fact_type": f.fact_type}))
             used.append(f.fact_id)
         digest = hashlib.sha256(json.dumps(dict(
             entity=root, as_of=as_of.isoformat(), task=task_type,
-            facts=sorted((x.fact.fact_id, x.fact.status, x.fact.recorded_at) for x in records if x.fact.fact_id in used),
+            facts=sorted((x.fact.fact_id, x.fact.status, x.fact.validation_status, x.fact.source_type, x.fact.recorded_at)
+                         for x in records if x.fact.fact_id in used),
             rules=None if ruleset is None else [ruleset.version] + sorted((r.rule_id, r.version) for r in ruleset.rules),
         ), sort_keys=True).encode()).hexdigest()[:24]
         request = ReasoningRequest(id=f"erc_req_{digest}", task_type=task_type, propositions=tuple(props),

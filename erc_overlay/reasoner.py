@@ -65,6 +65,8 @@ class Reasoner:
             lines.append(f"{c.certainty.value} contradiction: {self._claim(props[c.left_id])} / {self._claim(props[c.right_id])}")
         for u in r.uncertainty:
             if u.kind.value != "missing_premise": lines.append(f"uncertain: {u.description}")
-        for fid, why in reasoning.adapted.left_out:
-            lines.append(f"left out: fact {fid} ({why})")
+        for l in reasoning.adapted.left_out:
+            s = l.state
+            lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s['status']}, validation {s['validation_status']}, "
+                         f"source {s['source_type']}; needs {l.needs})")
         return lines

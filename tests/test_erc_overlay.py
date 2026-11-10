@@ -33,11 +33,15 @@ class World:
         self.m.close_chat(write_note=False)
         return sid
 
-    def obs(self, subject, predicate, value, valid_from=None, speaker=None, source_type="explicit", sid=None, plan=False):
+    def obs(self, subject, predicate, value, valid_from=None, speaker=None, source_type="explicit", sid=None, plan=False,
+            validation="accepted", status="active", valid_to=None):
         sid = sid or self.say(speaker or subject, f"{subject} {predicate} {value}.")
         f = KnowledgeFact.create(self.who(subject), predicate, "text", "plan" if plan else "attribute", source_type, object_value=value,
-                                 valid_from=valid_from, validation_status="accepted")
+                                 valid_from=valid_from, valid_to=valid_to, validation_status=validation)
         self.engine.apply_observation(FactWithEvidence(f, (FactEvidence.create(f.fact_id, sid),)))
+        if status in ("superseded", "disputed", "retracted"): self.kb.set_status(f.fact_id, status)
+        elif status != "active":  # needs_review and invalidated come from deletion; set directly for the test
+            self.m.db.execute("UPDATE knowledge_records SET status=? WHERE fact_id=?", (status, f.fact_id)); self.m.db.commit()
         return f.fact_id, sid
 
 
@@ -68,7 +72,7 @@ def test_as_of_is_respected(world):
     chain(world)
     before = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=dt.datetime(2019, 6, 1, tzinfo=dt.timezone.utc))
     assert not before.result.conclusion_refs
-    assert any(why == "starts after as_of" for _, why in before.adapted.left_out)
+    assert any(l.reason == "starts after as_of" for l in before.adapted.left_out)
 
 
 def test_a_conflict_p1_sees_is_a_definite_contradiction_in_erc(world):
@@ -96,7 +100,7 @@ def test_inferred_facts_are_hypotheses_and_plans_are_left_out(world):
     a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
     kinds = {p.id: p.kind for p in a.request.propositions}
     assert kinds[f"fact:{inferred}"] == PropositionKind.HYPOTHESIS
-    assert f"fact:{plan}" not in kinds and (plan, "plan") in a.left_out
+    assert f"fact:{plan}" not in kinds and (plan, "plan") in [(l.fact_id, l.reason) for l in a.left_out]
 
 
 def test_one_sentence_counts_once_however_many_facts_it_supports(world):
@@ -157,3 +161,153 @@ def test_explain_shows_the_conclusion_and_the_sentences_under_it(world):
     text = "\n".join(lines)
     assert "conclusion: Asha works_in_city Bengaluru -> accepted" in text
     assert '"Asha works_at Manipal."' in text and '"Manipal located_in Bengaluru."' in text
+
+
+# ---------- step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md) ----------
+from engram_erc import EvidenceRelation
+from erc_overlay.knowledge import LeftOut, map_state
+
+# The handover's table, as data: each row is checked against the adapter's mapping, so the document, the test and the code
+# are one list. (status, validation, source) -> (action, kind or None)
+HANDOVER_TABLE = [
+    (("active", "accepted", "explicit"), ("send", PropositionKind.ASSERTION)),
+    (("active", "accepted", "inferred"), ("send", PropositionKind.HYPOTHESIS)),
+    (("active", "pending", "explicit"), ("send", PropositionKind.HYPOTHESIS)),
+    (("active", "pending", "inferred"), ("send", PropositionKind.HYPOTHESIS)),
+    (("needs_review", "accepted", "explicit"), ("send", PropositionKind.HYPOTHESIS)),
+    (("needs_review", "pending", "explicit"), ("send", PropositionKind.HYPOTHESIS)),
+    (("needs_review", "accepted", "inferred"), ("send", PropositionKind.HYPOTHESIS)),
+    (("disputed", "accepted", "explicit"), ("leave_out", None)),
+    (("disputed", "pending", "inferred"), ("leave_out", None)),
+    (("superseded", "accepted", "explicit"), ("history", PropositionKind.ASSERTION)),
+    (("superseded", "pending", "explicit"), ("history", PropositionKind.HYPOTHESIS)),
+    (("superseded", "accepted", "inferred"), ("history", PropositionKind.HYPOTHESIS)),
+    (("active", "rejected", "explicit"), ("leave_out", None)),
+    (("superseded", "rejected", "inferred"), ("leave_out", None)),
+    (("retracted", "accepted", "explicit"), ("leave_out", None)),
+    (("invalidated", "accepted", "explicit"), ("leave_out", None)),
+]
+
+
+def _state_links(a, fid):
+    return [l.relation for l in a.request.evidence_links if l.evidence_id == f"state:{fid}" and l.proposition_id == f"fact:{fid}"]
+
+
+def _sentence_links(a, fid):
+    return [l.relation for l in a.request.evidence_links if l.evidence_id.startswith("sentence:") and l.proposition_id == f"fact:{fid}"]
+
+
+@pytest.mark.parametrize("state,expected", HANDOVER_TABLE)
+def test_every_row_of_the_handover_table_maps_as_written(state, expected):
+    rule = map_state(*state)
+    assert (rule.action, rule.kind) == expected
+    if rule.action == "leave_out": assert rule.reason and rule.needs
+    if rule.kind == PropositionKind.HYPOTHESIS: assert rule.state_record
+    if rule.kind == PropositionKind.ASSERTION: assert not rule.state_record
+
+
+@pytest.mark.parametrize("state", [("active", "accepted", "guessed"), ("active", "unknown", "explicit"), ("archived", "accepted", "explicit")])
+def test_a_combination_not_in_the_table_is_left_out_never_sent(state):
+    rule = map_state(*state)
+    assert rule.action == "leave_out" and rule.kind is None
+    assert rule.reason == "unmapped state" and rule.needs == "mapping update"
+
+
+def test_an_accepted_explicit_fact_is_an_assertion_with_no_state_record_and_can_be_accepted(world):
+    works, _ = chain(world)
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    assert not any(e.id.startswith("state:") for e in a.request.evidence)
+    assert _sentence_links(a, works) == [EvidenceRelation.SUPPORTS]
+    assert Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF).evaluation.overall_decision.value == "accepted"
+
+
+@pytest.mark.parametrize("how", [dict(validation="pending"), dict(status="needs_review"), dict(source_type="inferred")])
+def test_an_unchecked_fact_keeps_its_sentence_as_support_and_adds_a_qualifying_state_record(world, how):
+    world.who("Manipal")
+    works, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2021", **how)
+    world.obs("Manipal", "located_in", "Bengaluru")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    assert _sentence_links(a, works) == [EvidenceRelation.SUPPORTS]
+    assert _state_links(a, works) == [EvidenceRelation.QUALIFIES]
+    rec = next(e for e in a.request.evidence if e.id == f"state:{works}")
+    assert rec.metadata["status"] in ("active", "needs_review") and rec.metadata["validation_status"] in ("accepted", "pending")
+    assert rec.metadata["source_type"] in ("explicit", "inferred") and rec.metadata["adapter_control"] is True
+    assert {p.id: p.kind for p in a.request.propositions}[f"fact:{works}"] == PropositionKind.HYPOTHESIS
+
+
+@pytest.mark.parametrize("how", [dict(validation="pending"), dict(status="needs_review"), dict(source_type="inferred")])
+def test_an_unchecked_fact_can_only_ever_be_provisional_never_accepted(world, how):
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2021", **how)
+    world.obs("Manipal", "located_in", "Bengaluru")
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
+    assert r.result.conclusion_refs, "the rule still fires"
+    assert r.evaluation.overall_decision.value == "provisional"
+    ev = r.evaluation.evaluations[0]
+    assert "QUALIFYING_EVIDENCE_REQUIRES_INTERPRETATION" in ev.reasons and ev.escalation.value == "review"
+
+
+def test_the_state_record_is_never_counted_as_corroboration(world):
+    world.who("Manipal")
+    world.obs("Asha", "works_at", "Manipal", valid_from="2021", validation="pending")
+    world.obs("Manipal", "located_in", "Bengaluru")
+    r = Reasoner(world.kb).reason("Asha", ruleset=CITY, as_of=AS_OF)
+    ev = r.evaluation.evaluations[0]
+    assert ev.supporting_source_count == 2 and ev.qualifying_source_count == 1  # one sentence per leaf; the record adds no support
+
+
+def test_a_disputed_fact_is_left_out_with_a_diagnostic_and_never_becomes_a_proposition(world):
+    fid, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2021", status="disputed")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    assert f"fact:{fid}" not in {p.id for p in a.request.propositions}
+    out = next(l for l in a.left_out if l.fact_id == fid)
+    assert isinstance(out, LeftOut) and out.reason == "disputed: needs resolution" and out.needs == "resolution"
+    assert out.state == {"status": "disputed", "validation_status": "accepted", "source_type": "explicit"}
+
+
+def test_a_superseded_fact_with_an_end_date_is_history_not_current(world):
+    old, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2021", status="superseded")
+    world.obs("Asha", "lives_in", "Bengaluru", valid_from="2022")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    props = {p.id: p for p in a.request.propositions}
+    assert f"fact:{old}" in props, "history is sent"
+    t = props[f"fact:{old}"].valid_time
+    assert t.start == dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc) and t.end == dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc)
+    assert t.end <= AS_OF, "ended before as_of: past questions only"
+    assert props[f"fact:{old}"].qualifiers["status"] == "superseded"
+    # and it cannot re-enter the current set through the state engine's periods
+    r = Reasoner(world.kb).reason("Asha", as_of=AS_OF)
+    assert not [c for c in r.orchestration.contradictions if c.certainty == ContradictionCertainty.DEFINITE]
+
+
+def test_a_superseded_fact_with_no_end_date_is_left_out_not_given_one(world):
+    old, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019", status="superseded")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    assert f"fact:{old}" not in {p.id for p in a.request.propositions}
+    out = next(l for l in a.left_out if l.fact_id == old)
+    assert out.reason == "superseded: end date unknown" and out.needs == "date"
+
+
+def test_a_rejected_fact_is_left_out_with_its_reason(world):
+    fid, _ = world.obs("Asha", "works_at", "Manipal", validation="rejected")
+    a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AS_OF)
+    assert f"fact:{fid}" not in {p.id for p in a.request.propositions}
+    assert next(l for l in a.left_out if l.fact_id == fid).reason == "validation rejected"
+
+
+def test_explain_names_every_left_out_fact_its_state_and_what_it_needs(world):
+    chain(world)
+    fid, _ = world.obs("Asha", "hobby", "chess", status="disputed")
+    r = Reasoner(world.kb)
+    text = "\n".join(r.explain(r.reason("Asha", ruleset=CITY, as_of=AS_OF)))
+    assert f"left out: fact {fid} (disputed: needs resolution; status disputed, validation accepted, source explicit; needs resolution)" in text
+
+
+def test_changing_a_facts_validation_status_changes_the_request_id(world):
+    works, _ = chain(world)
+    adapter = KnowledgeAdapter(world.kb)
+    first = adapter.request_for("Asha", as_of=AS_OF).request.id
+    world.kb.set_validation(works, "pending")
+    assert adapter.request_for("Asha", as_of=AS_OF).request.id != first
+    world.kb.set_validation(works, "accepted")
+    assert adapter.request_for("Asha", as_of=AS_OF).request.id == first
