@@ -371,3 +371,13 @@ The text above this line is the frozen B3 specification, unchanged: it is Draft 
 | Outside B3, approved by Manj the same day | After B3 is implemented, tested and signed off: a separate documentation-only commit placing the frozen specifications under `docs/specifications/` (`erc-b2a-spec.md`, `erc-b3-spec.md`). The B2a commit and tag are not touched; it is never mixed with the B3 implementation commit; it needs its own go when the time comes |
 | Tests | **Authorised by Manj, 10 Nov 20:40** ("proceed with test and freeze"). Tests only, written first and shown failing against the unchanged `103d2fd` |
 | Implementation, commit, push, tag, B2b | **Not authorised.** Each needs its own explicit word from Manj |
+
+### Amendment 1 (10 Nov 2026, 23:12): B3 tests revised at B2b
+| Item | Record |
+|---|---|
+| What the frozen text says | Section 9: tests X2 and X5 "are the only B3 tests marked for revision at B2b" |
+| What is amended | Two rows of test X4 (`test_b3_results_that_do_not_change`) are also revised at B2b: **S11** (the one-day minimum) and **S12** (two moves). X2 and X5 are revised as the frozen text foresaw. X1, X3 and R13 are not revised; S06, S07, S08, S15, S16 and S21 stay potential |
+| Reason | Measured during B2b's Stage 1 at `8eb4853`. S11: once the adapter no longer manufactures a one-day period (F18), the job that ended in 2021 is left out as ended and no contradiction remains, which is what Engram holds; today the result is a definite contradiction. S12: once events are sent as occurrences, two moves at different known times cannot meet and give no contradiction; today a potential one. Both are consequences of correcting what the adapter sends. **B3's comparison rule and `primitives/comparison.py` are not changed** |
+| Where specified | B2b specification, frozen 10 Nov 2026, SHA-256 `621314c573ecbffcd82cf5295e3a0b98597fe750164c220c1d4d17356f5589c7`: sections 10 and 12.2 (rows 21 to 27), decision OP-9 |
+| Approval | Manj, 10 Nov 23:07 (OP-1 to OP-12 accepted as his decisions) and 23:12 (freeze of the B2b specification). Recommended by the reviewer in every review of B2b |
+| Effect on this file | The frozen B3 text above is unchanged (`a94eb532e5d8bcfb4fb220bdac72a6875bd1515897656ddb56470aa2339e4c86`). With the freeze record this file was `9684762364696af40f03d5aaaa45b9c474eabe7a3e92741b64ea8e8a40058538`, which is still the copy in the repository at `docs/specifications/erc-b3-spec.md`; that copy is brought up to date by the documentation-only commit after B2b is signed off |
