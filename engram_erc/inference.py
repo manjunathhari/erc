@@ -14,6 +14,7 @@ from .graph import ReasoningGraphBuilder, ReasoningGraphView
 from .rules import (
     ConclusionTemplate, PropositionPattern, RuleDefinition, RuleSet, Variable,
 )
+from .temporal_requirements import TemporalOutcome, check_temporal_requirements
 
 
 @dataclass(frozen=True, slots=True)
@@ -204,6 +205,25 @@ def execute_rules(
                 firing_key = _canonical(key_payload)
                 if firing_key in fired_keys:
                     continue
+                # ERC 0.7.0: a rule that declares temporal requirements fires only on a match that establishes them.
+                # A match that does not is recorded once, is not looked at again and counts toward no firing limit.
+                temporal = None
+                if rule.temporal:
+                    check = check_temporal_requirements(rule, [all_props[ref] for ref in match.premise_ids])
+                    temporal = [dict(item) for item in check.constraints]
+                    if check.outcome is not TemporalOutcome.ESTABLISHED:
+                        disproved = check.outcome is TemporalOutcome.DISPROVED
+                        fired_keys.add(firing_key)
+                        trace.append(TraceEntry(
+                            sequence=len(trace), operation="rule_evaluation",
+                            input_refs=match.premise_ids, output_refs=(),
+                            status="temporal_requirement_disproved" if disproved else "temporal_requirement_indeterminate",
+                            rule_id=rule.rule_id,
+                            explanation_code=("TEMPORAL_REQUIREMENT_DISPROVED" if disproved
+                                              else "TEMPORAL_REQUIREMENT_NOT_ESTABLISHED"),
+                            details={"rule_version": rule.version, "temporal": temporal},
+                        ))
+                        continue
                 if per_rule_firings.get(rule.rule_id, 0) >= rule.max_firings or firings >= limits.max_total_firings:
                     limit_reached = True
                     break
@@ -242,6 +262,7 @@ def execute_rules(
                         "ruleset_version": ruleset.version,
                         "bindings": dict(match.bindings),
                         "description": rule.description,
+                        **({"temporal": temporal} if temporal is not None else {}),
                     },
                 )
                 all_props[candidate.id] = candidate

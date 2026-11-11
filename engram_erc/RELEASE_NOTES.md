@@ -1,3 +1,69 @@
+# ERC 0.7.0 — Rule Temporal Requirements (increment B4)
+
+**Package version:** 0.7.0  
+**Status:** Implemented and tested locally on branch `erc-adapter-1`. The commit, the GitHub runs, the sign-off and the tag are recorded when they are given.  
+**Baseline:** `e2a6872` (code as at `ff2bfbb`, tag `erc-temporal-b2b`; package 0.6.0). Specification: `claude/erc-b4-spec.md`, frozen Draft 4 (SHA-256 of the frozen text `bea15c132a9f2eb02b665277f1cf087a549da375306f6028f7bd824d001b3f07`) with Amendments 1 and 2.
+
+## What 0.7.0 changes
+
+Until now a rule fired whenever its premises existed, whenever they were true. A rule may now say what it needs in time, and fires only on a match that establishes it.
+
+```python
+RuleDefinition(
+    "works_in_city", "1",
+    (PropositionPattern(X, "works_at", C, name="job"), PropositionPattern(C, "located_in", Y, name="place")),
+    ConclusionTemplate(X, "works_in_city", Y),
+    temporal=(TemporalConstraint("overlaps", "job", "place"),),
+)
+```
+
+| Relation | Takes | Holds when |
+|---|---|---|
+| `overlaps` | two states | they hold at one and the same time. This is the 0.6.0 comparison itself, called and not copied |
+| `before` | any two (left, right) | left is over before right begins. A state that ends at X is before what begins at X; an event must be strictly earlier |
+| `during` | an event, then a state | the event happens while the state holds (start <= instant < end) |
+
+For each match, each constraint is **established** (true in every history consistent with what is stated), **disproved** (true in none) or **indeterminate** (anything else). All constraints must be established for the rule to fire; one disproved makes the match disproved; otherwise one indeterminate makes it indeterminate. The answer may be more cautious than those definitions, never bolder.
+
+| Match | The rule fires | What is recorded |
+|---|---|---|
+| Established | yes | the inference step's `parameters["temporal"]` lists each constraint and its outcome |
+| Disproved | no | a trace entry, status `temporal_requirement_disproved` |
+| Indeterminate | no | a trace entry, status `temporal_requirement_indeterminate`, with the reason; and, through `orchestrate`, one uncertainty item (`uncertainty_temporal_requirement_<n>`, kind `TEMPORAL_AMBIGUITY`) worded for the relation and the reason |
+
+Reasons for an indeterminate constraint, looked for in this order: `derived_premise` (the premise is a derived conclusion, which carries no time yet), `no_temporal_statement`, `wrong_kind` (an event where a state is needed, or the reverse), `bounds_do_not_settle`.
+
+The uncertainty item is worded from a second run of the check on the same rule and the same matched premises. That run must agree with the trace entry in every constraint, field and order; if it does not, `orchestrate` raises `RuntimeError` and builds no item (Amendment 2).
+
+New public names (five): `TemporalConstraint`, `TemporalRequirementKind`, `TemporalOutcome`, `TemporalCheck`, `check_temporal_requirements`. `TemporalRelation` keeps its name, its three values and its meaning.
+
+## Compatibility
+
+- A rule that declares nothing (`temporal=None`, the default) or declares that it needs nothing (`temporal=()`) runs exactly as before. Measured on the existing suite: all 1,192 calls of `execute_rules` (79 tests, 1,188 firings) give the same propositions, inference steps and trace as at 0.6.0.
+- `name` on a pattern and `temporal` on a rule are keyword-only. A name plays no part in matching.
+- A match that does not fire is recorded once, is not looked at again in later rounds, and counts toward no firing limit.
+- `execute_rules` called directly (as `recovery.py` and `counterfactual.py` do) records the trace entries; only `orchestrate` builds uncertainty items.
+- `engine_version` on a result is now the package version. It was the fixed text `0.1.8`.
+- Code files changed: `rules.py`, `inference.py`, `orchestration.py`, `__init__.py`; new: `temporal_requirements.py`. `primitives/comparison.py` keeps its 0.6.0 bytes. The release-pin table now has five entries; the other nine ERC 1.x files are still held to their 0.4.0 bytes.
+- The Engram adapter (`erc_overlay/`) is not changed, and its 258 tests pass unedited. No rule set ships with ERC, and the adapter's test rules declare nothing, so no existing conclusion changes.
+
+## Known limitations carried forward
+
+- A conclusion still carries no time (B5). A declared rule over a premise that is itself a derived conclusion therefore stops at indeterminate.
+- `as_of` is still not enforced inside ERC (B6). B4 alone does not correct the case in which a job that has ended and an employer's present location, which did overlap, give a conclusion accepted for today: that needs B5 and B6. Until then the adapter's guards hold it off.
+- A rule that declares nothing still ignores time (decision TAD-11), until B6.
+- The answers are cautious in one known class of shapes: each boundary is read on its own, and the fact that a state's start precedes its end is not used. Never a wrong definite answer on the enumerated shapes (54,264 pairs, and 216,766 on a second grid).
+- ERC cannot tell a fact that makes no temporal statement from one the adapter marks `valid_time: unknown` only in a qualifier; under a declared requirement both are indeterminate.
+- A rule whose temporal declaration is changed must be given a new version. This is not enforced, and the adapter's request id covers a rule's id and version, not its content.
+- Outside `orchestrate`, a match that could not be established is visible only in the trace. `recovery.py` then reports an executed run with nothing derived, `counterfactual.py` a complete replay, and `to_reasoning_result` (which wraps a direct engine run, and which nothing in ERC or the adapter uses) a complete result with no uncertainty item.
+- Alternative derivations of one conclusion are still collapsed into one (B5). B4 guarantees only that a match which does not fire is never recorded as a derivation and never suppresses another match.
+
+## Tests
+
+`engram_erc/tests/test_temporal_rules.py` (new, 99 cases) with `engram_erc/tests/data/b4_expected_table.tsv.gz` (the frozen answer table); `tests/test_erc_overlay_temporal_rules.py` (new, 2 cases through the adapter). `engram_erc/tests/test_domain_profiles.py`: three release pins and the version assertion 0.7.0. `engram_erc/tests/test_temporal_comparison.py`: version, changed-file set, and the public-name pin 300 to 305. ERC package: 676 tests. Deliberate breakages: `python kit_tools/check_base2_breakage.py --suite erc`, 118 of 118 caught (the 54 earlier and 64 for B4).
+
+---
+
 # ERC 0.6.0 — Temporal Comparison (increment B3)
 
 **Package version:** 0.6.0  

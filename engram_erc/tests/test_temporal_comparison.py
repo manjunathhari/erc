@@ -308,18 +308,22 @@ def test_e5_an_event_still_sent_as_an_interval_is_compared_as_an_interval_exactl
 # V. Version, pins and public names
 # --------------------------------------------------------------------------
 
-PUBLIC_NAMES_AT_103D2FD = (300, "80ce1eda47d019cdc9403366bbca2072eb3fb6768e5f12435b9be451ecbaea4b")
+# Revised at B4 (ERC 0.7.0), which adds exactly five public names for rule temporal requirements: TemporalCheck,
+# TemporalConstraint, TemporalOutcome, TemporalRequirementKind, check_temporal_requirements. B3 itself added none: until
+# 0.7.0 this pin was (300, "80ce1eda47d019cdc9403366bbca2072eb3fb6768e5f12435b9be451ecbaea4b").
+PUBLIC_NAMES_AT_103D2FD_AND_B4 = (305, "0ebca2a8058e41153a798aae237f2747beee407956086dc1ae63ceeaa4dff59f")
 PRIMITIVE_NAMES_AT_103D2FD = ["ComparisonKind", "ComparisonResult", "Contradiction", "ContradictionCertainty", "EvidenceAssessment",
                               "EvidenceAssessmentStatus", "TemporalRelation", "assess_evidence", "compare_propositions",
                               "find_contradictions"]
 
 
 def test_v1_version_and_release_pin():
-    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.6.0"
+    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.7.0"  # revised at B4; the comparison's own pin stays 0.6.0
     digest, release, reason = pins.ERC_1X_RELEASE_PINS["primitives/comparison.py"]
     assert release == "0.6.0" and "B3" in reason
     assert digest == hashlib.sha256((PKG / "primitives/comparison.py").read_bytes()).hexdigest() != pins.ERC_1X_SHA256_AT_0_4_0["primitives/comparison.py"]
-    assert pins.ERC_1X_FILES_CHANGED_SINCE_0_4_0 == {"contracts.py", "primitives/comparison.py"}
+    # revised at B4, which changes rules.py, inference.py and orchestration.py and leaves the comparison alone
+    assert pins.ERC_1X_FILES_CHANGED_SINCE_0_4_0 == {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py"}
     # the contradiction layer is not touched: still its 0.4.0 bytes
     assert hashlib.sha256((PKG / "primitives/contradiction.py").read_bytes()).hexdigest() == pins.ERC_1X_SHA256_AT_0_4_0["primitives/contradiction.py"]
 
@@ -329,6 +333,6 @@ def test_v1_nothing_new_is_public_and_the_relation_keeps_its_three_values():
     byte pin out (every mutation changes the bytes), can still run this one."""
     the_new_reading_is_in()
     names = sorted(engram_erc.__all__)
-    assert (len(names), hashlib.sha256(json.dumps(names).encode()).hexdigest()) == PUBLIC_NAMES_AT_103D2FD
+    assert (len(names), hashlib.sha256(json.dumps(names).encode()).hexdigest()) == PUBLIC_NAMES_AT_103D2FD_AND_B4
     assert sorted(engram_erc.primitives.__all__) == PRIMITIVE_NAMES_AT_103D2FD
     assert [r.value for r in TemporalRelation] == [OVERLAP, DISJOINT, UNKNOWN]

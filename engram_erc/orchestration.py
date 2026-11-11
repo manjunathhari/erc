@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from hashlib import sha256
 import json
+from pathlib import Path
 from typing import Iterable, Mapping
 
 from .contracts import (
@@ -20,6 +21,10 @@ from .primitives.evidence_assessment import (
     EvidenceAssessment, EvidenceAssessmentStatus, assess_evidence,
 )
 from .rules import RuleSet
+from .temporal_requirements import RESOLUTION_HINT, _describe_not_applied, check_temporal_requirements
+
+# ERC 0.7.0: the engine reports the package's own version (it reported a fixed "0.1.8" before).
+_ENGINE_VERSION = Path(__file__).with_name("VERSION").read_text(encoding="utf-8").strip()
 
 
 class StrategyOperation(str, Enum):
@@ -303,6 +308,33 @@ def orchestrate(
                 resolution_hint="Review source quality, population, methods and applicability.",
             ))
 
+    # ERC 0.7.0: a match whose temporal requirement could not be established is reported as an uncertainty, one item
+    # per match, in trace order. The wording needs more than the trace entry holds (which premise a reason applies
+    # to), so the check is run a second time on the same rule and the same matched premises. That second result is
+    # used only if it agrees with the trace entry in every constraint, field and order; the wording is then built
+    # from it. A disagreement is an internal fault: nothing is built from it.
+    if rule_execution is not None:
+        rules_by_ref = {(rule.rule_id, rule.version): rule for rule in ruleset.rules}
+        propositions_by_id = {p.id: p for p in rule_execution.propositions}
+        temporal_items = 0
+        for entry in rule_execution.trace:
+            if entry.status != "temporal_requirement_indeterminate":
+                continue
+            rule = rules_by_ref[(entry.rule_id, entry.details["rule_version"])]
+            premises = [propositions_by_id[ref] for ref in entry.input_refs]
+            verified = [dict(item) for item in check_temporal_requirements(rule, premises).constraints]
+            if verified != [dict(item) for item in entry.details["temporal"]]:
+                raise RuntimeError(f"Temporal recheck for rule {rule.rule_id}@{rule.version} disagrees with the "
+                                   "recorded trace entry; no uncertainty item was produced.")
+            temporal_items += 1
+            uncertainty.append(UncertaintyItem(
+                id=f"uncertainty_temporal_requirement_{temporal_items}",
+                kind=UncertaintyKind.TEMPORAL_AMBIGUITY,
+                description=_describe_not_applied(rule, premises, verified),
+                affected_refs=entry.input_refs,
+                resolution_hint=RESOLUTION_HINT,
+            ))
+
     if definite:
         status = ReasoningStatus.CONFLICT
     elif rule_execution is not None and rule_execution.status == ReasoningStatus.PARTIAL:
@@ -332,7 +364,7 @@ def orchestrate(
         graph=graph,
         uncertainty=tuple(uncertainty),
         trace=tuple(trace),
-        engine_version="0.1.8",
+        engine_version=_ENGINE_VERSION,
     )
     return OrchestrationResult(
         result=result,

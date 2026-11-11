@@ -40,7 +40,12 @@ from .primitives import (
 
 from .rules import (
     Variable, PropositionPattern, ConclusionTemplate, RuleDefinition, RuleSet,
+    TemporalConstraint, TemporalRequirementKind,
 )
+from .temporal_requirements import TemporalCheck, TemporalOutcome, check_temporal_requirements
+__all__ += [  # ERC 0.7.0 (B4): rule temporal requirements
+    "TemporalConstraint", "TemporalRequirementKind", "TemporalCheck", "TemporalOutcome", "check_temporal_requirements",
+]
 from .inference import (
     RuleMatch, ExecutionLimits, RuleExecution, match_rule, execute_rules,
     to_reasoning_result,
