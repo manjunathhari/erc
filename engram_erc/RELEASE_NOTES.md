@@ -1,3 +1,44 @@
+# ERC 0.6.0 — Temporal Comparison (increment B3)
+
+**Package version:** 0.6.0  
+**Status:** Implemented, tested locally and on GitHub Actions, signed off at `e57c7c1` (tag `erc-temporal-b3`).
+**Baseline:** `103d2fd` (tag `erc-temporal-b2a`). Specification: `docs/specifications/erc-b3-spec.md` (frozen text SHA-256 `a94eb532e5d8bcfb4fb220bdac72a6875bd1515897656ddb56470aa2339e4c86`, with Amendment 1).
+
+## What 0.6.0 changes
+
+The temporal comparison now reads the 0.5.0 contract. It is the first reasoning behaviour that does.
+
+| Case | Result |
+|---|---|
+| Two states | They certainly overlap only if the certain part of each (its latest possible start to its earliest possible end) shares time |
+| Two states that certainly do not overlap | Unchanged for every input |
+| Two intervals that use none of the 0.5.0 fields | Compared exactly as before |
+| Two events (`occurred`) | Compared by their occurrence windows |
+| An event against a state | Unknown |
+
+No qualifier is read. No public name is added, and the three relation values are kept.
+
+## Compatibility
+
+- One code file changes: `primitives/comparison.py`. `VERSION` goes from 0.5.0 to 0.6.0. `contradiction.py`, the rule engine, evaluation and orchestration are untouched.
+- The release-pin table now has two entries: `contracts.py` (0.5.0) and `primitives/comparison.py` (0.6.0). The other 12 ERC 1.x files are still held to their 0.4.0 bytes.
+- Every comparison the earlier test suite makes gives the same answer, except the one test 0.5.0 marked as temporary.
+
+## Known limitations carried forward
+
+- Every result still reports `engine_version` `0.1.8` (hard-coded in `orchestration.py`, which this increment does not touch).
+- The rule engine still ignores time (B4), a derived conclusion still has no time (B5), and `as_of` is still not enforced inside ERC (B6).
+
+## Since 0.6.0, outside this package
+
+The package itself has not changed since 0.6.0. The Engram adapter (`erc_overlay/`) has: at increment B2b (`ff2bfbb`, tag `erc-temporal-b2b`) it began sending open states as `end_unbounded`, a first-said day as `start_latest`, a date that was only said as an upper bound, and events as `occurred`. That corrected the limitation B3 named, in which two open values with a coarse start reaching the asked-at date were reported as a potential contradiction. The statement in the 0.5.0 notes below that the adapter sends none of the new fields describes the adapter as it was at 0.5.0.
+
+## Tests
+
+`engram_erc/tests/test_temporal_comparison.py` (new). `engram_erc/tests/test_domain_profiles.py`: release pin for `primitives/comparison.py`; version assertion 0.6.0. ERC package: 577 tests. Deliberate breakages: `python kit_tools/check_base2_breakage.py --suite erc`, 54 of 54 caught.
+
+---
+
 # ERC 0.5.0 — Temporal Contract Foundation (increment B1)
 
 **Package version:** 0.5.0  
