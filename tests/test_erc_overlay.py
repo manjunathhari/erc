@@ -164,7 +164,7 @@ def test_explain_shows_the_conclusion_and_the_sentences_under_it(world):
 
 
 # ---------- step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md) ----------
-from engram_erc import EvidenceRelation, TimeInterval
+from engram_erc import EvidenceRelation, Occurrence, TimeInterval
 from erc_overlay.knowledge import LeftOut, map_state
 
 # The handover's table, as data: each row is checked against the adapter's mapping, so the document, the test and the code
@@ -420,9 +420,9 @@ def test_explain_shows_each_included_facts_state_and_kind(world):
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", ruleset=CITY, as_of=AS_OF))
     i = lines.index("  because: Asha works_at Manipal")
-    assert lines[i + 1] == "    state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record (validation pending); valid 2021-01-01 to 2024-03-06"
+    assert lines[i + 1] == "    state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record (validation pending); valid 2021-01-01, still going"
     assert lines[lines.index("  because: Manipal located_in Bengaluru") + 1] == "    state: status active, validation accepted, source explicit; sent as assertion with a qualifying state record (valid time unknown); valid time unknown"
-    assert "fact: Asha works_at Manipal; state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record (validation pending); valid 2021-01-01 to 2024-03-06" in lines
+    assert "fact: Asha works_at Manipal; state: status active, validation pending, source explicit; sent as hypothesis with a qualifying state record (validation pending); valid 2021-01-01, still going" in lines
 
 
 # ---------- 1A follow-up: unknown time is qualifying evidence; excluded facts cannot alter eligible periods ----------
@@ -473,7 +473,7 @@ def test_a_disputed_closing_event_cannot_end_an_eligible_facts_period(world):
     a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=dt.datetime(2023, 6, 1, tzinfo=dt.timezone.utc))
     props = {p.id: p for p in a.request.propositions}
     assert f"fact:{pune}" in props, "the active fact stays eligible"
-    assert props[f"fact:{pune}"].valid_time.end > dt.datetime(2023, 6, 1, tzinfo=dt.timezone.utc)
+    assert props[f"fact:{pune}"].valid_time == TimeInterval(_t(2019, 1, 1), start_latest=_t(2019, 12, 31, *END_OF_DAY), end_unbounded=True)  # revised at B2b: still going, no stand-in end
     assert next(l for l in a.left_out if l.fact_id == closing).reason == "disputed: needs resolution"
     # P1 itself still sees the closing event by default: the adapter asked for periods without disputed facts, nothing else changed
     assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].end == "2021"
@@ -489,7 +489,7 @@ def test_an_unaccepted_closing_event_cannot_end_an_accepted_facts_period_but_sti
     closing, _ = world.obs("Asha", "left_job", "Hospital Pune", valid_from="2021", speaker="Ravi", **how)
     a = KnowledgeAdapter(world.kb).request_for("Asha", as_of=AT_2023)
     props = {p.id: p for p in a.request.propositions}
-    assert f"fact:{pune}" in props and props[f"fact:{pune}"].valid_time.end > AT_2023, "the accepted fact stays eligible and open"
+    assert f"fact:{pune}" in props and props[f"fact:{pune}"].valid_time.end_unbounded, "the accepted fact stays eligible and open"  # revised at B2b: open is sent as still going
     assert props[f"fact:{closing}"].kind == PropositionKind.HYPOTHESIS, "the closing event is still sent, as a hypothesis"
     assert _state_links(a, closing) == [EvidenceRelation.QUALIFIES]
     assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].end == "2021", "P1's own default view is unchanged"
@@ -571,9 +571,9 @@ def test_as_of_2022_the_employment_is_out_and_the_2021_closing_event_is_availabl
     pune, left = _pune(world, "2021")
     props, out = _at(world, 2022)
     assert f"fact:{pune}" not in props and out[pune] == "ended before as_of"
-    t = props[f"fact:{left}"].valid_time
-    assert t.start == dt.datetime(2021, 1, 1, tzinfo=dt.timezone.utc), "the event has its own date, not the period's start"
-    assert t.end is None, "an event does not stop having happened: no end, not even a synthetic one at as_of"
+    o = props[f"fact:{left}"].occurred  # revised at B2b: an event is an occurrence, with no validity interval
+    assert o == Occurrence(_t(2021, 1, 1), _t(2021, 12, 31, *END_OF_DAY)), "the event has its own date, not the period's start"
+    assert props[f"fact:{left}"].valid_time is None, "an event is not a period: nothing to end, and nothing synthetic at as_of"
     assert props[f"fact:{left}"].qualifiers["time_kind"] == "event"
     props_2020, _ = _at(world, 2020)
     assert props_2020[f"fact:{pune}"].qualifiers["time_kind"] == "state"
@@ -583,10 +583,11 @@ def test_an_undated_closing_event_takes_its_date_from_its_sentence_not_from_the_
     pune, left = _pune(world, None)  # said on 5 March 2024
     props, out = _at(world, 2022)
     assert f"fact:{pune}" in props and props[f"fact:{pune}"].valid_time.end == dt.datetime(2024, 3, 6, tzinfo=dt.timezone.utc)
+    assert props[f"fact:{pune}"].valid_time.end_is_upper_bound  # revised at B2b: a closing date that was only said is the latest the job can have ended
     assert f"fact:{left}" not in props and out[left] == "starts after as_of"
     props, _ = _at(world, 2025)
     assert f"fact:{pune}" not in props
-    assert props[f"fact:{left}"].valid_time == TimeInterval(dt.datetime(2024, 3, 5, tzinfo=dt.timezone.utc), None)
+    assert props[f"fact:{left}"].occurred == Occurrence(None, _t(2024, 3, 5, *END_OF_DAY)) and props[f"fact:{left}"].valid_time is None  # revised at B2b: told by 5 March: no later, and no date
 
 
 def test_an_opening_event_keeps_its_own_date_and_outlives_the_state_it_opened(world):
@@ -594,7 +595,7 @@ def test_an_opening_event_keeps_its_own_date_and_outlives_the_state_it_opened(wo
     world.obs("Asha", "lives_in", "Mysore", valid_from="2024")
     props, out = _at(world, 2023)
     assert props[f"fact:{moved}"].qualifiers["time_kind"] == "event"
-    assert props[f"fact:{moved}"].valid_time == TimeInterval(dt.datetime(2022, 1, 1, tzinfo=dt.timezone.utc), None)
+    assert props[f"fact:{moved}"].occurred == Occurrence(_t(2022, 1, 1), _t(2022, 12, 31, *END_OF_DAY)) and props[f"fact:{moved}"].valid_time is None  # revised at B2b: an occurrence some time in 2022
     props, out = _at(world, 2025)
     assert f"fact:{moved}" in props, "the move still happened in 2025, even though living in Delhi ended in 2024"
     lives = [p for p in props.values() if p.predicate == "lives_in"]
@@ -605,7 +606,7 @@ def test_explain_tells_an_event_from_a_state(world):
     pune, left = _pune(world, "2021")
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", as_of=dt.datetime(2022, 6, 1, tzinfo=dt.timezone.utc)))
-    assert any(l.startswith("fact: Asha left_job Hospital Pune; state:") and l.endswith("; event on 2021-01-01") for l in lines), lines
+    assert any(l.startswith("fact: Asha left_job Hospital Pune; state:") and l.endswith("; event between 2021-01-01 and 2021-12-31") for l in lines), lines  # revised at B2b: stated to the year
 
 
 @pytest.mark.parametrize("stated", [True, False], ids=["started_job stated 2021", "started_job dated only by its sentence"])
@@ -615,8 +616,8 @@ def test_an_opening_event_appended_to_an_existing_period_keeps_its_own_date_not_
     pune, _ = world.obs("Asha", "works_at", "Hospital Pune", valid_from="2019")
     started, _ = world.obs("Asha", "started_job", "Hospital Pune", valid_from="2021" if stated else None)  # said on 5 March 2024
     props, out = _at(world, 2025)
-    expected = dt.datetime(2021, 1, 1, tzinfo=dt.timezone.utc) if stated else dt.datetime(2024, 3, 5, tzinfo=dt.timezone.utc)
-    assert props[f"fact:{started}"].valid_time == TimeInterval(expected, None)
+    expected = Occurrence(_t(2021, 1, 1), _t(2021, 12, 31, *END_OF_DAY)) if stated else Occurrence(None, _t(2024, 3, 5, *END_OF_DAY))
+    assert props[f"fact:{started}"].occurred == expected and props[f"fact:{started}"].valid_time is None  # revised at B2b: an event is an occurrence
     assert props[f"fact:{pune}"].valid_time.start == dt.datetime(2019, 1, 1, tzinfo=dt.timezone.utc), "the state keeps the period's start"
     assert world.engine.get_history(world.kb.resolve("Asha"), "works_at")["periods"][0].start == "2019", "P1 unchanged"
     props, out = _at(world, 2020)
@@ -639,7 +640,7 @@ def test_an_event_with_no_establishable_date_is_time_unknown_not_dated_from_the_
     assert rec.metadata["qualified_for"] == ("valid time unknown",)
     assert _state_links(a, left) == [EvidenceRelation.QUALIFIES]
     # the state engine, by its own rule, still closes the period from the sentence it can date (none here): the period stays open
-    assert props[f"fact:{pune}"].valid_time.end > AS_OF
+    assert props[f"fact:{pune}"].valid_time.end_unbounded and props[f"fact:{pune}"].valid_time.end is None  # revised at B2b: the open period is sent as still going
     assert left not in {l.fact_id for l in a.left_out}
 
 
@@ -725,7 +726,7 @@ def test_b2a_a_start_stated_to_the_year_keeps_its_start_and_gains_the_years_last
     v = props[f"fact:{fid}"].valid_time
     assert v.start == _t(2021, 1, 1) and v.start_latest == _t(2021, 12, 31, *END_OF_DAY)
     assert v.start_status == BoundaryStatus.WITHIN
-    assert v.end == AS_OF + dt.timedelta(days=1) and v.end_earliest is None
+    assert v.end is None and v.end_unbounded and v.end_earliest is None  # revised at B2b: no stand-in end
 
 
 def test_b2a_a_start_stated_to_the_month_gains_the_months_last_instant(world):
@@ -779,7 +780,7 @@ def test_b2a_a_state_dated_only_by_when_it_was_said_keeps_that_start_gets_no_bou
     fid, _ = world.obs("Asha", "works_at", "Apollo")
     _, props = _sent(world)
     p = props[f"fact:{fid}"]
-    assert p.valid_time == TimeInterval(SAID, AS_OF + dt.timedelta(days=1)), "start, end and no bound of any kind"
+    assert p.valid_time == TimeInterval(start_latest=_t(2024, 3, 5, *END_OF_DAY), end_unbounded=True)  # revised at B2b: begun no later than the said day; still going
     assert p.qualifiers["start_basis"] == "first_said"
 
 
@@ -793,7 +794,7 @@ def test_b2a_a_state_first_said_in_a_sentence_dated_only_to_the_month_gets_no_bo
     assert (period.start, period.first_said) == (None, "2024-03")
     a, props = _sent(world)
     p = props[f"fact:{fid}"]
-    assert p.valid_time == TimeInterval(_t(2024, 3, 1), AS_OF + dt.timedelta(days=1)), "today's interval, and no bound"
+    assert p.valid_time == TimeInterval(start_latest=_t(2024, 3, 31, *END_OF_DAY), end_unbounded=True)  # revised at B2b: begun no later than the said month
     assert p.qualifiers["start_basis"] == "first_said"
     e = _evidence(a, f"sentence:{sid}")
     assert e.observed_at == _t(2024, 3, 1) and e.metadata["observed_latest"] == "2024-03-31T23:59:59.999999+00:00"
@@ -843,7 +844,7 @@ def test_b2a_a_period_closed_by_a_dated_statement_keeps_its_end_and_gets_no_boun
     fid, _ = _closed(world)
     _, props = _sent(world, AT_2020)
     v = props[f"fact:{fid}"].valid_time
-    assert v.end == _t(2022, 1, 1) and v.end_earliest is None
+    assert v.end == _t(2022, 1, 1) and v.end_earliest == _t(2021, 1, 2) and not v.end_is_upper_bound  # revised at B2b: a closing date stated to the year bounds the end as a stated end does
     assert v.start_latest == _t(2019, 12, 31, *END_OF_DAY), "the start, which was stated, still gets its bound"
 
 
@@ -884,10 +885,9 @@ def test_b2a_the_one_day_minimum_is_labelled_adjusted_and_gets_no_bound(world):
     fid, _ = world.obs("Asha", "works_at", "Apollo", valid_to="2021")
     period = world.engine.get_history(world.kb.resolve("Asha"), "works_at", **PLAYED)["periods"][0]
     assert (period.start, period.first_said, period.end, period.end_kind) == (None, "2024-03-05", "2021", "stated")
-    _, props = _sent(world)
-    p = props[f"fact:{fid}"]
-    assert p.valid_time == TimeInterval(SAID, _t(2024, 3, 6)), "today's interval, with no bound added"
-    assert p.qualifiers["start_basis"] == "first_said" and p.qualifiers["end_basis"] == "adjusted"
+    a, props = _sent(world)  # revised at B2b: no date is moved to make an interval valid: the job ended by 2021 and is left out as ended
+    assert f"fact:{fid}" not in props and {l.fact_id: l.reason for l in a.left_out} == {fid: "ended before as_of"}
+    assert not any(p.qualifiers.get("end_basis") == "adjusted" for p in props.values())
 
 
 def _only_an_end(w):
@@ -928,7 +928,7 @@ def test_b2a_an_event_with_a_stated_year_keeps_exactly_its_interval_and_is_label
     moved, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2022")
     _, props = _sent(world, _t(2023, 6, 1))
     p = props[f"fact:{moved}"]
-    assert p.valid_time == TimeInterval(_t(2022, 1, 1), None) and p.occurred is None
+    assert p.occurred == Occurrence(_t(2022, 1, 1), _t(2022, 12, 31, *END_OF_DAY)) and p.valid_time is None  # revised at B2b: the stated year is the window
     assert p.qualifiers["time_kind"] == "event" and p.qualifiers["start_basis"] == "stated" and "end_basis" not in p.qualifiers
 
 
@@ -938,7 +938,7 @@ def test_b2a_an_event_dated_only_by_its_sentence_keeps_exactly_its_interval_and_
     left, _ = world.obs("Asha", "left_job", "Apollo")
     _, props = _sent(world, _t(2025, 6, 1))
     p = props[f"fact:{left}"]
-    assert p.valid_time == TimeInterval(SAID, None) and p.occurred is None
+    assert p.occurred == Occurrence(None, _t(2024, 3, 5, *END_OF_DAY)) and p.valid_time is None  # revised at B2b: no later than the said day, and no date
     assert p.qualifiers["start_basis"] == "first_said" and "end_basis" not in p.qualifiers
 
 
@@ -951,8 +951,8 @@ def test_b2a_guard_a_fact_from_this_year_is_still_sent_and_a_fact_from_next_year
     as_of = _t(2026, 3, 1)
     a, props = _sent(world, as_of)
     v = props[f"fact:{this_year}"].valid_time
-    assert (v.start, v.end) == (_t(2026, 1, 1), _t(2026, 3, 2))
-    assert v.start_latest == _t(2026, 12, 31, *END_OF_DAY) and v.start_latest > v.end
+    assert (v.start, v.end, v.end_unbounded) == (_t(2026, 1, 1), None, True)  # revised at B2b: no stand-in end for the bound to run past
+    assert v.start_latest == _t(2026, 12, 31, *END_OF_DAY)
     assert f"fact:{next_year}" not in props
     assert {l.fact_id: l.reason for l in a.left_out} == {next_year: "starts after as_of"}
 
@@ -1052,21 +1052,21 @@ def test_b2a_explain_adds_a_time_line_under_each_fact_and_every_other_line_is_ex
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", ruleset=CITY, as_of=AS_OF))
     said = "1:00 pm on 5 March, 2024"
-    heading = ["strategy rule_reasoning@1.0, status complete, as of 2024-03-05, overall accepted",
+    heading = ["strategy rule_reasoning@1.0, status complete, as of 2024-03-05, overall accepted, zone UTC",  # revised at B2b: this whole expectation: no invented end, said is not stated, the zone
                "conclusion: Asha works_in_city Bengaluru -> accepted (PREMISE_LINEAGE_COMPLETE_AND_SUPPORT_THRESHOLD_MET)"]
-    located = ("  because: Manipal located_in Bengaluru", f"    {STATE}; valid 2010-01-01 to 2024-03-06",
+    located = ("  because: Manipal located_in Bengaluru", f"    {STATE}; valid 2010-01-01, still going",
                f'    sentence 2 (Manipal, {said}): "Manipal located_in Bengaluru."')
-    works = ("  because: Asha works_at Manipal", f"    {STATE}; valid 2021-01-01 to 2024-03-06",
+    works = ("  because: Asha works_at Manipal", f"    {STATE}; valid 2021-01-01, still going",
              f'    sentence 1 (Asha, {said}): "Asha works_at Manipal."')
-    facts = [f"fact: Asha works_at Manipal; {STATE}; valid 2021-01-01 to 2024-03-06",
-             f"fact: Asha lives_in Mysore; {STATE}; valid 2024-03-05 to 2024-03-06",
-             f"fact: Asha left_job Apollo; {STATE}; event on 2022-01-01",
-             f"fact: Manipal located_in Bengaluru; {STATE}; valid 2010-01-01 to 2024-03-06"]
+    facts = [f"fact: Asha works_at Manipal; {STATE}; valid 2021-01-01, still going",
+             f"fact: Asha lives_in Mysore; {STATE}; valid from no later than 2024-03-05, still going",
+             f"fact: Asha left_job Apollo; {STATE}; event between 2022-01-01 and 2022-12-31",
+             f"fact: Manipal located_in Bengaluru; {STATE}; valid 2010-01-01, still going"]
     before = (heading, sorted([located, works]), sorted((f,) for f in facts))
     assert _explained([l for l in lines if not l.lstrip().startswith("time:")]) == before
     in_2010 = "time: start stated, between 2010-01-01 and 2010-12-31; end open"
     in_2021 = "time: start stated, between 2021-01-01 and 2021-12-31; end open"
-    times = [f"  {in_2021}", "  time: start not stated (first said 2024-03-05); end open", "  time: event stated 2022-01-01", f"  {in_2010}"]
+    times = [f"  {in_2021}", "  time: start not stated (first said 2024-03-05); end open", "  time: event stated, between 2022-01-01 and 2022-12-31", f"  {in_2010}"]
     after = (heading,
              sorted([(located[0], located[1], f"    {in_2010}", located[2]), (works[0], works[1], f"    {in_2021}", works[2])]),
              sorted(zip(facts, times)))
@@ -1077,14 +1077,15 @@ def test_b2a_explain_adds_a_time_line_under_each_fact_and_every_other_line_is_ex
     (dict(valid_from="2021-04-10"), AS_OF, "  time: start stated 2021-04-10; end open"),
     (dict(valid_from="2019", valid_to="2021-03"), AT_2020, "  time: start stated, between 2019-01-01 and 2019-12-31; end stated, between 2021-03-02 and 2021-04-01"),
     (dict(valid_from="2019", valid_to="2021-03-15"), AT_2020, "  time: start stated, between 2019-01-01 and 2019-12-31; end stated 2021-03-16"),
-    (dict(valid_to="2021"), AS_OF, "  time: start not stated (first said 2024-03-05); end adjusted 2024-03-06"),
+    (dict(valid_to="2021"), AS_OF, None),  # revised at B2b: first said after its own end: never sent, so no time line; no end is ever adjusted
 ], ids=["exact start", "end known to the month", "exact end", "adjusted end"])
 def test_b2a_explain_time_line_for_each_kind_of_state_boundary(world, how, as_of, expected):
     """X1, the remaining wordings. An end is shown as the first day the state no longer holds, as the existing 'valid … to …' line does."""
     world.obs("Asha", "works_at", "Apollo", **how)
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", as_of=as_of))
-    assert [l for l in lines if l.lstrip().startswith("time:")] == [expected]
+    assert [l for l in lines if l.lstrip().startswith("time:")] == ([expected] if expected else [])
+    if expected is None: assert any(l.startswith("left out: fact ") and "(ended before as_of;" in l for l in lines) and not any("adjusted" in l for l in lines)
 
 
 def test_b2a_explain_time_lines_for_a_closed_period_its_closing_event_and_a_fact_with_no_time(world):
@@ -1095,9 +1096,9 @@ def test_b2a_explain_time_lines_for_a_closed_period_its_closing_event_and_a_fact
     r = Reasoner(world.kb)
     lines = r.explain(r.reason("Asha", as_of=AS_OF))
     assert _explained(lines)[2] == sorted([
-        (f"fact: Asha works_at Apollo; {STATE}; valid 2019-01-01 to 2024-03-06",
-         "  time: start stated, between 2019-01-01 and 2019-12-31; end closed 2024-03-06"),
-        (f"fact: Asha left_job Apollo; {STATE}; event on 2024-03-05",
+        (f"fact: Asha works_at Apollo; {STATE}; valid 2019-01-01 to 2024-03-06 at the latest",  # revised at B2b: the closing date was only said
+         "  time: start stated, between 2019-01-01 and 2019-12-31; end closed, no later than 2024-03-06"),
+        (f"fact: Asha left_job Apollo; {STATE}; event by 2024-03-05",
          "  time: event not stated (first said 2024-03-05)"),
         ("fact: Asha located_in Bengaluru; state: status active, validation accepted, source explicit; sent as assertion with a qualifying "
          "state record (valid time unknown); valid time unknown",
@@ -1177,9 +1178,10 @@ def test_b3_named_limitation_two_open_values_with_a_coarse_start_reaching_the_as
     level, in engram_erc/tests/test_temporal_comparison.py::test_r13_..."""
     r, decided = _decided(world, build, as_of)
     assert world.engine.get_current_state(world.kb.resolve("Asha"))["lives_in"].conflict     # Engram is certain
-    assert decided == ([POTENTIAL], ReasoningStatus.INDETERMINATE)                           # ERC, until B2b, is not
-    stand_ins = [p.valid_time for p in r.adapted.request.propositions if p.qualifiers.get("end_basis") == "open"]
-    assert len(stand_ins) == 2 and all(i.end == as_of + dt.timedelta(days=1) for i in stand_ins)  # the cause, visible
+    # revised at B2b (frozen specification 621314c5, section 10, Group A): the limitation is corrected and ERC is certain too
+    assert decided == ([DEFINITE], ReasoningStatus.CONFLICT)
+    still_going = [p.valid_time for p in r.adapted.request.propositions if p.qualifiers.get("end_basis") == "open"]
+    assert len(still_going) == 2 and all(i.end_unbounded and i.end is None for i in still_going)  # the correction, visible
 
 
 @pytest.mark.parametrize("build,as_of", [(_s06, AT_JUNE_2021), (_s07, AT_JUNE_2021), (_s08, AT_JUNE_2021), (_s16, AS_OF), (_s21, AT_JUNE_2021)],
@@ -1196,12 +1198,12 @@ def test_b3_a_change_inside_one_coarse_period_is_a_potential_conflict_not_a_defi
 @pytest.mark.parametrize("build,as_of,expected", [
     (_s01, AT_2023, ([DEFINITE], ReasoningStatus.CONFLICT)),
     (_s05, AS_OF, ([DEFINITE], ReasoningStatus.CONFLICT)),
-    (_s11, AS_OF, ([DEFINITE], ReasoningStatus.CONFLICT)),      # the one-day minimum (F18): a separate adapter defect, carried to B2b
+    (_s11, AS_OF, ([], ReasoningStatus.COMPLETE)),              # revised at B2b (B3 amendment 1): no one-day minimum; the job that ended by 2021 is left out
     (_s13, AS_OF, ([DEFINITE], ReasoningStatus.CONFLICT)),
     (_s14, AT_JUNE_2021, ([DEFINITE], ReasoningStatus.CONFLICT)),
     (_s09, dt.datetime(2020, 6, 1, tzinfo=UTC), ([POTENTIAL], ReasoningStatus.INDETERMINATE)),
     (_s10, dt.datetime(2020, 6, 1, tzinfo=UTC), ([POTENTIAL], ReasoningStatus.INDETERMINATE)),
-    (_s12, AS_OF, ([POTENTIAL], ReasoningStatus.INDETERMINATE)),
+    (_s12, AS_OF, ([], ReasoningStatus.COMPLETE)),              # revised at B2b (B3 amendment 1): two moves at different known times cannot meet
 ], ids=["S01 starts already past", "S05 both first said", "S11 one-day minimum", "S13 different months of a past year",
         "S14 a real overlap of six months", "S09 end with no start", "S10 two ends with no start", "S12 two moves"])
 def test_b3_results_that_do_not_change(world, build, as_of, expected):
@@ -1220,11 +1222,12 @@ def test_b3_named_limitation_a_conclusion_resting_on_such_a_conflict_is_provisio
     world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     r = Reasoner(world.kb).reason("Asha", as_of=AS_OF, ruleset=CITY)
     assert world.engine.get_current_state(world.kb.resolve("Asha"))["works_at"].conflict
-    assert [c.certainty for c in r.orchestration.contradictions] == [POTENTIAL] and not r.orchestration.stopped_before_inference
-    derived = [p for p in r.result.propositions if p.kind == PropositionKind.INFERENCE]
-    assert [(p.predicate, p.object_value) for p in derived] == [("works_in_city", "Bengaluru")]
-    assert [(e.decision.value, e.reasons) for e in r.evaluation.evaluations] == [("provisional", ("POTENTIAL_CONTRADICTION_REQUIRES_SCOPE_REVIEW",))]
-    assert r.evaluation.overall_decision.value == "provisional" and not r.evaluation.accepted_refs
+    # revised at B2b (frozen specification 621314c5, section 10, S19): the limitation is corrected. Both jobs are sent as still going,
+    # so the conflict Engram holds is definite again, the run halts before any rule fires and nothing is derived.
+    assert [c.certainty for c in r.orchestration.contradictions] == [DEFINITE] and r.orchestration.stopped_before_inference
+    assert r.result.status == ReasoningStatus.CONFLICT
+    assert not [p for p in r.result.propositions if p.kind == PropositionKind.INFERENCE]
+    assert r.evaluation.evaluations == () and not r.evaluation.accepted_refs
 
 
 def test_b3_the_same_conclusion_with_no_second_value_is_accepted(world):
@@ -1235,3 +1238,670 @@ def test_b3_the_same_conclusion_with_no_second_value_is_accepted(world):
     world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     r = Reasoner(world.kb).reason("Asha", as_of=AS_OF, ruleset=CITY)
     assert not r.orchestration.contradictions and r.evaluation.overall_decision.value == "accepted"
+
+
+# ======================================================================================================================
+# B2b - the adapter stops stating what Engram does not hold: open states are still going, a first-said day is the latest a
+# state can have begun, a date that was only said is never an exact end, an event is an occurrence, no date is moved to
+# make an interval valid, and the zone is declared. ERC and Engram are not touched.
+# Specification: claude/erc-b2b-spec.md, frozen 10 Nov 2026 (Draft 5), SHA-256
+# 621314c573ecbffcd82cf5295e3a0b98597fe750164c220c1d4d17356f5589c7. Section numbers below are its sections.
+# The 29 existing tests it names (section 12.2) are revised in place above, each marked "revised at B2b".
+# A test that says "this stays as it is" would pass before B2b exists, so each also asserts something new beside it.
+# The explain() wording asserted here is that of the wording amendment (section 11.2, OP-11).
+# ======================================================================================================================
+import zoneinfo
+
+from engram_knowledge.transition import CLOSES, OPENS
+
+AT_2022 = dt.datetime(2022, 6, 1, tzinfo=UTC)
+MICRO = dt.timedelta(microseconds=1)
+Y2019 = dict(start_latest=dt.datetime(2019, 12, 31, *END_OF_DAY, tzinfo=UTC))
+SAID_END = dt.datetime(2024, 3, 5, *END_OF_DAY, tzinfo=UTC)
+
+
+def _dated(world, speaker, text, date):
+    """A sentence said on a given date (text as Engram stores it)."""
+    world.m.open_chat(DAY); sid = world.m.add(speaker, text, date=date); world.m.close_chat(write_note=False)
+    return sid
+
+
+def _in(world, zone, as_of, who="Asha"):
+    a = KnowledgeAdapter(world.kb, day_zone=zone).request_for(who, as_of=as_of)
+    return a, {p.id: p for p in a.request.propositions}
+
+
+def _reasons(a):
+    return {l.fact_id: l.reason for l in a.left_out}
+
+
+# ----- Appendix A: what is sent, combination by combination -----
+def _a_day_open(w): return w.obs("Asha", "works_at", "Apollo", valid_from="2021-04-10")[0]
+def _a_year_open(w): return w.obs("Asha", "works_at", "Apollo", valid_from="2021")[0]
+def _a_said_open(w): return w.obs("Asha", "works_at", "Apollo")[0]
+def _a_day_stated(w): return w.obs("Asha", "works_at", "Apollo", valid_from="2019-05-01", valid_to="2021-03-15")[0]
+def _a_year_stated(w): return w.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021-03")[0]
+def _a_said_stated(w): return w.obs("Asha", "works_at", "Apollo", valid_to="2025")[0]
+def _a_closed_day(w): fid = w.obs("Asha", "works_at", "Apollo", valid_from="2019")[0]; w.obs("Asha", "left_job", "Apollo", valid_from="2021-06-30"); return fid
+def _a_closed_year(w): return _closed(w)[0]
+def _a_closed_said(w): fid = w.obs("Asha", "works_at", "Apollo", valid_from="2019")[0]; w.obs("Asha", "left_job", "Apollo"); return fid
+def _a_said_closed_said(w): fid = w.obs("Asha", "works_at", "Apollo")[0]; w.obs("Asha", "left_job", "Apollo"); return fid
+def _a_replaced_stated(w): return _replaced(w)[0]
+def _a_replaced_said(w): fid = w.obs("Asha", "lives_in", "Pune", valid_from="2019")[0]; w.obs("Asha", "lives_in", "Delhi"); return fid
+def _a_none_stated(w): return w.obs("Asha", "works_at", "Apollo", valid_to="2021", sid=_undated(w, "Asha", "Asha works_at Apollo."))[0]
+def _a_outside_open(w): return w.obs("Asha", "located_in", "Pune", valid_from="2010")[0]
+def _a_none_open(w): return w.obs("Asha", "works_at", "Apollo", sid=_undated(w, "Asha", "Asha works_at Apollo."))[0]
+def _a_outside_none(w): return w.obs("Asha", "located_in", "Pune")[0]
+
+
+def _a_day_closed_day(w): fid = w.obs("Asha", "works_at", "Apollo", valid_from="2019-05-01")[0]; w.obs("Asha", "left_job", "Apollo", valid_from="2021-06-30"); return fid
+def _a_day_closed_said(w): fid = w.obs("Asha", "works_at", "Apollo", valid_from="2019-05-01")[0]; w.obs("Asha", "left_job", "Apollo"); return fid
+def _a_day_replaced_stated(w): fid = w.obs("Asha", "lives_in", "Pune", valid_from="2019-05-01")[0]; w.obs("Asha", "lives_in", "Delhi", valid_from="2022"); return fid
+def _a_day_replaced_said(w): fid = w.obs("Asha", "lives_in", "Pune", valid_from="2019-05-01")[0]; w.obs("Asha", "lives_in", "Delhi"); return fid
+def _a_said_closed_day(w): fid = w.obs("Asha", "works_at", "Apollo")[0]; w.obs("Asha", "left_job", "Apollo", valid_from="2024-06-30"); return fid
+def _a_said_closed_year(w): fid = w.obs("Asha", "works_at", "Apollo")[0]; w.obs("Asha", "left_job", "Apollo", valid_from="2025"); return fid
+def _a_said_replaced_stated(w): fid = w.obs("Asha", "lives_in", "Pune")[0]; w.obs("Asha", "lives_in", "Delhi", valid_from="2024-06-01"); return fid
+
+
+def _a_said_replaced_said(w):
+    fid = w.obs("Asha", "lives_in", "Pune")[0]
+    w.obs("Asha", "lives_in", "Delhi", sid=_dated(w, "Asha", "Asha lives_in Delhi.", "1:00 pm on 10 April, 2024"))
+    return fid
+
+
+AT_APRIL_2024 = dt.datetime(2024, 4, 1, tzinfo=UTC)
+SAID_START = dict(start_latest=SAID_END)
+# (build, asked at, what is sent, (start_basis, end_basis), the Appendix A cell as Engram's own period shows it: (start, end_kind);
+#  None for a fact outside every slot, which has no period)
+APPENDIX_A = [
+    (_a_day_open, AS_OF, TimeInterval(_t(2021, 4, 10), end_unbounded=True), ("stated", "open"), ("day", "open")),
+    (_a_day_stated, AT_2020, TimeInterval(_t(2019, 5, 1), _t(2021, 3, 16)), ("stated", "stated"), ("day", "stated")),
+    (_a_day_closed_day, AT_2020, TimeInterval(_t(2019, 5, 1), _t(2021, 7, 1)), ("stated", "closed"), ("day", "closed")),
+    (_a_day_closed_said, AT_2020, TimeInterval(_t(2019, 5, 1), _t(2024, 3, 6), end_is_upper_bound=True), ("stated", "closed"), ("day", "closed")),
+    (_a_day_replaced_stated, AT_2020, TimeInterval(_t(2019, 5, 1), _t(2022, 1, 1)), ("stated", "replaced"), ("day", "replaced")),
+    (_a_day_replaced_said, AT_2020, TimeInterval(_t(2019, 5, 1), _t(2024, 3, 5), end_is_upper_bound=True), ("stated", "replaced"), ("day", "replaced")),
+    (_a_year_open, AS_OF, TimeInterval(_t(2021, 1, 1), start_latest=_t(2021, 12, 31, *END_OF_DAY), end_unbounded=True), ("stated", "open"), ("coarse", "open")),
+    (_a_year_stated, AT_2020, TimeInterval(_t(2019, 1, 1), _t(2021, 4, 1), end_earliest=_t(2021, 3, 2), **Y2019), ("stated", "stated"), ("coarse", "stated")),
+    (_a_closed_day, AT_2020, TimeInterval(_t(2019, 1, 1), _t(2021, 7, 1), **Y2019), ("stated", "closed"), ("coarse", "closed")),
+    (_a_closed_year, AT_2020, TimeInterval(_t(2019, 1, 1), _t(2022, 1, 1), end_earliest=_t(2021, 1, 2), **Y2019), ("stated", "closed"), ("coarse", "closed")),
+    (_a_closed_said, AT_2022, TimeInterval(_t(2019, 1, 1), _t(2024, 3, 6), end_is_upper_bound=True, **Y2019), ("stated", "closed"), ("coarse", "closed")),
+    (_a_replaced_stated, AT_2020, TimeInterval(_t(2019, 1, 1), _t(2022, 1, 1), **Y2019), ("stated", "replaced"), ("coarse", "replaced")),
+    (_a_replaced_said, AT_2022, TimeInterval(_t(2019, 1, 1), _t(2024, 3, 5), end_is_upper_bound=True, **Y2019), ("stated", "replaced"), ("coarse", "replaced")),
+    (_a_said_open, AS_OF, TimeInterval(end_unbounded=True, **SAID_START), ("first_said", "open"), ("said", "open")),
+    (_a_said_stated, AS_OF, TimeInterval(None, _t(2026, 1, 1), end_earliest=_t(2025, 1, 2), **SAID_START), ("first_said", "stated"), ("said", "stated")),
+    (_a_said_closed_day, AT_APRIL_2024, TimeInterval(None, _t(2024, 7, 1), **SAID_START), ("first_said", "closed"), ("said", "closed")),
+    (_a_said_closed_year, AT_APRIL_2024, TimeInterval(None, _t(2026, 1, 1), end_earliest=_t(2025, 1, 2), **SAID_START), ("first_said", "closed"), ("said", "closed")),
+    (_a_said_closed_said, AS_OF, TimeInterval(None, _t(2024, 3, 6), end_is_upper_bound=True, **SAID_START), ("first_said", "closed"), ("said", "closed")),
+    (_a_said_replaced_stated, AT_APRIL_2024, TimeInterval(None, _t(2024, 6, 1), **SAID_START), ("first_said", "replaced"), ("said", "replaced")),
+    (_a_said_replaced_said, AT_APRIL_2024, TimeInterval(None, _t(2024, 4, 10), end_is_upper_bound=True, **SAID_START), ("first_said", "replaced"), ("said", "replaced")),
+    (_a_none_open, AS_OF, None, (None, None), ("none", "open")),
+    (_a_none_stated, AT_2020, TimeInterval(None, _t(2022, 1, 1), end_earliest=_t(2021, 1, 2)), (None, "stated"), ("none", "stated")),
+    (_a_outside_open, AS_OF, TimeInterval(_t(2010, 1, 1), start_latest=_t(2010, 12, 31, *END_OF_DAY), end_unbounded=True), ("stated", "open"), None),
+    (_a_outside_none, AS_OF, None, (None, None), None),
+]
+
+
+def _cell(world, fid):
+    """The Appendix A cell a fact sits in, read from the period Engram itself assembled: (start, end_kind)."""
+    for slot in ("works_at", "lives_in"):
+        for p in world.engine.get_history(world.kb.resolve("Asha"), slot, **PLAYED)["periods"]:
+            if fid in p.fact_ids:
+                start = ("day" if len(p.start.split("-")) == 3 else "coarse") if p.start else ("said" if p.first_said else "none")
+                return start, p.end_kind
+    return None
+
+
+@pytest.mark.parametrize("build,as_of,expected,labels,cell", APPENDIX_A, ids=[
+    "stated day | open", "stated day | stated", "stated day | closed, date stated", "stated day | closed, only said",
+    "stated day | replaced, date stated", "stated day | replaced, only said",
+    "stated year | open", "stated year | stated to the month", "stated year | closed, date stated to the day", "stated year | closed, date stated to the year",
+    "stated year | closed, only said", "stated year | replaced, date stated", "stated year | replaced, only said",
+    "first said | open", "first said | stated", "first said | closed, date stated to the day", "first said | closed, date stated to the year",
+    "first said | closed, only said", "first said | replaced, date stated", "first said | replaced, only said",
+    "none | open: time unknown", "none | stated", "outside every slot, start and no end", "outside every slot, no date: time unknown"])
+def test_b2b_what_is_sent_for_each_reachable_combination_of_start_and_end(world, build, as_of, expected, labels, cell):
+    """Appendix A, every one of its 20 cells marked R or U (some twice, for the precision of the closing date), and the two shapes
+    of a fact outside every slot; sections 3, 4, 5. The cell is read back from Engram's own period, so each case is shown to be
+    the combination it is named for. Field by field: TimeInterval equality compares all eight fields. A stated end, a stated-day
+    closing date and a stated replacing date are sent exactly as before B2b; beside them the zone is reported."""
+    fid = build(world)
+    assert _cell(world, fid) == cell
+    a, props = _sent(world, as_of)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time == expected and p.occurred is None
+    assert (p.qualifiers.get("start_basis"), p.qualifiers.get("end_basis")) == labels
+    assert a.day_zone == "UTC"   # beside the cells that are sent exactly as before B2b
+    if expected is None:  # OP-12: under the unknown-time guard, as an undated fact is
+        assert p.qualifiers["valid_time"] == "unknown"
+        assert next(e for e in a.request.evidence if e.id == f"state:{fid}").metadata["qualified_for"] == ("valid time unknown",)
+    else:
+        assert not any(e.id == f"state:{fid}" for e in a.request.evidence)
+
+
+@pytest.mark.parametrize("slot,closer,then_sent", [
+    ("works_at", dict(predicate="left_job", value="Apollo", valid_from="2021"), Occurrence(_t(2021, 1, 1), _t(2021, 12, 31, *END_OF_DAY))),
+    ("works_at", dict(predicate="left_job", value="Apollo", valid_from=None), Occurrence(None, SAID_END)),
+    ("lives_in", dict(predicate="lives_in", value="Delhi", valid_from="2022"), TimeInterval(_t(2022, 1, 1), start_latest=_t(2022, 12, 31, *END_OF_DAY), end_unbounded=True)),
+    ("lives_in", dict(predicate="lives_in", value="Delhi", valid_from=None), TimeInterval(end_unbounded=True, **SAID_START)),
+], ids=["none | closed, date stated", "none | closed, only said", "none | replaced, date stated", "none | replaced, only said"])
+def test_b2b_engram_never_closes_or_replaces_a_value_that_has_no_start_of_any_kind(world, slot, closer, then_sent):
+    """Appendix A, the four cells marked X. A value with no stated start and no readable said day, followed by a statement that
+    would close or replace it. Engram plays an undated statement last, so nothing closes or replaces it: its period stays open
+    with no start, and no period anywhere in the slot is closed or replaced with no start. The adapter sends it as time unknown
+    (the 'none | open' cell), and the statement that came with it in its own new form."""
+    value = "Apollo" if slot == "works_at" else "Pune"
+    fid, _ = world.obs("Asha", slot, value, sid=_undated(world, "Asha", f"Asha {slot} {value}."))
+    other, _ = world.obs("Asha", closer["predicate"], closer["value"], valid_from=closer["valid_from"])
+    periods = world.engine.get_history(world.kb.resolve("Asha"), slot, **PLAYED)["periods"]
+    mine = next(p for p in periods if fid in p.fact_ids)
+    assert (mine.start, mine.first_said, mine.end, mine.end_kind) == (None, None, None, "open")
+    assert not [p for p in periods if not p.start and not p.first_said and p.end_kind in ("closed", "replaced")]
+    a, props = _sent(world, _t(2025, 1, 1))
+    p = props[f"fact:{fid}"]
+    assert p.valid_time is None and p.qualifiers["valid_time"] == "unknown" and "end_basis" not in p.qualifiers
+    q = props[f"fact:{other}"]
+    assert (q.occurred or q.valid_time) == then_sent
+
+
+def _n_day(w): return [w.obs("Asha", "works_at", "Apollo", valid_from="2023-06-10", valid_to="2024-03")[0], w.obs("Asha", "works_at", "Apollo", valid_to="2021")[0]]
+def _n_coarse(w): return [w.obs("Asha", "works_at", "Apollo", valid_from="2023-06", valid_to="2024-03")[0], w.obs("Asha", "works_at", "Apollo", valid_to="2021")[0]]
+def _n_said(w): return [w.obs("Asha", "works_at", "Apollo", valid_to="2021")[0]]
+def _n_stated_then_handed(w): return [w.obs("Asha", "works_at", "Apollo", valid_from="2023")[0]]
+def _n_day_then_handed(w): return [w.obs("Asha", "works_at", "Apollo", valid_from="2023-06-10")[0]]
+def _n_said_then_handed(w): return [w.obs("Asha", "works_at", "Apollo")[0]]
+
+
+@pytest.mark.parametrize("build,handed,inconsistent", [
+    (_n_day, None, True), (_n_coarse, None, True), (_n_said, None, False),
+    (_n_stated_then_handed, ("2021", "closed"), True), (_n_stated_then_handed, ("2021", "replaced"), True),
+    (_n_day_then_handed, ("2023-06-09", "closed"), True), (_n_day_then_handed, ("2023-06-09", "replaced"), True),   # ends the instant it starts
+    (_n_said_then_handed, ("2021", "closed"), False), (_n_said_then_handed, ("2021", "replaced"), False),
+], ids=["stated day | stated end before it", "stated month | stated end before it", "first said | stated end before it",
+        "stated year | closed before it (handed)", "stated year | replaced before it (handed)",
+        "stated day | closed the day before it (handed)", "stated day | replaced the day before it (handed)",
+        "first said | closed before it (handed)", "first said | replaced before it (handed)"])
+def test_b2b_a_period_whose_end_is_not_after_its_start_is_never_sent_whatever_ended_it(world, build, handed, inconsistent):
+    """Appendix A, the cells marked N, at dates before, on and after each boundary. A stated start at or after the end: the period's
+    dates are inconsistent, and that is the reason given, at every date. A first-said day at or after the end: not yet said
+    before that day, ended from it on. Engram produced no closed or replaced end before a start in any probe (it plays statements
+    in date order), so those six are handed to the adapter as periods, to hold the rule should Engram ever produce one. The stated-day pair ends on
+    the day before it starts: its end, the first instant it no longer holds, is exactly its start, the boundary of the rule."""
+    fids = build(world)
+    periods = world.engine.get_history(world.kb.resolve("Asha"), "works_at", **PLAYED)["periods"]
+    assert len(periods) == 1 and sorted(periods[0].fact_ids) == sorted(fids)   # one period holds every fact built here
+    adapter = KnowledgeAdapter(world.kb)
+    if handed:
+        real = adapter.engine.get_history
+
+        def ended_early(entity_id, predicate, **kwargs):
+            history = real(entity_id, predicate, **kwargs)
+            for p in history["periods"]: p.end, p.end_kind = handed
+            return history
+        adapter.engine.get_history = ended_early
+    for as_of in (_t(2018, 6, 1), _t(2021, 12, 31), _t(2022, 1, 1), _t(2023, 1, 1), _t(2023, 6, 10), SAID - MICRO, SAID, SAID_END, _t(2025, 1, 1)):
+        a = adapter.request_for("Asha", as_of=as_of)
+        reason = "period dates inconsistent" if inconsistent else ("starts after as_of" if as_of < SAID else "ended before as_of")
+        assert a.request.propositions == () and _reasons(a) == {f: reason for f in fids}, as_of
+
+
+def test_b2b_nothing_that_is_sent_depends_on_the_asked_at_date_and_no_end_is_ever_invented(world):
+    """Section 12.1, items 3 and 4. The same world asked at three dates: every fact sent at more than one of them has the same time."""
+    world.obs("Asha", "works_at", "Apollo", valid_from="2021")
+    world.obs("Asha", "lives_in", "Mysore")
+    world.obs("Asha", "located_in", "Pune", valid_from="2010")
+    world.obs("Asha", "moved_to", "Mysore", valid_from="2023")
+    seen = {}
+    for as_of in (AS_OF, _t(2024, 3, 5, 12), _t(2031, 1, 1)):
+        _, props = _sent(world, as_of)
+        assert len(props) == 4
+        for pid, p in props.items():
+            assert seen.setdefault(pid, (p.valid_time, p.occurred)) == (p.valid_time, p.occurred)
+            assert p.qualifiers.get("end_basis") != "adjusted"
+            if p.valid_time is not None: assert p.valid_time.end is None and p.valid_time.end_unbounded
+
+
+# ----- section 10: the corrections stay potential -----
+@pytest.mark.parametrize("build,as_of", [(_s06, AT_JUNE_2021), (_s07, AT_JUNE_2021), (_s08, AT_JUNE_2021), (_s15, dt.datetime(2021, 3, 1, tzinfo=UTC)),
+                                         (_s16, AS_OF), (_s21, AT_JUNE_2021)], ids=["S06", "S07", "S08", "S15", "S16", "S21"])
+def test_b2b_group_b_the_six_corrections_stay_potential_when_open_ends_are_sent_honestly(world, build, as_of):
+    """Section 10, Group B (normative). B3's X1 and X3 hold these and are not edited; this holds them beside the new representation:
+    the value still going is sent as still going, and the result is still a potential conflict, never a definite one."""
+    r, decided = _decided(world, build, as_of)
+    assert decided == ([POTENTIAL], ReasoningStatus.INDETERMINATE)
+    going = [p.valid_time for p in r.adapted.request.propositions if p.qualifiers.get("end_basis") == "open"]
+    assert len(going) == 1 and going[0].end_unbounded and going[0].end is None
+
+
+# ----- section 8: no date is manufactured -----
+def test_b2b_a_job_first_said_after_its_own_stated_end_is_never_sent_and_no_end_is_adjusted(world):
+    """Shape (b), F18/S11. 'Worked at Apollo, to 2021', said on 5 March 2024. Asked before it was said: not yet known. Asked on or
+    after: it ended by 2021. Before B2b it was sent, as a one-day job on 5 March 2024, when asked on that day."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_to="2021")
+    for as_of, reason in [(AT_2020, "starts after as_of"), (SAID - MICRO, "starts after as_of"), (SAID, "ended before as_of"),
+                          (SAID_END, "ended before as_of"), (_t(2025, 1, 1), "ended before as_of")]:
+        a, props = _sent(world, as_of)
+        assert props == {} and _reasons(a) == {fid: reason}, as_of
+
+
+def test_b2b_a_period_whose_stated_start_is_after_its_stated_end_is_left_out_with_its_own_reason_and_is_no_bridge(world):
+    """Shape (c), F22, OP-7. Two facts for one value merge into a period Engram holds as June 2023 to 2021. Every state fact dated by
+    that period is left out, at any asked-at date, with the true reason; nothing is reached through it; no record is invented."""
+    world.who("Manipal")
+    one, _ = world.obs("Asha", "works_at", "Manipal", valid_from="2023-06", valid_to="2024-03")
+    two, _ = world.obs("Asha", "works_at", "Manipal", valid_to="2021")
+    world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
+    period = world.engine.get_history(world.kb.resolve("Asha"), "works_at", **PLAYED)["periods"][0]
+    assert (period.start, period.end, sorted(period.fact_ids)) == ("2023-06", "2021", sorted([one, two]))
+    for as_of in (_t(2018, 12, 31), _t(2023, 6, 1), _t(2023, 7, 1), _t(2024, 3, 4, 12), _t(2025, 1, 1)):
+        a, props = _sent(world, as_of)
+        assert props == {} and not a.request.evidence, as_of
+        assert sorted((l.fact_id, l.reason, l.needs) for l in a.left_out) == sorted((f, "period dates inconsistent", "resolution") for f in (one, two))
+
+
+def test_b2b_inconsistency_is_the_periods_not_one_facts_and_an_event_in_the_period_keeps_its_own_date(world):
+    """Section 8, period-level. A valid period (2019 to 2021) containing a fact that on its own was first said after its end is dated
+    normally. In an inconsistent period, an event filed there is still sent, by its own date."""
+    a_fact, _ = world.obs("Asha", "lives_in", "Delhi", valid_from="2019")
+    b_fact, _ = world.obs("Asha", "lives_in", "Delhi", valid_to="2021")          # no start of its own; said in 2024
+    one, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2023-06", valid_to="2024-03")
+    started, _ = world.obs("Asha", "started_job", "Apollo", valid_from="2023-07")
+    two, _ = world.obs("Asha", "works_at", "Apollo", valid_to="2021")
+    a, props = _sent(world, AT_2020)
+    held = TimeInterval(_t(2019, 1, 1), _t(2022, 1, 1), end_earliest=_t(2021, 1, 2), **Y2019)
+    assert props[f"fact:{a_fact}"].valid_time == held and props[f"fact:{b_fact}"].valid_time == held
+    assert {k: v for k, v in _reasons(a).items() if k in (one, two)} == {one: "period dates inconsistent", two: "period dates inconsistent"}
+    a, props = _sent(world, _t(2023, 8, 1))
+    assert props[f"fact:{started}"].occurred == Occurrence(_t(2023, 7, 1), _t(2023, 7, 31, *END_OF_DAY))
+    assert _reasons(a)[one] == _reasons(a)[two] == "period dates inconsistent"
+
+
+# ----- section 9: the guards read Engram's dates, with today's inequalities -----
+def test_b2b_guards_at_equality_a_fact_known_from_the_asked_at_instant_is_kept_and_one_ending_at_it_is_left_out(world):
+    """Section 9. Starts on 5 March 2024; another ended on 4 March (so its end, the first instant it no longer held, is 5 March 00:00)."""
+    starts, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2024-03-05")
+    ended, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2024-03-04")
+    a, props = _sent(world, SAID)
+    assert set(props) == {f"fact:{starts}"} and _reasons(a) == {ended: "ended before as_of"}
+    assert props[f"fact:{starts}"].valid_time == TimeInterval(SAID, end_unbounded=True)
+    a, props = _sent(world, SAID - MICRO)
+    assert set(props) == {f"fact:{ended}"} and _reasons(a) == {starts: "starts after as_of"}
+    a, props = _sent(world, (SAID - MICRO).astimezone(dt.timezone(dt.timedelta(hours=-5))))   # the same instant, written in another offset
+    assert set(props) == {f"fact:{ended}"} and _reasons(a) == {starts: "starts after as_of"}
+
+
+def test_b2b_guards_a_coarse_start_is_eligible_from_its_first_day_and_a_first_said_fact_does_not_answer_an_earlier_question(world):
+    """Section 9. 'From 2026' is known from 1 January 2026, never only from its latest possible start. A value only first said on
+    5 March 2024 is not known before that day. A state still going is never 'ended', however late it is asked."""
+    coarse, _ = world.obs("Asha", "lives_in", "Mysore", valid_from="2026")
+    said, _ = world.obs("Asha", "works_at", "Apollo")
+    a, props = _sent(world, _t(2026, 1, 1))
+    assert set(props) == {f"fact:{coarse}", f"fact:{said}"}
+    a, props = _sent(world, _t(2026, 1, 1) - MICRO)
+    assert set(props) == {f"fact:{said}"} and _reasons(a) == {coarse: "starts after as_of"}
+    a, props = _sent(world, SAID - MICRO)
+    assert props == {} and _reasons(a) == {coarse: "starts after as_of", said: "starts after as_of"}
+    a, props = _sent(world, SAID)
+    assert props[f"fact:{said}"].valid_time == TimeInterval(start_latest=SAID_END, end_unbounded=True)
+    a, props = _sent(world, _t(2100, 1, 1))
+    assert set(props) == {f"fact:{coarse}", f"fact:{said}"} and a.left_out == ()
+
+
+# ----- section 5: the provenance of a replacing date -----
+def _pune_then(world, *after):
+    fid, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019")
+    for predicate, value, when in after: world.obs("Asha", predicate, value, valid_from=when)
+    return fid
+
+
+@pytest.mark.parametrize("after,end,only_said", [
+    ([("lives_in", "Delhi", "2024-03-05")], (2024, 3, 5), False),
+    ([("lives_in", "Delhi", None)], (2024, 3, 5), True),
+    ([("lives_in", "Delhi", None), ("moved_to", "Delhi", None)], (2024, 3, 5), True),
+    ([("moved_to", "Mysore", None), ("lives_in", "Mysore", "2024-03-05")], (2024, 3, 5), False),
+    ([("lives_in", "Mysore", "2024-03-05"), ("moved_to", "Mysore", None)], (2024, 3, 5), False),
+], ids=["one candidate, stated", "one candidate, only said", "several, all only said", "mixed: only said entered first", "mixed: stated entered first"])
+def test_b2b_a_replaced_end_is_an_upper_bound_only_when_no_replacing_fact_states_the_date(world, after, end, only_said):
+    """Section 5, OP-4: an aggregation, not a search. All facts that could have replaced the value are taken together; if any
+    states the date the end is stated and exact, in either order of entry; if none does it was only said and is an upper bound."""
+    fid = _pune_then(world, *after)
+    period = next(p for p in world.engine.get_history(world.kb.resolve("Asha"), "lives_in", **PLAYED)["periods"] if p.value == "Pune")
+    assert (period.end, period.end_kind) == ("2024-03-04", "replaced")
+    a, props = _sent(world, AT_2022)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time == TimeInterval(_t(2019, 1, 1), _t(*end), end_is_upper_bound=only_said, **Y2019)
+    assert p.qualifiers["end_basis"] == "replaced"
+    assert a.day_zone == "UTC"   # beside the stated cases, which are sent exactly as before B2b
+
+
+def test_b2b_a_replaced_end_with_no_replacing_fact_to_be_found_is_treated_as_only_said(world):
+    """Section 5, the fallback: the weaker claim. Engram does not produce this (0 of 586 in the probe), so the period is handed to
+    the adapter as replaced with nothing in the slot that could have replaced it."""
+    fid, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019")
+    adapter = KnowledgeAdapter(world.kb)
+    real = adapter.engine.get_history
+
+    def replaced_by_nothing(entity_id, predicate, **kwargs):
+        history = real(entity_id, predicate, **kwargs)
+        for p in history["periods"]: p.end, p.end_kind = "2021", "replaced"
+        return history
+    adapter.engine.get_history = replaced_by_nothing
+    p = {p.id: p for p in adapter.request_for("Asha", as_of=AT_2020).request.propositions}[f"fact:{fid}"]
+    assert p.valid_time == TimeInterval(_t(2019, 1, 1), _t(2022, 1, 1), end_is_upper_bound=True, **Y2019)
+
+
+# ----- section 6: an event is an occurrence -----
+@pytest.mark.parametrize("when,expected,basis", [
+    ("2022", Occurrence(_t(2022, 1, 1), _t(2022, 12, 31, *END_OF_DAY)), "stated"),
+    ("2022-03", Occurrence(_t(2022, 3, 1), _t(2022, 3, 31, *END_OF_DAY)), "stated"),
+    ("2022-03-05", Occurrence(_t(2022, 3, 5), _t(2022, 3, 5, *END_OF_DAY)), "stated"),
+    (None, Occurrence(None, SAID_END), "first_said"),
+], ids=["stated to the year", "stated to the month", "stated to the day", "only said"])
+def test_b2b_an_event_is_sent_as_an_occurrence_with_no_validity_interval(world, when, expected, basis):
+    """Section 6. A stated date is the window in which it happened. Only said: no later than the day it was told, and no date."""
+    moved, _ = world.obs("Asha", "moved_to", "Delhi", valid_from=when)
+    a, props = _sent(world, _t(2025, 6, 1))
+    p = props[f"fact:{moved}"]
+    assert p.occurred == expected and p.valid_time is None
+    assert (p.qualifiers["time_kind"], p.qualifiers["valid_time"], p.qualifiers["start_basis"]) == ("event", "known", basis)
+    assert "end_basis" not in p.qualifiers and not any(e.id == f"state:{moved}" for e in a.request.evidence)
+
+
+def test_b2b_the_said_day_bounds_an_event_only_under_the_three_conditions_and_the_event_vocabulary_is_pinned(world):
+    """Section 6, OP-5. (1) The predicate is one of Engram's event predicates, all completed happenings: this set is pinned, and
+    the test fails when a predicate is added or removed, so a new one cannot get the bound without a decision. (2) A plan is left
+    out. (3) Only a sentence linked as supporting evidence gives the bound: a dated sentence that merely qualifies does not."""
+    assert overlay_knowledge.EVENTS == frozenset({"started_job", "moved_to", "got_married", "bought", "adopted", "started_hobby", "joined",
+                                                  "left_job", "divorced", "sold", "lost", "gave_away", "stopped_hobby", "left_group"})
+    assert overlay_knowledge.EVENTS == frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)
+    told, _ = world.obs("Asha", "moved_to", "Delhi")
+    planned, _ = world.obs("Asha", "moved_to", "Goa", plan=True)
+    f = KnowledgeFact.create(world.who("Asha"), "sold", "text", "attribute", "explicit", object_value="car", validation_status="accepted")
+    undated, dated = _undated(world, "Asha", "Asha sold car."), world.say("Ravi", "Asha sold car, I think.")
+    world.engine.apply_observation(FactWithEvidence(f, (FactEvidence.create(f.fact_id, undated), FactEvidence.create(f.fact_id, dated, "qualifies"))))
+    a, props = _sent(world, _t(2025, 6, 1))
+    assert props[f"fact:{told}"].occurred == Occurrence(None, SAID_END)
+    assert _reasons(a) == {planned: "plan"}
+    sold = props[f"fact:{f.fact_id}"]
+    assert sold.occurred is None and sold.valid_time is None and sold.qualifiers["valid_time"] == "unknown"
+    assert next(e for e in a.request.evidence if e.id == f"state:{f.fact_id}").metadata["qualified_for"] == ("valid time unknown",)
+
+
+def test_b2b_two_moves_at_different_known_times_no_longer_look_like_a_conflict_and_a_move_only_said_stays_uncertain(world):
+    """Section 6 and section 10 (S12), through ERC: windows that cannot meet give no contradiction; a move only said, whose window
+    has no earliest bound, may meet a dated one, so it is a potential contradiction and never a definite one."""
+    world.obs("Asha", "moved_to", "Pune", valid_from="2022"); world.obs("Asha", "moved_to", "Delhi", valid_from="2023")
+    r = Reasoner(world.kb).reason("Asha", as_of=AS_OF)
+    assert r.orchestration.contradictions == () or list(r.orchestration.contradictions) == []
+    world.obs("Asha", "moved_to", "Goa")
+    r = Reasoner(world.kb).reason("Asha", as_of=AS_OF)
+    assert {c.certainty for c in r.orchestration.contradictions} == {POTENTIAL}
+
+
+# ----- section 11.2: explain() says where each date came from -----
+def test_b2b_explain_shows_a_date_that_was_only_said_as_only_said_and_never_an_invented_end(world):
+    """Section 11.2, OP-11 (wording amendment). A value replaced by a statement with no date; a job closed by a statement stated
+    to the year; a value only first said and still going."""
+    world.obs("Asha", "lives_in", "Pune", valid_from="2019"); world.obs("Asha", "lives_in", "Delhi")
+    world.obs("Asha", "works_at", "Apollo", valid_from="2019"); world.obs("Asha", "left_job", "Apollo", valid_from="2021")
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", as_of=AT_2020))
+    assert lines[0].endswith(", as of 2020-06-01, overall withheld, zone UTC")
+    assert [block[:2] for block in _explained(lines)[2]] == sorted([   # the first two lines of each fact: its state line and its time line
+        (f"fact: Asha lives_in Pune; {STATE}; valid 2019-01-01 to 2024-03-05 at the latest",
+         "  time: start stated, between 2019-01-01 and 2019-12-31; end replaced, no later than 2024-03-05"),
+        (f"fact: Asha works_at Apollo; {STATE}; valid 2019-01-01 to 2022-01-01",
+         "  time: start stated, between 2019-01-01 and 2019-12-31; end closed, between 2021-01-02 and 2022-01-01"),
+    ])
+    lines = r.explain(r.reason("Asha", as_of=_t(2025, 1, 1)))
+    assert (f"fact: Asha lives_in Delhi; {STATE}; valid from no later than 2024-03-05, still going", "  time: start not stated (first said 2024-03-05); end open") in [block[:2] for block in _explained(lines)[2]]
+    assert (f"fact: Asha left_job Apollo; {STATE}; event between 2021-01-01 and 2021-12-31", "  time: event stated, between 2021-01-01 and 2021-12-31") in [block[:2] for block in _explained(lines)[2]]
+    world.obs("Asha", "works_at", "Fortis", valid_to="2025")   # only first said, with a stated end: the same words, then the end
+    lines = r.explain(r.reason("Asha", as_of=AS_OF))
+    assert (f"fact: Asha works_at Fortis; {STATE}; valid from no later than 2024-03-05 to 2026-01-01",
+            "  time: start not stated (first said 2024-03-05); end stated, between 2025-01-02 and 2026-01-01") in [block[:2] for block in _explained(lines)[2]]
+    assert not any("valid by " in l for l in lines)
+
+
+def test_b2b_explain_names_an_inconsistent_period_as_the_reason_a_fact_is_left_out(world):
+    """Section 11.2."""
+    one, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2023-06", valid_to="2024-03")
+    two, _ = world.obs("Asha", "works_at", "Apollo", valid_to="2021")
+    r = Reasoner(world.kb)
+    lines = r.explain(r.reason("Asha", as_of=_t(2023, 7, 1)))
+    assert sorted(l for l in lines if l.startswith("left out:")) == sorted(
+        f"left out: fact {f} (period dates inconsistent; status active, validation accepted, source explicit; needs resolution)" for f in (one, two))
+
+
+# ----- section 7: the zone is a setting of each adapter -----
+def test_b2b_the_default_zone_is_utc_and_an_explicit_utc_sends_exactly_the_same_instants(world):
+    """Section 7. No zone given: UTC, reported as UTC. The zone is on the adapted request and in explain()'s heading."""
+    fid, sid = world.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021-03")
+    a0, p0 = _sent(world, AT_2020)
+    a1, p1 = _in(world, "UTC", AT_2020)
+    a2, p2 = _in(world, zoneinfo.ZoneInfo("UTC"), AT_2020)
+    assert a0.day_zone == a1.day_zone == a2.day_zone == "UTC"
+    expected = TimeInterval(_t(2019, 1, 1), _t(2021, 4, 1), end_earliest=_t(2021, 3, 2), **Y2019)
+    assert [p[f"fact:{fid}"].valid_time for p in (p0, p1, p2)] == [expected] * 3
+    assert _evidence(a1, f"sentence:{sid}").observed_at == SAID and _evidence(a1, f"sentence:{sid}").metadata["observed_latest"] == SAID_LATEST
+    r = Reasoner(world.kb, day_zone="Asia/Kolkata")
+    assert r.explain(r.reason("Asha", as_of=AT_2020))[0].endswith(", zone Asia/Kolkata")
+
+
+def test_b2b_a_named_zone_puts_every_boundary_at_that_zones_calendar_day_including_month_and_year_ends(world):
+    """Section 7. Asia/Kolkata: 'from 2019' begins at local midnight on 1 January 2019, which is 18:30 UTC the day before; the
+    year's last instant is local; 'to March 2021' ends at local midnight on 1 April; the sentence's day is local too."""
+    ist = zoneinfo.ZoneInfo("Asia/Kolkata")
+    at = lambda *parts: dt.datetime(*parts, tzinfo=ist)
+    fid, sid = world.obs("Asha", "works_at", "Apollo", valid_from="2019", valid_to="2021-03")
+    moved, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2019-12")
+    a, props = _in(world, "Asia/Kolkata", AT_2020)
+    v = props[f"fact:{fid}"].valid_time
+    assert a.day_zone == "Asia/Kolkata"
+    assert (v.start, v.start_latest, v.end_earliest, v.end) == (at(2019, 1, 1), at(2019, 12, 31, *END_OF_DAY), at(2021, 3, 2), at(2021, 4, 1))
+    assert v.start == _t(2018, 12, 31, 18, 30) and all(x.utcoffset() == dt.timedelta(hours=5, minutes=30) for x in (v.start, v.start_latest, v.end_earliest, v.end))
+    assert props[f"fact:{moved}"].occurred == Occurrence(at(2019, 12, 1), at(2019, 12, 31, *END_OF_DAY))
+    assert _evidence(a, f"sentence:{sid}").observed_at == at(2024, 3, 5)
+    assert _evidence(a, f"sentence:{sid}").metadata["observed_latest"] == "2024-03-05T23:59:59.999999+05:30"
+
+
+@pytest.mark.parametrize("day,hours", [("2024-03-10", 23), ("2024-11-03", 25), ("2024-06-01", 24)], ids=["a 23-hour day", "a 25-hour day", "an ordinary day"])
+def test_b2b_a_day_shortened_or_lengthened_by_a_clock_change_runs_from_its_own_first_instant_to_its_own_last(world, day, hours):
+    """Section 7, F35. America/New_York. The day's last instant is one microsecond before the next day's first instant, as an
+    instant: never the first instant plus 24 hours."""
+    ny = zoneinfo.ZoneInfo("America/New_York")
+    y, m, d = (int(x) for x in day.split("-"))
+    event, _ = world.obs("Asha", "moved_to", "Delhi", valid_from=day)
+    state, _ = world.obs("Asha", "works_at", "Apollo", valid_from=day, valid_to=day)
+    _, props = _in(world, "America/New_York", dt.datetime(y, m, d, 12, tzinfo=ny))
+    o, v = props[f"fact:{event}"].occurred, props[f"fact:{state}"].valid_time
+    assert o.earliest == v.start == dt.datetime(y, m, d, tzinfo=ny) and o.earliest.isoformat().startswith(f"{day}T00:00:00")
+    assert o.latest.isoformat().startswith(f"{day}T23:59:59.999999")
+    assert v.end.astimezone(UTC) - v.start.astimezone(UTC) == dt.timedelta(hours=hours)
+    assert v.end.astimezone(UTC) - o.latest.astimezone(UTC) == MICRO
+
+
+def test_b2b_the_asked_at_date_is_compared_as_an_instant_whatever_offset_or_zone_it_is_written_in(world):
+    """Section 7, F34. Zone Asia/Kolkata; a job from 5 March 2024 and a home to 4 March. The boundary is IST midnight on 5 March,
+    18:30 UTC on the 4th. The answer follows the instant, written in UTC, in IST or in New York time. Then the repeated hour in
+    New York (3 November 2024, 01:30 twice): Python calls the two times equal; the guards answer for each as the instant it is."""
+    starts, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2024-03-05")
+    ended, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2019", valid_to="2024-03-04")
+    boundary = _t(2024, 3, 4, 18, 30)
+    ny = zoneinfo.ZoneInfo("America/New_York")
+    for as_of in (boundary, boundary.astimezone(zoneinfo.ZoneInfo("Asia/Kolkata")), boundary.astimezone(ny)):
+        a, props = _in(world, "Asia/Kolkata", as_of)
+        assert set(props) == {f"fact:{starts}"} and _reasons(a) == {ended: "ended before as_of"}
+    for as_of in (boundary - MICRO, (boundary - MICRO).astimezone(zoneinfo.ZoneInfo("Asia/Kolkata")), (boundary - MICRO).astimezone(ny)):
+        a, props = _in(world, "Asia/Kolkata", as_of)
+        assert set(props) == {f"fact:{ended}"} and _reasons(a) == {starts: "starts after as_of"}
+    first, second = dt.datetime(2024, 11, 3, 1, 30, tzinfo=ny, fold=0), dt.datetime(2024, 11, 3, 1, 30, tzinfo=ny, fold=1)
+    assert first == second and second.astimezone(UTC) - first.astimezone(UTC) == dt.timedelta(hours=1)
+    nov, _ = world.obs("Asha", "job_title", "surgeon", valid_from="2024-11-03")
+    for as_of in (first, second):
+        a, props = _in(world, "America/New_York", as_of)
+        assert f"fact:{nov}" in props and props[f"fact:{nov}"].valid_time.start.isoformat() == "2024-11-03T00:00:00-04:00"
+
+
+def test_b2b_where_the_clock_goes_back_at_midnight_the_days_last_instant_is_its_second_2359_and_the_guards_follow_instants(world):
+    """Section 7, F35, an acceptance requirement. America/Santiago, 14 March 2009: at midnight the clock went back to 23:00, so
+    23:00 to midnight happened twice. The day's true last instant is the second 23:59:59.999999 (-04:00); clock arithmetic lands
+    on the first (-03:00), an hour early. Through the adapter's own guards, at both occurrences of 23:30."""
+    scl = zoneinfo.ZoneInfo("America/Santiago")
+    event, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2009-03-14")
+    ends, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2009-03-01", valid_to="2009-03-14")
+    begins, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2009-03-15")
+    first, second = dt.datetime(2009, 3, 14, 23, 30, tzinfo=scl, fold=0), dt.datetime(2009, 3, 14, 23, 30, tzinfo=scl, fold=1)
+    assert second.astimezone(UTC) - first.astimezone(UTC) == dt.timedelta(hours=1)
+    for as_of in (first, second):
+        a, props = _in(world, "America/Santiago", as_of)
+        assert set(props) == {f"fact:{event}", f"fact:{ends}"} and _reasons(a) == {begins: "starts after as_of"}
+        o, v = props[f"fact:{event}"].occurred, props[f"fact:{ends}"].valid_time
+        assert o.earliest.isoformat() == "2009-03-14T00:00:00-03:00" and o.latest.isoformat() == "2009-03-14T23:59:59.999999-04:00"
+        assert v.end.isoformat() == "2009-03-15T00:00:00-04:00" and v.end.astimezone(UTC) - o.latest.astimezone(UTC) == MICRO
+        assert v.end.astimezone(UTC) - o.earliest.astimezone(UTC) == dt.timedelta(hours=25)
+    next_day = dt.datetime(2009, 3, 15, tzinfo=scl)
+    a, props = _in(world, "America/Santiago", next_day)
+    assert set(props) == {f"fact:{event}", f"fact:{begins}"} and _reasons(a) == {ends: "ended before as_of"}
+    a, props = _in(world, "America/Santiago", (next_day.astimezone(UTC) - MICRO))
+    assert set(props) == {f"fact:{event}", f"fact:{ends}"}
+
+
+def test_b2b_a_day_whose_midnight_is_skipped_begins_at_the_first_time_that_did_occur_and_is_not_a_missing_day(world):
+    """Section 7, F38, an acceptance requirement. America/Santiago, 11 October 2009: the clock went from midnight straight to 01:00.
+    The day begins at 01:00 -03:00; the adapter sends that valid local time, never the label 00:00 -04:00 for a time that did not
+    occur. The day before ends one microsecond earlier, at 23:59:59.999999 -04:00. Through the adapter's own guards at that first
+    instant and one microsecond either side."""
+    begins, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2009-10-11")
+    before, _ = world.obs("Asha", "moved_to", "Delhi", valid_from="2009-10-10")
+    ended, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2009-10-01", valid_to="2009-10-10")
+    first = dt.datetime(2009, 10, 11, 4, 0, tzinfo=UTC)                         # 01:00 -03:00 in Santiago
+    a, props = _in(world, "America/Santiago", first)
+    v = props[f"fact:{begins}"].valid_time
+    assert v == TimeInterval(first, end_unbounded=True) and v.start.isoformat() == "2009-10-11T01:00:00-03:00"
+    assert props[f"fact:{begins}"].qualifiers["valid_time"] == "known" and not any(e.id == f"state:{begins}" for e in a.request.evidence)
+    o = props[f"fact:{before}"].occurred
+    assert o.latest.isoformat() == "2009-10-10T23:59:59.999999-04:00" and first - o.latest.astimezone(UTC) == MICRO
+    assert _reasons(a) == {ended: "ended before as_of"}
+    a, props = _in(world, "America/Santiago", first - MICRO)
+    assert set(props) == {f"fact:{before}", f"fact:{ended}"} and _reasons(a) == {begins: "starts after as_of"}
+    assert props[f"fact:{ended}"].valid_time.end.isoformat() == "2009-10-11T01:00:00-03:00"
+    a, props = _in(world, "America/Santiago", first + MICRO)
+    assert set(props) == {f"fact:{before}", f"fact:{begins}"} and _reasons(a) == {ended: "ended before as_of"}
+    # An asked-at time written on Santiago's own clock as 00:30, a time that did not occur that night: as an instant it is 04:30 UTC,
+    # half an hour after the day began. On the clock 00:30 is "before" 01:00; compared as instants, as it must be, the job has begun.
+    written = dt.datetime(2009, 10, 11, 0, 30, tzinfo=zoneinfo.ZoneInfo("America/Santiago"))
+    assert written.astimezone(UTC) == first + dt.timedelta(minutes=30) and written < v.start
+    a, props = _in(world, "America/Santiago", written)
+    assert set(props) == {f"fact:{before}", f"fact:{begins}"} and _reasons(a) == {ended: "ended before as_of"}
+
+
+def test_b2b_two_adapters_with_different_zones_do_not_affect_one_another_and_the_module_default_is_untouched(world):
+    """Section 7. The zone is fixed for the life of an adapter; nothing process-wide is written."""
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2019")
+    kolkata, new_york = KnowledgeAdapter(world.kb, day_zone="Asia/Kolkata"), KnowledgeAdapter(world.kb, day_zone="America/New_York")
+    starts = [(ad.day_zone, ad.request_for("Asha", as_of=AT_2020).request.propositions[0].valid_time.start.isoformat()) for ad in (kolkata, new_york, kolkata, new_york)]
+    assert starts == [("Asia/Kolkata", "2019-01-01T00:00:00+05:30"), ("America/New_York", "2019-01-01T00:00:00-05:00")] * 2
+    assert overlay_knowledge.DAY_ZONE is dt.timezone.utc
+    assert _sent(world, AT_2020)[1][f"fact:{fid}"].valid_time.start == _t(2019, 1, 1)
+
+
+def _nameless_zone():
+    """A ZoneInfo read from data, not from a name: it is a real zone (UTC) and has no key to be reported by."""
+    import io, struct
+    return zoneinfo.ZoneInfo.from_file(io.BytesIO(b"TZif" + b"\x00" * 16 + struct.pack(">6l", 0, 0, 0, 0, 1, 4) + struct.pack(">lBB", 0, 0, 0) + b"UTC\x00"))
+
+
+@pytest.mark.parametrize("setting", ["Mars/Olympus", "", "IST+5", 5.5, dt.timezone(dt.timedelta(hours=5, minutes=30)), dt.timezone.utc, _nameless_zone()],
+                         ids=["an unknown name", "an empty name", "an offset written as a name", "a number", "a fixed offset", "the fixed UTC object",
+                              "a ZoneInfo with no name"])
+def test_b2b_a_zone_that_is_not_an_iana_name_or_a_zoneinfo_is_refused_and_never_replaced_by_utc(world, setting):
+    """Section 7, the public contract."""
+    with pytest.raises(ValueError):
+        KnowledgeAdapter(world.kb, day_zone=setting)
+    with pytest.raises(ValueError):
+        Reasoner(world.kb, day_zone=setting)
+
+
+def test_b2b_the_legacy_test_seam_still_works_and_is_reported_by_its_fixed_name(world, monkeypatch):
+    """Section 7, the legacy test seam: replacing the module default with a fixed offset, as one B2a test does, still works and is
+    reported by the offset's fixed name. It is a compatibility exception: the same offset cannot be given to day_zone (above)."""
+    monkeypatch.setattr(overlay_knowledge, "DAY_ZONE", dt.timezone(dt.timedelta(hours=5, minutes=30)))
+    fid, _ = world.obs("Asha", "works_at", "Apollo", valid_from="2019")
+    a, props = _sent(world, AT_2020)
+    assert a.day_zone == "UTC+05:30"
+    assert props[f"fact:{fid}"].valid_time.start == dt.datetime(2019, 1, 1, tzinfo=dt.timezone(dt.timedelta(hours=5, minutes=30)))
+
+
+# ----- section 7.1: a calendar day that does not exist in the zone -----
+APIA_AFTER = dt.datetime(2012, 6, 1, tzinfo=UTC)
+
+
+def _nothing_is_dated_the_next_day(a):
+    """No instant anywhere in the request falls on 31 December 2011 in Apia: the missing 30th was not moved to it."""
+    apia = zoneinfo.ZoneInfo("Pacific/Apia")
+    instants = []
+    for p in a.request.propositions:
+        t, o = p.valid_time, p.occurred
+        if t is not None: instants += [t.start, t.end, t.start_latest, t.end_earliest]
+        if o is not None: instants += [o.earliest, o.latest]
+    instants += [e.observed_at for e in a.request.evidence]
+    return not any(i is not None and i.astimezone(apia).date() in (dt.date(2011, 12, 31), dt.date(2011, 12, 30)) for i in instants)
+
+
+@pytest.mark.parametrize("build", [
+    lambda w: w.obs("Asha", "works_at", "Apollo", valid_from="2011-12-30")[0],
+    lambda w: w.obs("Asha", "works_at", "Apollo", valid_from="2010", valid_to="2011-12-30")[0],
+    lambda w: (w.obs("Asha", "works_at", "Apollo", valid_from="2010")[0], w.obs("Asha", "left_job", "Apollo", valid_from="2011-12-30"))[0],
+    lambda w: w.obs("Asha", "moved_to", "Delhi", valid_from="2011-12-30")[0],
+], ids=["a stated start", "a stated end", "a closing date", "an event's date"])
+def test_b2b_a_date_that_does_not_exist_in_the_zone_is_never_moved_and_the_facts_time_is_not_established(world, build):
+    """Section 7.1, F36, F37. Pacific/Apia skipped 30 December 2011. No instant is made from it and none from a neighbouring day;
+    no partial interval is sent from the boundary that does exist; the fact goes under the existing unknown-time guard, and says
+    why. In UTC, where the day exists, the same fact is dated normally."""
+    fid = build(world)
+    a, props = _in(world, "Pacific/Apia", APIA_AFTER)
+    p = props[f"fact:{fid}"]
+    assert p.valid_time is None and p.occurred is None and p.qualifiers["valid_time"] == "unknown"
+    assert next(e for e in a.request.evidence if e.id == f"state:{fid}").metadata["qualified_for"] == ("valid time unknown", "date not in zone")
+    assert _nothing_is_dated_the_next_day(a)
+    r = Reasoner(world.kb, day_zone="Pacific/Apia")
+    lines = r.explain(r.reason("Asha", as_of=APIA_AFTER))
+    assert "  time: not known (date not in zone Pacific/Apia)" in lines
+    a, props = _in(world, "UTC", dt.datetime(2011, 12, 30, 12, tzinfo=UTC))
+    p = props[f"fact:{fid}"]
+    assert (p.valid_time or p.occurred) is not None and p.qualifiers["valid_time"] == "known"
+
+
+def test_b2b_a_sentence_said_on_a_day_that_does_not_exist_in_the_zone_gives_no_date_and_a_stated_month_is_unaffected(world):
+    """Section 7.1. The said day is treated as a said date that cannot be read: no observation date, no first-said bound, so a
+    value known only from it has no time. A day inside a stated month is not required: December 2011 in Apia is dated normally."""
+    apia = zoneinfo.ZoneInfo("Pacific/Apia")
+    sid = _dated(world, "Asha", "Asha works_at Apollo.", "1:00 pm on 30 December, 2011")
+    said_only, _ = world.obs("Asha", "works_at", "Apollo", sid=sid)
+    month, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2011-12")
+    a, props = _in(world, "Pacific/Apia", APIA_AFTER)
+    e = _evidence(a, f"sentence:{sid}")
+    assert e.observed_at is None and "observed_latest" not in e.metadata
+    p = props[f"fact:{said_only}"]
+    assert p.valid_time is None and p.qualifiers["valid_time"] == "unknown"
+    v = props[f"fact:{month}"].valid_time
+    assert v == TimeInterval(dt.datetime(2011, 12, 1, tzinfo=apia), start_latest=dt.datetime(2011, 12, 31, *END_OF_DAY, tzinfo=apia), end_unbounded=True)
+    assert v.start_latest.isoformat() == "2011-12-31T23:59:59.999999+14:00"
+    # Added with the implementation: the same said day, and an end that was stated. The said day gives no bound; the stated end
+    # stands. That is the "no start of any kind, stated end" shape, and it carries no start label.
+    with_end, _ = world.obs("Asha", "job_title", "registrar", valid_to="2012", sid=_dated(world, "Asha", "Asha job_title registrar.", "1:00 pm on 30 December, 2011"))
+    period = world.engine.get_history(world.kb.resolve("Asha"), "job_title", **PLAYED)["periods"][0]
+    assert (period.start, period.first_said, period.end, period.end_kind) == (None, "2011-12-30", "2012", "stated")
+    _, props = _in(world, "Pacific/Apia", APIA_AFTER)
+    p = props[f"fact:{with_end}"]
+    assert p.valid_time == TimeInterval(None, dt.datetime(2013, 1, 1, tzinfo=apia), end_earliest=dt.datetime(2012, 1, 2, tzinfo=apia))
+    assert "start_basis" not in p.qualifiers and p.qualifiers["end_basis"] == "stated"
+
+
+def test_b2b_a_superseded_fact_whose_end_is_a_day_missing_from_the_zone_is_left_out_as_end_not_known(world):
+    """Section 7.1: as today for a superseded fact whose end is not known. In UTC the same fact is history, with its dates."""
+    fid, _ = world.obs("Asha", "lives_in", "Pune", valid_from="2010", valid_to="2011-12-30", status="superseded")
+    a, props = _in(world, "Pacific/Apia", dt.datetime(2011, 6, 1, tzinfo=UTC))
+    assert props == {} and _reasons(a) == {fid: "superseded: end date unknown"}
+    a, props = _in(world, "UTC", dt.datetime(2011, 6, 1, tzinfo=UTC))
+    assert props[f"fact:{fid}"].valid_time.end == _t(2011, 12, 31)
