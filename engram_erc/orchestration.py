@@ -21,6 +21,7 @@ from .primitives.evidence_assessment import (
     EvidenceAssessment, EvidenceAssessmentStatus, assess_evidence,
 )
 from .rules import RuleSet
+from .conclusion_time import RESOLUTION_HINT as CONCLUSION_TIME_HINT, ConclusionTimeStatus, reason_text
 from .temporal_requirements import RESOLUTION_HINT, _describe_not_applied, check_temporal_requirements
 
 # ERC 0.7.0: the engine reports the package's own version (it reported a fixed "0.1.8" before).
@@ -333,6 +334,27 @@ def orchestrate(
                 description=_describe_not_applied(rule, premises, verified),
                 affected_refs=entry.input_refs,
                 resolution_hint=RESOLUTION_HINT,
+            ))
+
+    # ERC 0.8.0 (B5): one item per conclusion whose time is not established, in the order of their first inference
+    # step, after the items for temporal requirements. Worded from the step's own record; nothing is evaluated again.
+    if rule_execution is not None:
+        reported: set[str] = set()
+        for step in rule_execution.inference_steps:
+            record = step.parameters.get("conclusion_time")
+            if not record or record["status"] != ConclusionTimeStatus.NOT_ESTABLISHED.value:
+                continue
+            (conclusion_ref,) = step.output_proposition_refs
+            if conclusion_ref in reported:
+                continue
+            reported.add(conclusion_ref)
+            uncertainty.append(UncertaintyItem(
+                id=f"uncertainty_conclusion_time_{len(reported)}",
+                kind=UncertaintyKind.TEMPORAL_AMBIGUITY,
+                description=(f"Conclusion of rule {step.rule_id}: the time for which it holds is not established "
+                             f"({reason_text(record)})."),
+                affected_refs=(conclusion_ref,),
+                resolution_hint=CONCLUSION_TIME_HINT,
             ))
 
     if definite:

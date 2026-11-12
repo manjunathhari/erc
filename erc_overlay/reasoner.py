@@ -6,6 +6,7 @@ import datetime as dt
 from dataclasses import dataclass
 
 from engram_erc import DecisionPolicy, EvaluationReport, evaluate_conclusions, orchestrate
+from engram_erc.conclusion_time import reason_text
 from engram_erc.orchestration import OrchestrationLimits, OrchestrationResult
 
 from .knowledge import NOT_IN_ZONE, AdaptedRequest, KnowledgeAdapter
@@ -99,8 +100,31 @@ class Reasoner:
         else: end = f"end {q['end_basis']} {day(t.end)}"
         return f"time: {start}; {end}"
 
+    def _conclusion_time_line(self, p, record, rule) -> str:
+        """The line under a conclusion of a rule that declares (ERC 0.8.0): its period or event window and what it follows
+        from, or that it is timeless by declaration, or that its time is not established and why. Each side of a period is
+        worded by its status in the contract, so a side that is not known never reads as one that is unbounded. An end day
+        is the first day the state no longer holds, and says so."""
+        if record["status"] == "timeless": return f"time: timeless (declared by rule {rule})"
+        if record["status"] == "not_established": return f"time: not established ({reason_text(record)})"
+        names, day, t, o = record["premises"], self._day, p.valid_time, p.occurred
+        basis = f"while {' and '.join(names)} all hold, rule {rule}" if record["mode"] == "while_all" else f"the time of {names[0]}, rule {rule}"
+        if o is not None:
+            if o.earliest is None: when = f"event by {day(o.latest)}"
+            elif o.latest is None: when = f"event no earlier than {day(o.earliest)}"
+            elif o.earliest.date() == o.latest.date(): when = f"event on {day(o.earliest)}"
+            else: when = f"event between {day(o.earliest)} and {day(o.latest)}"
+            return f"time: {when}; {basis}"
+        start = {"exact": lambda: f"from {day(t.start)}", "within": lambda: f"from between {day(t.start)} and {day(t.start_latest)}",
+                 "no_later_than": lambda: f"from no later than {day(t.start_latest)}", "no_earlier_than": lambda: f"from no earlier than {day(t.start)}",
+                 "unknown": lambda: "start not known", "unbounded": lambda: "with no stated beginning"}[t.start_status.value]()
+        end = {"exact": lambda: f"to {day(t.end)} (end exclusive)", "within": lambda: f"to between {day(t.end_earliest)} and {day(t.end)} (end exclusive)",
+               "no_later_than": lambda: f"to no later than {day(t.end)} (end exclusive)", "no_earlier_than": lambda: f"to no earlier than {day(t.end_earliest)} (end exclusive)",
+               "unknown": lambda: "end not known", "unbounded": lambda: "still going"}[t.end_status.value]()
+        return f"time: holds {start} {end}; {basis}"
+
     def explain(self, reasoning: Reasoning) -> list[str]:
-        """Plain lines: the strategy and the zone calendar days were read in, each conclusion with its decision and the facts under it (each with its Engram state, how it was
+        """Plain lines: the strategy and the zone calendar days were read in, each conclusion with its decision, the time it holds for when its rule declares one, the facts under it and its other derivations (each fact with its Engram state, how it was
         sent and its dates, a `time:` line saying what is stated and what is only first said, then its sentences), every fact sent
         with its `time:` line, conflicts, what is unknown, and every fact left out and why."""
         r, props, request = reasoning.result, {p.id: p for p in reasoning.result.propositions}, reasoning.adapted.request
@@ -110,11 +134,18 @@ class Reasoner:
                  f"zone {zone}"]
         for ev in reasoning.evaluation.evaluations:
             lines.append(f"conclusion: {self._claim(props[ev.conclusion_id])} -> {ev.decision.value} ({', '.join(ev.reasons)})")
+            producing = [s for s in r.inference_steps if ev.conclusion_id in s.output_proposition_refs]
+            record = producing[0].parameters.get("conclusion_time") if producing else None
+            if record: lines.append(f"  {self._conclusion_time_line(props[ev.conclusion_id], record, producing[0].rule_id)}")
             for leaf in ev.premise_coverage.leaf_premise_ids:
                 lines.append(f"  because: {self._claim(props[leaf])}")
                 if leaf.startswith("fact:"): lines.append(f"    {self._state_line(props[leaf], request)}")
                 if leaf.startswith("fact:"): lines.append(f"    {self._time_line(props[leaf], request, zone)}")
                 lines += [f"    {s}" for s in self._sentences(leaf)]
+            for d in ev.derivations[1:]:
+                own = next(s for s in producing if s.id in d.step_ids)
+                lines.append(f"  also derived by rule {own.rule_id} ({d.decision.value}) from: " + "; ".join(self._claim(props[l]) for l in d.leaf_premise_ids))
+            if "ALTERNATIVE_DERIVATIONS_TRUNCATED" in ev.limitations: lines.append("  further derivations were not examined (limit 64)")
         for p in request.propositions:
             lines.append(f"fact: {self._claim(p)}; {self._state_line(p, request)}")
             lines.append(f"  {self._time_line(p, request, zone)}")

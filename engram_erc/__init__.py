@@ -43,6 +43,12 @@ from .rules import (
     TemporalConstraint, TemporalRequirementKind,
 )
 from .temporal_requirements import TemporalCheck, TemporalOutcome, check_temporal_requirements
+from .rules import ConclusionTime, ConclusionTimeKind
+from .conclusion_time import ConclusionTimeStatus
+from .evaluation import DerivationEvaluation
+__all__ += [  # ERC 0.8.0 (B5): the time of a derived conclusion. How it is worked out is not public.
+    "ConclusionTime", "ConclusionTimeKind", "ConclusionTimeStatus", "DerivationEvaluation",
+]
 __all__ += [  # ERC 0.7.0 (B4): rule temporal requirements
     "TemporalConstraint", "TemporalRequirementKind", "TemporalCheck", "TemporalOutcome", "check_temporal_requirements",
 ]

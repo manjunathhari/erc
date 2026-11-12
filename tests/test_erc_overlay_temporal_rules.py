@@ -11,12 +11,13 @@ from test_erc_overlay import AS_OF, CITY, world  # noqa: F401  (world is a fixtu
 X, C, Y = Variable("x"), Variable("c"), Variable("y")
 
 
-def declared():
+def declared(conclusion_time=None):
     from engram_erc import TemporalConstraint
     return RuleSet((RuleDefinition("works_in_city", "1",
                                    (PropositionPattern(X, "works_at", C, name="job"), PropositionPattern(C, "located_in", Y, name="place")),
                                    ConclusionTemplate(X, "works_in_city", Y),
-                                   temporal=(TemporalConstraint("overlaps", "job", "place"),)),))
+                                   temporal=(TemporalConstraint("overlaps", "job", "place"),),
+                                   **({} if conclusion_time is None else {"conclusion_time": conclusion_time})),))
 
 
 def test_b4_a9_explain_prints_the_rule_that_was_not_applied(world):
@@ -46,9 +47,18 @@ def test_b4_a_declared_rule_over_two_dated_overlapping_facts_gives_the_same_acce
     world.obs("Asha", "works_at", "Manipal", valid_from="2021")
     world.obs("Manipal", "located_in", "Bengaluru", valid_from="2010")
     r = Reasoner(world.kb)
-    plain, run = r.reason("Asha", ruleset=CITY, as_of=AS_OF), r.reason("Asha", ruleset=declared(), as_of=AS_OF)
+    # Revised at B5 (0.8.0). B5 (0.8.0): a rule with requirements and no conclusion time now gives a provisional
+    # conclusion (OP-2); this test is about B4's firing, so its rule declares its conclusion's time and the original
+    # decision is kept. explain() gains the one `time:` line B5 adds under the conclusion; every other line is unchanged.
+    from engram_erc import ConclusionTime
+    timed = declared(ConclusionTime("while_all", ("job", "place")))
+    plain, run = r.reason("Asha", ruleset=CITY, as_of=AS_OF), r.reason("Asha", ruleset=timed, as_of=AS_OF)
     assert run.evaluation.overall_decision.value == plain.evaluation.overall_decision.value == "accepted"
     assert run.result.conclusion_refs == plain.result.conclusion_refs and run.result.uncertainty == plain.result.uncertainty
     (step,) = run.result.inference_steps
     assert step.parameters["temporal"] == [{"relation": "overlaps", "left": "job", "right": "place", "outcome": "established"}]
-    assert r.explain(run) == r.explain(plain)
+    lines = r.explain(run)
+    added = [l for l in lines if l.startswith("  time: holds ")]
+    assert len(added) == 1 and added[0].endswith("; while job and place all hold, rule works_in_city@1")
+    assert lines.index(added[0]) == 2 and lines[1].startswith("conclusion:")
+    assert [l for l in lines if l != added[0]] == r.explain(plain)

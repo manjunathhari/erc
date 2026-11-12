@@ -91,13 +91,13 @@ def triple_rule(*constraints):
                           temporal=tuple(b4().Constraint(*c) for c in constraints))
 
 
-def city(temporal="declared", version="1"):
+def city(temporal="declared", version="1", **kw):
     """works_at(X, C) and located_in(C, Y) give works_in_city(X, Y). `declared`: the two must hold at the same time."""
     if temporal == "declared":
         temporal = (b4().Constraint("overlaps", "job", "place"),)
     return RuleDefinition("works_in_city", version,
                           (PropositionPattern(X, "works_at", C, name="job"), PropositionPattern(C, "located_in", Y, name="place")),
-                          ConclusionTemplate(X, "works_in_city", Y), temporal=temporal)
+                          ConclusionTemplate(X, "works_in_city", Y), temporal=temporal, **kw)
 
 
 def prop(pid, predicate, time=None, *, subject=None, obj=None, kind=PropositionKind.ASSERTION, qualifiers=None):
@@ -119,6 +119,14 @@ def job(time, pid="a", **kw):
 
 def place(time, pid="b", **kw):
     return prop(pid, "located_in", time, subject="manipal", obj="blr", **kw)
+
+
+def conclusion_time(kind, *names):
+    """Revised at B5 (0.8.0). B5 (0.8.0): a rule with requirements and no conclusion time now gives a provisional
+    conclusion (OP-2). The tests that use this are about B4's firing, so their rules declare their conclusion's time
+    and the original decisions are kept."""
+    from engram_erc import ConclusionTime
+    return ConclusionTime(kind, names)
 
 
 def execute(rules, props, **kw):
@@ -346,7 +354,12 @@ SCENARIOS = {
 def test_a6_named_scenario(sid):
     relation, a, b, outcome, reason = SCENARIOS[sid]
     assert answer(relation, a, b) == (outcome, reason)
-    rule, props = pair_rule((relation, "left", "right")), [left(a), right(b)]
+    # Revised at B5 (0.8.0), scenarios O1, D1, D4, D8, E1, E4, E6, E9 (those that fire). B5 (0.8.0): a rule with
+    # requirements and no conclusion time now gives a provisional conclusion (OP-2); this test is about B4's firing, so its
+    # rule declares its conclusion's time and the original decision is kept. Scenarios that do not fire are unaffected.
+    declared = {"overlaps": conclusion_time("while_all", "left", "right"), "during": conclusion_time("as_premise", "left"),
+                "before": conclusion_time("as_premise", "right")}[relation]
+    rule, props = pair_rule((relation, "left", "right"), conclusion_time=declared), [left(a), right(b)]
     execution = execute([rule], props)
     assert len(execution.inference_steps) == (outcome == EST)
     assert [e.status for e in temporal_entries(execution.trace)] == ([] if outcome == EST else [f"temporal_requirement_{outcome}"])
@@ -378,7 +391,10 @@ P = {
 def test_a6_the_city_rule_with_its_requirement_declared(pid):
     j, p, outcome, reason = P[pid]
     props = [job(j), place(p)]
-    run, report = think([city()], props)
+    # Revised at B5 (0.8.0), case P1. B5 (0.8.0): a rule with requirements and no conclusion time now gives a provisional
+    # conclusion (OP-2); this test is about B4's firing, so its rule declares its conclusion's time and the original
+    # decision is kept.
+    run, report = think([city(conclusion_time=conclusion_time("while_all", "job", "place"))], props)
     assert conclusions(run) == ([("asha", "works_in_city", "blr")] if outcome == EST else [])
     (entry,) = temporal_entries(run.result.trace) or [None]
     if outcome == EST:
@@ -694,14 +710,18 @@ OLD_STINT, CURRENT_STINT, FROM_2020 = TI(at(2015), at(2017)), TI(at(2022), at(20
 @pytest.mark.parametrize("old_id,current_id", [("a1", "a2"), ("a2", "a1")])
 def test_a11_a_failed_match_never_suppresses_another_whichever_sorts_first(old_id, current_id):
     props = [job(OLD_STINT, old_id), job(CURRENT_STINT, current_id), place(FROM_2020)]
-    run, report = think([city()], props, supported=[current_id, "b"])
+    # Revised at B5 (0.8.0), both id orders. B5 (0.8.0): a rule with requirements and no conclusion time now gives a
+    # provisional conclusion (OP-2); this test is about B4's firing, so its rule declares its conclusion's time and the
+    # original decision is kept.
+    timed_city = city(conclusion_time=conclusion_time("while_all", "job", "place"))
+    run, report = think([timed_city], props, supported=[current_id, "b"])
     (step,) = run.result.inference_steps
     assert step.input_refs == (current_id, "b") and conclusions(run) == [("asha", "works_in_city", "blr")]
     (ev,) = report.evaluations
     assert ev.decision.value == "accepted" and ev.premise_coverage.leaf_premise_ids == tuple(sorted((current_id, "b")))
     (entry,) = temporal_entries(run.result.trace)
     assert entry.status == "temporal_requirement_disproved" and entry.input_refs == (old_id, "b")
-    run, report = think([city()], props, supported=[old_id, "b"])            # only the stint that does not count is supported
+    run, report = think([timed_city], props, supported=[old_id, "b"])        # only the stint that does not count is supported
     assert report.evaluations[0].decision.value == "withheld"
 
 
@@ -799,16 +819,22 @@ def test_a14_no_qualifier_no_evidence_date_and_no_as_of_changes_an_outcome():
 # A15: version, pins, public names
 # --------------------------------------------------------------------------
 
-PUBLIC_NAMES_AT_B4 = (305, "0ebca2a8058e41153a798aae237f2747beee407956086dc1ae63ceeaa4dff59f")   # the 300 of 0.6.0 and the five below
+# Revised at B5 (ERC 0.8.0), which adds exactly four public names (ConclusionTime, ConclusionTimeKind, ConclusionTimeStatus,
+# DerivationEvaluation). At 0.7.0 this pin was (305, "0ebca2a8058e41153a798aae237f2747beee407956086dc1ae63ceeaa4dff59f"):
+# the 300 of 0.6.0 and the five below.
+PUBLIC_NAMES_AT_B4 = (309, "66d154490ab78ed4793db270dead6840ebca0e414cb22137114a4ac8d0f5a2a3")
 NEW_PUBLIC_NAMES = ["TemporalCheck", "TemporalConstraint", "TemporalOutcome", "TemporalRequirementKind", "check_temporal_requirements"]
 
 
 def test_a15_version_and_release_pins():
-    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.7.0"
-    assert pins.ERC_1X_FILES_CHANGED_SINCE_0_4_0 == {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py"}
+    # Revised at B5 (ERC 0.8.0): the version; evaluation.py joins the changed files; and the three files B4 changed are
+    # changed again by B5, so their one pin entry now names 0.8.0 and B5 (at 0.7.0: release "0.7.0", reason naming B4).
+    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.8.0"
+    assert pins.ERC_1X_FILES_CHANGED_SINCE_0_4_0 == {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py",
+                                                    "evaluation.py"}
     for rel in ("rules.py", "inference.py", "orchestration.py"):
         digest, release, reason = pins.ERC_1X_RELEASE_PINS[rel]
-        assert release == "0.7.0" and "B4" in reason
+        assert release == "0.8.0" and "B5" in reason
         assert digest == hashlib.sha256((PKG / rel).read_bytes()).hexdigest() != pins.ERC_1X_SHA256_AT_0_4_0[rel]
     # earlier pins are untouched, and the comparison is still its 0.6.0 bytes
     assert pins.ERC_1X_RELEASE_PINS["contracts.py"][1] == "0.5.0"
@@ -829,7 +855,7 @@ def test_a15_exactly_five_names_become_public():
 
 def test_a15_the_engine_reports_the_package_version():
     run, _ = think([city()], [job(P["P1"][0]), place(P["P1"][1])])
-    assert run.result.engine_version == engram_erc.__version__ == "0.7.0"
+    assert run.result.engine_version == engram_erc.__version__ == "0.8.0"   # revised at B5 (was "0.7.0")
 
 
 # --------------------------------------------------------------------------

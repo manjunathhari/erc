@@ -1,12 +1,17 @@
 """Evidence-aware conclusion evaluation and explicit reporting decisions."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
+from datetime import datetime, timezone
 from enum import Enum
-from typing import Mapping
+import heapq
+from itertools import islice, product
+import json
+import math
+from typing import Any, Iterator, Mapping
 
 from .contracts import (
-    Evidence, EvidenceLink, EvidenceRelation, Proposition, PropositionKind,
+    Evidence, EvidenceLink, EvidenceRelation, InferenceStep, Proposition, PropositionKind,
     ReasoningResult, UncertaintyKind,
 )
 from .graph import ReasoningGraphBuilder, ReasoningGraphView
@@ -57,6 +62,19 @@ class PremiseCoverage:
 
 
 @dataclass(frozen=True, slots=True)
+class DerivationEvaluation:
+    """One way of tracing a conclusion to stated propositions, decided on its own leaves (ERC 0.8.0).
+
+    ``step_ids`` are the inference steps chosen in this derivation, the step that produces the conclusion itself
+    among them; ``leaf_premise_ids`` its stated propositions; ``decision`` and ``reasons`` its own.
+    """
+    step_ids: tuple[str, ...]
+    decision: ConclusionDecision
+    leaf_premise_ids: tuple[str, ...]
+    reasons: tuple[str, ...]
+
+
+@dataclass(frozen=True, slots=True)
 class ConclusionEvaluation:
     conclusion_id: str
     decision: ConclusionDecision
@@ -68,6 +86,9 @@ class ConclusionEvaluation:
     qualifying_source_count: int
     reasons: tuple[str, ...]
     limitations: tuple[str, ...]
+    # ERC 0.8.0: empty when the conclusion has one derivation; otherwise every evaluated derivation, best first. The
+    # fields above are then those of the best one.
+    derivations: tuple[DerivationEvaluation, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -103,50 +124,189 @@ def _make_view(result: ReasoningResult, evidence, evidence_links) -> ReasoningGr
     return ReasoningGraphView(graph, result.propositions, evidence, result.inference_steps)
 
 
-def _premise_lineage(conclusion_id: str, result: ReasoningResult):
-    """Return assertion/hypothesis leaves and unresolved references.
+# ERC 0.8.0 (B5): a conclusion may be derived in several ways. Each derivation is decided on its own leaves, and the
+# conclusion takes the outcome of its best one. At most this many derivations of one conclusion are evaluated.
+MAX_DERIVATIONS = 64
+_DECISION_RANK = {
+    ConclusionDecision.ACCEPTED: 0, ConclusionDecision.PROVISIONAL: 1, ConclusionDecision.WITHHELD: 2,
+    ConclusionDecision.CONFLICTED: 3, ConclusionDecision.REJECTED: 4,
+}
+_NEGATIVE = (ConclusionDecision.WITHHELD, ConclusionDecision.CONFLICTED, ConclusionDecision.REJECTED)
+_TIME_NOT_ESTABLISHED = "CONCLUSION_TIME_NOT_ESTABLISHED"
+_TRUNCATED = "ALTERNATIVE_DERIVATIONS_TRUNCATED"
+_UNRESOLVED_KEY = ("2",)
+_UNORDERED_KEY = ("0", "")               # a stated proposition beneath a conclusion that has no choice of derivation
 
-    A derived proposition is expanded through every inference step that creates
-    it. Missing producers are reported rather than treated as source facts.
+
+def _instant(moment: datetime | None) -> str | None:
+    """One spelling for one instant, whatever zone it was given in: UTC, ISO 8601, with microseconds."""
+    if moment is None:
+        return None
+    if moment.tzinfo is not None:
+        moment = moment.astimezone(timezone.utc)
+    return moment.isoformat(timespec="microseconds")
+
+
+def _plain(value: Any) -> Any:
+    """A JSON value with every mapping as a plain dict, at every level, so that it can be written with sorted
+    member names. Lists keep their order."""
+    if isinstance(value, Mapping):
+        return {str(name): _plain(member) for name, member in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_plain(member) for member in value]
+    return value
+
+
+def _content_key(proposition: Proposition) -> tuple[str, str]:
+    """The key of a stated proposition: what it claims, in one canonical JSON text.
+
+    Its members are subject, predicate, object, polarity, kind, valid_time, occurred and qualifiers. No identifier is
+    part of it: not the proposition's id, and not its source references, which name where it came from and not what
+    it claims. Two propositions equal in every listed member have equal keys.
     """
-    propositions = {p.id: p for p in result.propositions}
-    producers: dict[str, list[tuple[str, ...]]] = {}
-    for step in result.inference_steps:
-        for output_id in step.output_proposition_refs:
-            producers.setdefault(output_id, []).append(step.input_refs)
+    period, event = proposition.valid_time, proposition.occurred
+    members = {
+        "subject": proposition.subject,
+        "predicate": proposition.predicate,
+        "object": _plain(proposition.object_value),
+        "polarity": proposition.polarity,
+        "kind": proposition.kind.value,
+        "valid_time": None if period is None else {
+            "start": _instant(period.start), "start_latest": _instant(period.start_latest),
+            "end_earliest": _instant(period.end_earliest), "end": _instant(period.end),
+            "start_unbounded": period.start_unbounded, "end_unbounded": period.end_unbounded,
+            "start_is_lower_bound": period.start_is_lower_bound, "end_is_upper_bound": period.end_is_upper_bound,
+        },
+        "occurred": None if event is None else {"earliest": _instant(event.earliest), "latest": _instant(event.latest)},
+        "qualifiers": _plain(proposition.qualifiers),
+    }
+    return ("0", json.dumps(members, sort_keys=True, separators=(",", ":"), ensure_ascii=True, allow_nan=False))
 
-    leaves: set[str] = set()
-    unresolved: set[str] = set()
-    visiting: set[str] = set()
-    visited: set[str] = set()
 
-    def walk(ref: str):
-        if ref in visiting:
-            unresolved.add(ref)
-            return
-        if ref in visited:
-            return
+def _holds_non_finite(value: Any) -> bool:
+    """Whether a JSON value holds, at any depth, a number that is not finite (NaN or an infinity)."""
+    if isinstance(value, float):
+        return not math.isfinite(value)
+    if isinstance(value, Mapping):
+        return any(_holds_non_finite(member) for member in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_holds_non_finite(member) for member in value)
+    return False
+
+
+def _beneath(conclusion_id: str, propositions: Mapping[str, Proposition],
+             producers: Mapping[str, list[InferenceStep]]) -> tuple[bool, list[Proposition]]:
+    """Whether the conclusion has a choice (it, or a derived proposition beneath it, has more than one producing
+    step), and the stated propositions beneath it."""
+    choice, stated, seen, pending = False, [], set(), [conclusion_id]
+    while pending:
+        ref = pending.pop()
+        if ref in seen:
+            continue
+        seen.add(ref)
         proposition = propositions.get(ref)
         if proposition is None:
-            unresolved.add(ref)
-            return
-        visiting.add(ref)
-        branches = producers.get(ref, [])
-        if proposition.kind == PropositionKind.INFERENCE and not branches:
-            unresolved.add(ref)
-        elif proposition.kind != PropositionKind.INFERENCE:
-            leaves.add(ref)
-        else:
-            # Multiple producers mean alternative derivations. Conservatively
-            # require every recorded derivation's premises for complete lineage.
-            for branch in branches:
-                for premise in branch:
-                    walk(premise)
-        visiting.remove(ref)
-        visited.add(ref)
+            continue
+        if proposition.kind != PropositionKind.INFERENCE:
+            stated.append(proposition)
+            continue
+        steps = producers.get(ref, [])
+        choice = choice or len(steps) > 1
+        for step in steps:
+            pending.extend(step.input_refs)
+    return choice, stated
 
-    walk(conclusion_id)
-    return tuple(sorted(leaves)), tuple(sorted(unresolved))
+
+@dataclass(frozen=True, slots=True)
+class _Derivation:
+    """One derivation while it is being listed. ``key`` orders derivations by content; ``step_ids`` only orders two
+    derivations whose keys are equal."""
+    key: tuple
+    leaves: frozenset[str]
+    unresolved: frozenset[str]
+    step_ids: tuple[str, ...]
+    time_not_established: bool
+
+    @property
+    def order(self) -> tuple:
+        return (self.key, self.step_ids)
+
+
+def _derivations(conclusion_id: str, result: ReasoningResult) -> tuple[list[_Derivation], bool]:
+    """The derivations of a conclusion that are evaluated, in order, and whether any were left out.
+
+    A derivation chooses exactly one producing step for the conclusion and for every derived proposition beneath it.
+    A conclusion with one step at every level has exactly one derivation, with the leaves found before 0.8.0.
+
+    The order is by content and never by an id. The key of a stated proposition is ``_content_key``; the key of a
+    derivation through a step is the step's rule (id and version) followed by the keys of the derivations chosen for
+    the step's premises, in input order; a reference that cannot be resolved (a proposition that is absent, a derived
+    one that no step produces, or one that depends on itself) has one fixed key. Derivations with equal keys are a
+    tie group: they differ only in which of several identical stated propositions they rest on.
+
+    At most ``MAX_DERIVATIONS`` are returned, and the limit never divides a tie group: if it would, that whole group
+    is left out. The one exception is a first tie group that alone exceeds the limit; its first ``MAX_DERIVATIONS``
+    by step id are returned.
+
+    Raises ``ValueError`` if the conclusion has a choice and a stated proposition beneath it holds a number that is
+    not finite, in its object or its qualifiers, at any depth.
+    """
+    propositions = {p.id: p for p in result.propositions}
+    producers: dict[str, list[InferenceStep]] = {}
+    for step in result.inference_steps:
+        for output_id in step.output_proposition_refs:
+            producers.setdefault(output_id, []).append(step)
+    wanted = MAX_DERIVATIONS + 1          # one more than is used, so that leaving some out is noticed
+    # An order is worked out only for a conclusion that has a choice (Amendment 2). A conclusion with none has exactly
+    # one derivation, as before 0.8.0, and is evaluated without any key being built, whatever else the result holds.
+    ordered, stated = _beneath(conclusion_id, propositions, producers)
+    if ordered:
+        # The key is JSON without non-finite numbers, and no spelling for them is defined: refuse, deliberately.
+        offending = sorted(p.id for p in stated if _holds_non_finite(p.object_value) or _holds_non_finite(p.qualifiers))
+        if offending:
+            raise ValueError(f"Alternative derivations of conclusion {conclusion_id} cannot be ordered: "
+                             f"proposition {offending[0]} holds a number that is not finite.")
+    listed: dict[str, list[_Derivation]] = {}
+
+    def through(step: InferenceStep, visiting: frozenset[str]) -> Iterator[_Derivation]:
+        record = step.parameters.get("conclusion_time") or {}
+        not_established = record.get("status") == "not_established"
+        parts = [expand(premise, visiting) for premise in step.input_refs]
+        # Each part is in order, so their product is in order of the combined key.
+        for chosen in product(*parts):
+            yield _Derivation(
+                key=("1", step.rule_id) + tuple(part.key for part in chosen),
+                leaves=frozenset().union(*(part.leaves for part in chosen)),
+                unresolved=frozenset().union(*(part.unresolved for part in chosen)),
+                step_ids=(step.id,) + tuple(step_id for part in chosen for step_id in part.step_ids),
+                time_not_established=not_established or any(part.time_not_established for part in chosen),
+            )
+
+    def expand(ref: str, visiting: frozenset[str]) -> list[_Derivation]:
+        proposition = propositions.get(ref)
+        if proposition is None or ref in visiting:
+            return [_Derivation(_UNRESOLVED_KEY, frozenset(), frozenset({ref}), (), False)]
+        if proposition.kind != PropositionKind.INFERENCE:
+            key = _content_key(proposition) if ordered else _UNORDERED_KEY
+            return [_Derivation(key, frozenset({ref}), frozenset(), (), False)]
+        if ref in listed:
+            return listed[ref]
+        steps = producers.get(ref, [])
+        if not steps:
+            return [_Derivation(_UNRESOLVED_KEY, frozenset(), frozenset({ref}), (), False)]
+        streams = [through(step, visiting | {ref}) for step in steps]
+        listed[ref] = list(islice(heapq.merge(*streams, key=lambda derivation: derivation.order), wanted))
+        return listed[ref]
+
+    found = expand(conclusion_id, frozenset())
+    truncated = len(found) > MAX_DERIVATIONS
+    keep = len(found)
+    if truncated:
+        keep = MAX_DERIVATIONS
+        if found[keep - 1].key == found[keep].key:               # the limit would divide a tie group
+            first_of_group = next(n for n, derivation in enumerate(found) if derivation.key == found[keep].key)
+            keep = first_of_group or MAX_DERIVATIONS             # leave the whole group out, unless it is the first
+    return found[:keep], truncated
 
 
 def evaluate_conclusions(
@@ -171,8 +331,7 @@ def evaluate_conclusions(
     )
     evaluations = []
 
-    for conclusion_id in result.conclusion_refs:
-        leaves, unresolved = _premise_lineage(conclusion_id, result)
+    def decide(conclusion_id, leaves, unresolved):
         assessments = tuple(assess_evidence(view, ref) for ref in leaves)
         by_id = {a.proposition_id: a for a in assessments}
         covered = tuple(sorted(
@@ -273,18 +432,52 @@ def evaluate_conclusions(
             )
         ):
             limitations.append("RELIABILITY_NOT_ASSESSED_FOR_ALL_LINKED_SOURCES")
-        evaluations.append(ConclusionEvaluation(
-            conclusion_id=conclusion_id,
-            decision=decision,
-            escalation=escalation,
-            premise_coverage=coverage,
-            evidence_assessments=assessments,
-            supporting_source_count=supporting,
-            contradicting_source_count=contradicting,
-            qualifying_source_count=qualifying,
-            reasons=tuple(reasons),
-            limitations=tuple(dict.fromkeys(limitations)),
-        ))
+        return decision, escalation, coverage, assessments, supporting, contradicting, qualifying, reasons, limitations
+
+    for conclusion_id in result.conclusion_refs:
+        derivations, truncated = _derivations(conclusion_id, result)
+        options: list[tuple[_Derivation, ConclusionEvaluation]] = []
+        for derivation in derivations:
+            (decision, escalation, coverage, assessments, supporting, contradicting, qualifying, reasons,
+             limitations) = decide(conclusion_id, tuple(sorted(derivation.leaves)), tuple(sorted(derivation.unresolved)))
+            if derivation.time_not_established:
+                # The conclusion, or a derived proposition beneath it, holds for a time that is not established.
+                if decision == ConclusionDecision.ACCEPTED:
+                    decision, escalation, reasons = ConclusionDecision.PROVISIONAL, EscalationLevel.REVIEW, [_TIME_NOT_ESTABLISHED]
+                limitations.append(_TIME_NOT_ESTABLISHED)
+            options.append((derivation, ConclusionEvaluation(
+                conclusion_id=conclusion_id,
+                decision=decision,
+                escalation=escalation,
+                premise_coverage=coverage,
+                evidence_assessments=assessments,
+                supporting_source_count=supporting,
+                contradicting_source_count=contradicting,
+                qualifying_source_count=qualifying,
+                reasons=tuple(reasons),
+                limitations=tuple(dict.fromkeys(limitations)),
+            )))
+        # Best outcome first; among equals, the earlier in the order of derivations (the sort is stable).
+        options.sort(key=lambda option: _DECISION_RANK[option[1].decision])
+        best = options[0][1]
+        if truncated:
+            # Some derivations were not examined. Nothing definite may be said against the conclusion from an
+            # incomplete search, unless a definite contradiction involves the conclusion itself: that applies to
+            # every derivation, examined or not.
+            contradicted = any(
+                conclusion_id in (c.left_id, c.right_id) and c.certainty == ContradictionCertainty.DEFINITE
+                for c in contradictions
+            )
+            if best.decision in _NEGATIVE and not contradicted:
+                best = replace(best, decision=ConclusionDecision.PROVISIONAL, escalation=EscalationLevel.REVIEW,
+                               reasons=(_TRUNCATED,))
+            best = replace(best, limitations=tuple(dict.fromkeys(best.limitations + (_TRUNCATED,))))
+        if len(options) > 1:
+            best = replace(best, derivations=tuple(
+                DerivationEvaluation(derivation.step_ids, evaluation.decision,
+                                     evaluation.premise_coverage.leaf_premise_ids, evaluation.reasons)
+                for derivation, evaluation in options))
+        evaluations.append(best)
 
     decisions = [item.decision for item in evaluations]
     if not decisions:

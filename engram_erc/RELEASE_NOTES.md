@@ -1,3 +1,84 @@
+# ERC 0.8.0 — Conclusion Temporal Propagation (increment B5)
+
+**Package version:** 0.8.0  
+**Status:** Implemented and tested locally on branch `erc-adapter-1`. The commit, the GitHub runs, the sign-off and the tag are recorded when they are given.  
+**Baseline:** `4f476fd` (code as at `a950c94`, tag `erc-temporal-b4`; package 0.7.0). Specification: frozen Draft 1.4 revision 2 (SHA-256 `ec3d333a2621754d6a6ca1dc8aa63662207a906572349d4f08019ea24d993581`) with Amendment 1 revision 2 (`bcbcf020b818f993dc5cab990a9534ba301bd8617301f6c550fd7e10a81cb38d`) and Amendment 2 revision 1 (`eeffe7ad745f1bbe5ba42a36f547897a63c59558f5560fe6e721935dba1783a2`).
+
+## What 0.8.0 changes
+
+Until now a derived conclusion carried no time, whatever the times of its premises. A rule may now say what time its conclusion takes.
+
+```python
+RuleDefinition(
+    "works_in_city", "1",
+    (PropositionPattern(X, "works_at", C, name="job"), PropositionPattern(C, "located_in", Y, name="place")),
+    ConclusionTemplate(X, "works_in_city", Y),
+    temporal=(TemporalConstraint("overlaps", "job", "place"),),
+    conclusion_time=ConclusionTime("while_all", ("job", "place")),
+)
+```
+
+| Kind | Names | The conclusion takes |
+|---|---|---|
+| `while_all` | two or more premises, each pair under a declared `overlaps` requirement | the period all of them share. States only |
+| `as_premise` | exactly one premise | that premise's time unchanged: a period, or an event window |
+| `timeless` | none | no time: the rule states that the conclusion has no temporal limit |
+
+**The shared period.** Earliest start: the latest of the stated earliest starts. Latest start: the latest of the latest starts. Earliest end: the earliest of the earliest ends. Latest end: the earliest of the stated latest ends. It is never bolder and never looser than the premises: checked against every concrete history on 26,329 groups of two to five states.
+
+**Three statuses, recorded on the inference step** (`parameters["conclusion_time"]`), not on `Proposition`: `timed`, `timeless`, `not_established`. A bare proposition with empty time fields does not say which it is; read the producing step.
+
+| Rule | Behaviour |
+|---|---|
+| Declares nothing | Exactly as in 0.7.0: no time, no status, the same duplicate handling |
+| Declares requirements and no conclusion time | Fires as in 0.7.0. Status `not_established` (`no_conclusion_time_declared`); the conclusion is at most **provisional** |
+| Declares both, or a conclusion time alone | The conclusion carries the declared time, or is timeless, or `not_established` when `as_premise` names a premise with no time (`premise_carries_no_time`) or an unknown time (`premise_time_unknown`) |
+
+**Alternative derivations.** Two derivations with different periods give two conclusions, never merged, including periods that touch. Two derivations with the same claim, time and status give one conclusion and one inference step each (trace status `derived_alternative`, code `ALTERNATIVE_DERIVATION_RECORDED`). A stated proposition never absorbs a derivation of a rule that declares.
+
+**Evaluation.** Each derivation is decided on its own stated propositions; support is never pooled. The conclusion takes the outcome of its best derivation (accepted, provisional, withheld, conflicted, rejected, in that order). `ConclusionEvaluation.derivations` lists every evaluated derivation, best first, as `DerivationEvaluation(step_ids, decision, leaf_premise_ids, reasons)`; it is empty when there is one. A time not established anywhere in a derivation caps accepted at provisional (`CONCLUSION_TIME_NOT_ESTABLISHED`).
+
+**The limit.** At most 64 derivations of one conclusion are evaluated, chosen by what they say and never by an id; derivations identical in content are kept or left out together. When any is left out (`ALTERNATIVE_DERIVATIONS_TRUNCATED`) no outcome against the conclusion is reported from the incomplete search: a withheld, conflicted or rejected result becomes provisional, unless a definite contradiction involves the conclusion itself.
+
+**Through `orchestrate` only:** one uncertainty item per conclusion whose time is not established (`uncertainty_conclusion_time_<n>`, kind `TEMPORAL_AMBIGUITY`).
+
+**Contradictions** now see a conclusion's period: two values of a one-valued predicate derived from disjoint periods no longer conflict, and from overlapping periods conflict definitely.
+
+New public names (four): `ConclusionTime`, `ConclusionTimeKind`, `ConclusionTimeStatus`, `DerivationEvaluation`. How a time is worked out is not public.
+
+## Compatibility
+
+- Every existing way of building a rule works and means what it meant. `conclusion_time` is keyword-only and defaults to none.
+- A rule that declares nothing gives the same propositions, steps, trace and decisions as in 0.7.0.
+- **A change for rules written for 0.7.0:** a rule with temporal requirements and no conclusion time still fires, and its conclusion is now provisional with "time not established" until the rule declares its conclusion's time.
+- `ConclusionEvaluation` gains one field, `derivations`, after the existing ones. Two inference steps may now name the same output proposition, and one claim may appear as several conclusions with different periods.
+- `Proposition` and the rest of `contracts.py` are unchanged, as are `temporal_requirements.py` and `primitives/comparison.py`.
+- A changed declaration, `conclusion_time` included, needs a new rule version. This is not enforced.
+
+## Known limitations carried forward
+
+- The conclusion now carries its period, and is still accepted when asked about a moment outside it: `as_of` is not read (B6).
+- A rule that declares nothing gives a conclusion with no time and no status.
+- Three kinds only. "At the start of a premise" and "at the end of a premise" cannot be said.
+- A timeless conclusion used under a later requirement is reported with the 0.7.0 words "carries no time yet".
+- The overall decision is withheld when one of several periods of a claim is withheld.
+- The counterfactual comparison is by claim alone: two periods of one claim count once there.
+- Outside `orchestrate` a time that is not established is in the step and trace only.
+- Periods of one claim are never merged, adjacent ones included.
+- The status does not travel with a conclusion that is handed back in as a stated proposition.
+- Beyond 64 derivations the search is incomplete: accepted or provisional, never definitely withheld.
+- With more than 64 derivations of one conclusion identical in content, which of them are examined depends on step ids; the outcome is accepted or provisional only. Full independence from identifiers inside such a group is an objective for a later increment.
+- What a caller puts in a claim is content: if subjects or objects are regenerated, the order of derivations can change.
+- A rule that declares nothing and a rule that declares never share a conclusion. When both derive the same claim there are two conclusions, also where 0.7.0 gave one (a plain rule beside a rule with requirements only).
+- A conclusion with alternative derivations cannot be evaluated when a stated proposition beneath it holds a number that is not finite (NaN or an infinity) in its object or qualifiers: `evaluate_conclusions` raises `ValueError` naming the conclusion and the proposition. A conclusion with one derivation is not affected, whatever else the result holds. A defined spelling for such numbers is left to a later increment.
+- B6 must read a conclusion's temporal status from its producing inference step, and must never infer timelessness from empty time fields.
+
+## Tests
+
+`engram_erc/tests/test_conclusion_time.py` (117 cases, with the fixed answer table of 26,329 rows as compressed data), `engram_erc/tests/test_conclusion_time_amendment2.py` (62 cases, Amendment 2) and `tests/test_erc_overlay_conclusion_time.py` (38 cases, the `explain()` lines). `engram_erc/tests` alone: 855.
+
+---
+
 # ERC 0.7.0 — Rule Temporal Requirements (increment B4)
 
 **Package version:** 0.7.0  

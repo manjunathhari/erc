@@ -613,20 +613,32 @@ ERC_1X_RELEASE_PINS = {
                                  "when the certain parts of both intervals share time; disjointness unchanged), and two events "
                                  "are compared by their occurrence windows. Intervals with none of the 0.5.0 fields compare "
                                  "exactly as before."),
-    "rules.py": ("9030a5d26f33de17615fbce23cf7d69f5b513be9e1240865a1fff9e76cd11ecb", "0.7.0",
-                 "B4 rule temporal requirements: an optional keyword-only name on a premise pattern, TemporalConstraint and "
-                 "TemporalRequirementKind, and an optional keyword-only `temporal` on a rule, validated when the rule is "
-                 "built. A rule built in any earlier way is the rule it was."),
-    "inference.py": ("3c73e75efea3f76a94ce43c8f970117d189d89dd8cd8065c5ab6713c22235cf5", "0.7.0",
-                     "B4 rule temporal requirements: a match of a rule that declares requirements fires only if they are "
-                     "established; otherwise a trace entry is recorded and nothing is derived. A rule that declares nothing "
-                     "runs exactly as before."),
-    "orchestration.py": ("df61def1f01cfab86ce23b606e07a63fd4f38b1e90ba3e87e5cd7bf49b5d9e32", "0.7.0",
-                         "B4 rule temporal requirements: one uncertainty item per indeterminate match, worded from a "
-                         "second run of the check that must agree with the trace entry (Amendment 2). engine_version is "
-                         "the package version, no longer the fixed 0.1.8."),
+    "rules.py": ("7ab5c9ff4d56eabd0c629dba3f2d38ac989d0020b0b42b65a81c19fad2d80cb3", "0.8.0",
+                 'B5 conclusion temporal propagation: ConclusionTime and ConclusionTimeKind, and an optional '
+                 'keyword-only `conclusion_time` on a rule, validated when the rule is built (while_all needs an '
+                 'overlaps requirement between every pair of its premises). Before it, 0.7.0 (B4): an optional '
+                 'keyword-only name on a premise pattern, TemporalConstraint, TemporalRequirementKind and `temporal`. '
+                 'A rule built in any earlier way is the rule it was.'),
+    "inference.py": ("c91b3fa7b3bd456c58fba6b311b35e45d243e1fc7a16c6fea00c75fb1d436b1f", "0.8.0",
+                     'B5 conclusion temporal propagation: the conclusion of a rule that declares carries the declared '
+                     'time; its status is recorded on the inference step; a second derivation of the same conclusion is '
+                     'recorded as an alternative step, and a stated proposition never absorbs it. Before it, 0.7.0 (B4): a '
+                     'match fires only if its declared requirements are established. A rule that declares nothing runs '
+                     'exactly as before.'),
+    "orchestration.py": ("1d837f2a57d5b6a8b3308de6c0431b21fe1c0487a6527b1ed254cadff3bdcea7", "0.8.0",
+                         'B5 conclusion temporal propagation: one uncertainty item per conclusion whose time is not '
+                         'established, worded from the step record. Before it, 0.7.0 (B4): one uncertainty item per '
+                         'indeterminate match, worded from a verified second run of the check; engine_version is the package '
+                         'version.'),
+    "evaluation.py": ("3fd9a65a57fc6fc83ccff9de2acc3038056c2d5443b94393703b6cccb692f99f", "0.8.0",
+                      'B5 conclusion temporal propagation: each derivation of a conclusion is decided on its own stated '
+                      'propositions and the best outcome is taken; DerivationEvaluation and '
+                      'ConclusionEvaluation.derivations; a time not established caps accepted at provisional; at most 64 '
+                      'derivations, chosen by content, with no outcome against the conclusion from an incomplete search. A '
+                      'conclusion with one derivation is evaluated exactly as before.'),
 }
-ERC_1X_FILES_CHANGED_SINCE_0_4_0 = {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py"}
+ERC_1X_FILES_CHANGED_SINCE_0_4_0 = {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py",
+                                    "evaluation.py"}
 
 
 def test_the_0_4_0_hash_table_is_kept_as_an_unedited_historical_record():
@@ -844,7 +856,7 @@ def test_legacy_request_runs_end_to_end_with_old_names():
 
 
 def test_version_comes_from_version_file():
-    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.7.0"
+    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.8.0"
 
 
 @pytest.mark.parametrize("module", ["engram_erc.examples.general_incident",

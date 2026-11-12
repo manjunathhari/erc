@@ -311,19 +311,23 @@ def test_e5_an_event_still_sent_as_an_interval_is_compared_as_an_interval_exactl
 # Revised at B4 (ERC 0.7.0), which adds exactly five public names for rule temporal requirements: TemporalCheck,
 # TemporalConstraint, TemporalOutcome, TemporalRequirementKind, check_temporal_requirements. B3 itself added none: until
 # 0.7.0 this pin was (300, "80ce1eda47d019cdc9403366bbca2072eb3fb6768e5f12435b9be451ecbaea4b").
-PUBLIC_NAMES_AT_103D2FD_AND_B4 = (305, "0ebca2a8058e41153a798aae237f2747beee407956086dc1ae63ceeaa4dff59f")
+# Revised at B5 (ERC 0.8.0), which adds exactly four: ConclusionTime, ConclusionTimeKind, ConclusionTimeStatus,
+# DerivationEvaluation. At 0.7.0 this pin was (305, "0ebca2a8058e41153a798aae237f2747beee407956086dc1ae63ceeaa4dff59f").
+PUBLIC_NAMES_AT_103D2FD_AND_B4 = (309, "66d154490ab78ed4793db270dead6840ebca0e414cb22137114a4ac8d0f5a2a3")
 PRIMITIVE_NAMES_AT_103D2FD = ["ComparisonKind", "ComparisonResult", "Contradiction", "ContradictionCertainty", "EvidenceAssessment",
                               "EvidenceAssessmentStatus", "TemporalRelation", "assess_evidence", "compare_propositions",
                               "find_contradictions"]
 
 
 def test_v1_version_and_release_pin():
-    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.7.0"  # revised at B4; the comparison's own pin stays 0.6.0
+    assert engram_erc.__version__ == (PKG / "VERSION").read_text().strip() == "0.8.0"  # revised at B4 and at B5; the comparison's own pin stays 0.6.0
     digest, release, reason = pins.ERC_1X_RELEASE_PINS["primitives/comparison.py"]
     assert release == "0.6.0" and "B3" in reason
     assert digest == hashlib.sha256((PKG / "primitives/comparison.py").read_bytes()).hexdigest() != pins.ERC_1X_SHA256_AT_0_4_0["primitives/comparison.py"]
-    # revised at B4, which changes rules.py, inference.py and orchestration.py and leaves the comparison alone
-    assert pins.ERC_1X_FILES_CHANGED_SINCE_0_4_0 == {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py"}
+    # revised at B4, which changes rules.py, inference.py and orchestration.py and leaves the comparison alone; and at B5,
+    # which changes those three again and evaluation.py, and still leaves the comparison alone
+    assert pins.ERC_1X_FILES_CHANGED_SINCE_0_4_0 == {"contracts.py", "primitives/comparison.py", "rules.py", "inference.py", "orchestration.py",
+                                                    "evaluation.py"}
     # the contradiction layer is not touched: still its 0.4.0 bytes
     assert hashlib.sha256((PKG / "primitives/contradiction.py").read_bytes()).hexdigest() == pins.ERC_1X_SHA256_AT_0_4_0["primitives/contradiction.py"]
 

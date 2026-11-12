@@ -7,14 +7,15 @@ import json
 from typing import Any, Iterable, Mapping
 
 from .contracts import (
-    Evidence, EvidenceLink, InferenceStep, Proposition, PropositionKind,
-    ReasoningGraph, ReasoningResult, ReasoningStatus, TraceEntry, new_id,
+    Evidence, EvidenceLink, InferenceStep, Occurrence, Proposition, PropositionKind,
+    ReasoningGraph, ReasoningResult, ReasoningStatus, TimeInterval, TraceEntry, new_id,
 )
 from .graph import ReasoningGraphBuilder, ReasoningGraphView
 from .rules import (
     ConclusionTemplate, PropositionPattern, RuleDefinition, RuleSet, Variable,
 )
 from .temporal_requirements import TemporalOutcome, check_temporal_requirements
+from .conclusion_time import ConclusionTimeStatus, derive_conclusion_time, time_record
 
 
 @dataclass(frozen=True, slots=True)
@@ -134,9 +135,14 @@ def instantiate_conclusion(
     bindings: Mapping[str, Any],
     *,
     proposition_id: str,
+    valid_time: TimeInterval | None = None,
+    occurred: Occurrence | None = None,
 ) -> Proposition:
+    """The conclusion of one match. ``valid_time`` and ``occurred`` (ERC 0.8.0) are the time the rule's declaration
+    gives it; a rule that declares nothing passes neither, and the conclusion carries no time, as before."""
     template = rule.conclusion
     return Proposition(
+        valid_time=valid_time, occurred=occurred,
         id=proposition_id,
         subject=_resolve(template.subject, bindings),
         predicate=_resolve(template.predicate, bindings),
@@ -184,6 +190,9 @@ def execute_rules(
     inference_steps: list[InferenceStep] = []
     trace: list[TraceEntry] = []
     fired_keys: set[str] = set()
+    # ERC 0.8.0: the temporal status of each conclusion derived in this run by a rule that declares requirements or a
+    # conclusion time. Conclusions of rules that declare nothing are not in it.
+    derived_status: dict[str, ConclusionTimeStatus] = {}
     per_rule_firings: dict[str, int] = {}
     rounds = 0
     firings = 0
@@ -229,27 +238,45 @@ def execute_rules(
                     break
 
                 conclusion_id = _stable_id("prop", key_payload)
-                # If an identical proposition already exists under a different ID,
-                # do not add a duplicate derived node.
+                # ERC 0.8.0: the time of the conclusion. None for a rule that declares nothing.
+                timing = derive_conclusion_time(rule, [all_props[ref] for ref in match.premise_ids])
                 candidate = instantiate_conclusion(
-                    rule, match.bindings, proposition_id=conclusion_id
+                    rule, match.bindings, proposition_id=conclusion_id,
+                    valid_time=timing.valid_time if timing else None, occurred=timing.occurred if timing else None,
                 )
-                duplicate = next((
-                    p for p in all_props.values()
-                    if (p.subject, p.predicate, p.object_value, p.polarity, p.valid_time)
-                    == (candidate.subject, candidate.predicate, candidate.object_value,
-                        candidate.polarity, candidate.valid_time)
-                ), None)
-                if duplicate is not None:
-                    fired_keys.add(firing_key)
-                    trace.append(TraceEntry(
-                        sequence=len(trace), operation="rule_evaluation",
-                        input_refs=match.premise_ids, output_refs=(duplicate.id,),
-                        status="no_op_duplicate_conclusion", rule_id=rule.rule_id,
-                        explanation_code="CONCLUSION_ALREADY_PRESENT",
-                        details={"rule_version": rule.version},
-                    ))
-                    continue
+                if timing is None:
+                    # A rule that declares nothing, exactly as in 0.7.0: if an identical proposition already exists
+                    # under a different ID, do not add a duplicate derived node. Conclusions derived in this run by a
+                    # rule that declares are not considered (Amendment 2): the two kinds of rule never share a
+                    # conclusion, whichever rule id sorts first.
+                    duplicate = next((
+                        p for p in all_props.values()
+                        if p.id not in derived_status
+                        and (p.subject, p.predicate, p.object_value, p.polarity, p.valid_time)
+                        == (candidate.subject, candidate.predicate, candidate.object_value,
+                            candidate.polarity, candidate.valid_time)
+                    ), None)
+                    if duplicate is not None:
+                        fired_keys.add(firing_key)
+                        trace.append(TraceEntry(
+                            sequence=len(trace), operation="rule_evaluation",
+                            input_refs=match.premise_ids, output_refs=(duplicate.id,),
+                            status="no_op_duplicate_conclusion", rule_id=rule.rule_id,
+                            explanation_code="CONCLUSION_ALREADY_PRESENT",
+                            details={"rule_version": rule.version},
+                        ))
+                        continue
+                    same = None
+                else:
+                    # A rule that declares: only a conclusion derived earlier in this run with the same claim, the same
+                    # time and the same status is the same conclusion, and this match is then recorded as an
+                    # alternative derivation of it. A stated proposition never absorbs a derivation, and two
+                    # periods of one claim are two conclusions.
+                    same = next((all_props[ref] for ref, status in derived_status.items()
+                                 if status is timing.status and _claim_and_time(all_props[ref]) == _claim_and_time(candidate)),
+                                None)
+                    if same is not None:
+                        candidate = same
 
                 step_id = _stable_id("inf", key_payload)
                 step = InferenceStep(
@@ -263,24 +290,29 @@ def execute_rules(
                         "bindings": dict(match.bindings),
                         "description": rule.description,
                         **({"temporal": temporal} if temporal is not None else {}),
+                        **({"conclusion_time": time_record(timing)} if timing is not None else {}),
                     },
                 )
-                all_props[candidate.id] = candidate
                 inference_steps.append(step)
-                new_this_round.append(candidate.id)
+                if timing is not None and same is None:
+                    derived_status[candidate.id] = timing.status
+                if same is None:
+                    all_props[candidate.id] = candidate
+                    new_this_round.append(candidate.id)
                 fired_keys.add(firing_key)
                 firings += 1
                 per_rule_firings[rule.rule_id] = per_rule_firings.get(rule.rule_id, 0) + 1
                 trace.append(TraceEntry(
                     sequence=len(trace), operation="rule_execution",
                     input_refs=match.premise_ids, output_refs=(candidate.id,),
-                    status="derived", rule_id=f"{rule.rule_id}@{rule.version}",
-                    explanation_code="RULE_PREMISES_MATCHED",
+                    status="derived" if same is None else "derived_alternative", rule_id=f"{rule.rule_id}@{rule.version}",
+                    explanation_code="RULE_PREMISES_MATCHED" if same is None else "ALTERNATIVE_DERIVATION_RECORDED",
                     details={
                         "rule_version": rule.version,
                         "ruleset_version": ruleset.version,
                         "inference_id": step_id,
                         "bindings": dict(match.bindings),
+                        **({"conclusion_time": time_record(timing)} if timing is not None else {}),
                     },
                 ))
             if limit_reached:
@@ -331,6 +363,12 @@ def execute_rules(
         rounds_executed=rounds,
         firings_executed=firings,
     )
+
+
+def _claim_and_time(proposition: Proposition) -> tuple:
+    """What a derived conclusion says and when: two conclusions equal in this and in status are one conclusion."""
+    return (proposition.subject, proposition.predicate, proposition.object_value, proposition.polarity,
+            proposition.valid_time, proposition.occurred)
 
 
 def to_reasoning_result(

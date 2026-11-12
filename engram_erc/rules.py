@@ -77,6 +77,36 @@ class TemporalConstraint:
             raise ValueError("a temporal constraint relates two different premises")
 
 
+class ConclusionTimeKind(str, Enum):
+    """How the time of a rule's conclusion follows from its premises (ERC 0.8.0)."""
+    WHILE_ALL = "while_all"      # a state that holds while every named premise holds: their shared period
+    AS_PREMISE = "as_premise"    # the time of one named premise, unchanged: a period or an event window
+    TIMELESS = "timeless"        # the rule states that its conclusion has no temporal limit
+
+
+@dataclass(frozen=True, slots=True)
+class ConclusionTime:
+    """A rule's declaration of the time its conclusion takes (ERC 0.8.0). ``premises`` are premise names as given on
+    ``PropositionPattern``: two or more for ``while_all``, exactly one for ``as_premise``, none for ``timeless``.
+    ``while_all`` names its premises explicitly; it never means "all premises of the rule"."""
+    kind: ConclusionTimeKind | str
+    premises: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        try:
+            object.__setattr__(self, "kind", ConclusionTimeKind(self.kind))
+        except ValueError:
+            raise ValueError(f"unknown conclusion time: {self.kind!r}") from None
+        if not isinstance(self.premises, tuple) or not all(isinstance(n, str) and n.strip() for n in self.premises):
+            raise ValueError("a conclusion time names premises as a tuple of names")
+        if len(set(self.premises)) != len(self.premises):
+            raise ValueError("a conclusion time names a premise twice")
+        need = {ConclusionTimeKind.WHILE_ALL: len(self.premises) >= 2, ConclusionTimeKind.AS_PREMISE: len(self.premises) == 1,
+                ConclusionTimeKind.TIMELESS: not self.premises}[self.kind]
+        if not need:
+            raise ValueError("while_all names two or more premises, as_premise exactly one, timeless none")
+
+
 @dataclass(frozen=True, slots=True)
 class RuleDefinition:
     """Immutable rule with explicit version and ordered premise patterns."""
@@ -90,6 +120,10 @@ class RuleDefinition:
     # match to fire. None: the rule declares nothing. (): the rule states that it needs none. In 0.7.0 both fire as a
     # rule always did. A rule whose declaration is changed must be given a new version.
     temporal: tuple[TemporalConstraint, ...] | None = field(default=None, kw_only=True)
+    # ERC 0.8.0: the time the conclusion takes. None: not declared. A rule that declares neither this nor `temporal`
+    # runs exactly as it did in 0.7.0. A rule that declares `temporal` and not this still fires, and its conclusion's
+    # time is recorded as not established. A rule whose declaration is changed must be given a new version.
+    conclusion_time: ConclusionTime | None = field(default=None, kw_only=True)
 
     def __post_init__(self) -> None:
         require_nonempty(self.rule_id, "rule_id")
@@ -115,6 +149,23 @@ class RuleDefinition:
                 if key in declared:
                     raise ValueError("the same temporal constraint is declared twice")
                 declared.add(key)
+        if self.conclusion_time is not None:
+            if not isinstance(self.conclusion_time, ConclusionTime):
+                raise ValueError("conclusion_time must be None or a ConclusionTime")
+            for premise_name in self.conclusion_time.premises:
+                if premise_name not in names:
+                    raise ValueError(f"conclusion time names an unknown premise: {premise_name!r}")
+            if self.conclusion_time.kind is ConclusionTimeKind.WHILE_ALL:
+                # The shared period certainly exists only if the rule fires only when the named states overlap, so
+                # every pair of them must be covered by a declared `overlaps` requirement.
+                required = {frozenset((c.left, c.right)) for c in (self.temporal or ())
+                            if c.relation is TemporalRequirementKind.OVERLAPS}
+                chosen = self.conclusion_time.premises
+                for index, first in enumerate(chosen):
+                    for second in chosen[index + 1:]:
+                        if frozenset((first, second)) not in required:
+                            raise ValueError(
+                                f"while_all needs an overlaps requirement between {first!r} and {second!r}")
         # Every variable used in the conclusion must be bound by a premise.
         bound = set()
         for pattern in self.premises:
