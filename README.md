@@ -193,7 +193,7 @@ Each increment worked from a written specification agreed before its code, had i
 | B3, comparison | ERC's comparison reads that precision (package 0.6.0) | `e57c7c1` | `erc-temporal-b3` |
 | B2b, open-end transition | The overlay stops inventing dates | `ff2bfbb` | `erc-temporal-b2b` |
 | B4, rule temporal requirements | A rule fires only when the time relationship it declares is established (package 0.7.0) | `a950c94` | `erc-temporal-b4` |
-| B5, conclusion temporal propagation | A rule can declare the time its conclusion takes; alternative derivations are kept and each is evaluated on its own (package 0.8.0) | recorded at sign-off | recorded at sign-off |
+| B5, conclusion temporal propagation | A rule can declare the time its conclusion takes; alternative derivations are kept and each is evaluated on its own (package 0.8.0) | `bcaf863` | `erc-temporal-b5` |
 
 B2b at `ff2bfbbbfbc813471ce5d87d65fe3bb288ec0b60`, on GitHub Actions and locally alike: full suite 1,540 passed with 4 known failures (present since before B1); ERC package 577; overlay and state engine 316; deliberate breakages caught 93 of 93 (overlay) and 54 of 54 (ERC).
 
@@ -208,8 +208,11 @@ B4 at `a950c94c617ad0e3d50aba61830b86236ca0dc12`, on GitHub Actions and locally 
 - Manual run with breakages: https://github.com/manjunathhari/erc/actions/runs/43045900847
 - B4 implementation diff against `e2a6872`, SHA-256 `290166ac75898feb066a6b2b3f05b809705b1b1b08304c16c2c68a33af3481bb`
 
-B5, implemented and tested locally; its commit, GitHub runs, sign-off and tag are recorded here when they are given. B5's specification authority is Draft 1.4 revision 2 with Amendments 1 and 2. Known limitations are listed in `engram_erc/RELEASE_NOTES.md`; `as_of` enforcement inside ERC (B6) is still to come.
+B5 at `bcaf863dd451f03b7e24be0d1d61e5537c547410`, on GitHub Actions and locally alike: full suite 1,858 passed with the same 4 known failures; ERC package 855; overlay and state engine 316 (the overlay tests unedited); deliberate breakages caught 201 of 201 (ERC) and 111 of 111 (overlay). The baseline is three commits: the implementation (`1874316`), the documentation (`75b981b`) and the breakage job's time limit in the workflow (`bcaf863`). B5's specification authority is Draft 1.4 revision 2 with Amendments 1 and 2. Known limitations are listed in `engram_erc/RELEASE_NOTES.md`; `as_of` enforcement inside ERC (B6) is still to come.
 
+- Push run: https://github.com/manjunathhari/erc/actions/runs/43233042743
+- Manual run with breakages: https://github.com/manjunathhari/erc/actions/runs/43233060023
+- B5 implementation diff against `4f476fd`, SHA-256 `42c0457d0a4dcccda55a629fcd13172ad3229ca943fc35e88d382a835e86891a`
 - Frozen B5 specification, `docs/specifications/erc-b5-spec.md` (frozen as `erc-b5-spec-draft1_4-r2.md`), SHA-256 `ec3d333a2621754d6a6ca1dc8aa63662207a906572349d4f08019ea24d993581`
 - Amendment 1 revision 2, `docs/specifications/erc-b5-amendment1.md` (approved as `erc-b5-amendment1-r2.md`), SHA-256 `bcbcf020b818f993dc5cab990a9534ba301bd8617301f6c550fd7e10a81cb38d`
 - Amendment 2 revision 1, `docs/specifications/erc-b5-amendment2.md` (approved as `erc-b5-amendment2-r1.md`), SHA-256 `eeffe7ad745f1bbe5ba42a36f547897a63c59558f5560fe6e721935dba1783a2`

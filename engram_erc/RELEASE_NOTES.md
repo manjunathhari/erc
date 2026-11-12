@@ -1,7 +1,7 @@
 # ERC 0.8.0 — Conclusion Temporal Propagation (increment B5)
 
 **Package version:** 0.8.0  
-**Status:** Implemented and tested locally on branch `erc-adapter-1`. The commit, the GitHub runs, the sign-off and the tag are recorded when they are given.  
+**Status:** Implemented, tested locally and on GitHub Actions, signed off at `bcaf863` (tag `erc-temporal-b5`); the implementation commit is `1874316`.  
 **Baseline:** `4f476fd` (code as at `a950c94`, tag `erc-temporal-b4`; package 0.7.0). Specification: frozen Draft 1.4 revision 2 (SHA-256 `ec3d333a2621754d6a6ca1dc8aa63662207a906572349d4f08019ea24d993581`) with Amendment 1 revision 2 (`bcbcf020b818f993dc5cab990a9534ba301bd8617301f6c550fd7e10a81cb38d`) and Amendment 2 revision 1 (`eeffe7ad745f1bbe5ba42a36f547897a63c59558f5560fe6e721935dba1783a2`).
 
 ## What 0.8.0 changes
