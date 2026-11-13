@@ -36,7 +36,7 @@ from typing import Iterable
 
 from engram_knowledge.database import KnowledgeBase
 from engram_knowledge.fact_validator import ACCEPTED, REJECTED, UNCERTAIN, Candidate, FactValidator, SourceLine
-from engram_knowledge.interpreter import interpret
+from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
 from engram_knowledge.models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, normalize_name
@@ -46,10 +46,14 @@ MONTHS = "january february march april may june july august september october no
 
 # ---------- 2. the gate ----------
 
-def gate(speaker: str, text: str, date: str = "") -> tuple[bool, str]:
+def gate(speaker: str, text: str, date: str = "", people: Iterable[str] = ()) -> tuple[bool, str]:
     """P2.1 interpreter + P2.2 policy on one sentence. True only for a 'candidate' (not review, not ignore).
-    Returns (picked, content kind); the kind is a hint for the P1 fact type."""
-    parsed = interpret(speaker, text, date=date)
+    Returns (picked, content kind); the kind is a hint for the P1 fact type.
+    `people` names the people in the chat (WR-A, rule S1), so a named speaker counts as a person talking about their
+    own life. An assistant, system or tool label in it is dropped first: it never counts as a person (W16). With no
+    `people`, every decision is as before."""
+    people = tuple(p for p in people if _speaker_role(p) == "other")
+    parsed = interpret(speaker, text, date=date, people=people)
     decision = evaluate(parsed)
     return decision.decision == "candidate" and decision.keep_as == "none", decision.content_kind
 

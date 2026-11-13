@@ -33,6 +33,11 @@ BASE2 = [
  ("runner: base 2 leaks into base 1 arm", "kit_tools/lme_gpt4o.py", 'b2_walked=len(fids), b2_facts_tokens=used_f)', 'b2_walked=len(fids), b2_facts_tokens=used_f); ctxs["raw"] = ctxs["b2"]'),
  ("runner: base 1 arm answers from base 2", "kit_tools/lme_gpt4o.py", 'ctxs["erc" if arm.endswith("+erc") else "b2" if arm.endswith("+b2") else "raw"]', 'ctxs["erc" if arm.endswith("+erc") else "b2" if "b2" in ctxs else "raw"]'),
  ("runner: b2 always rebuilt", "kit_tools/lme_gpt4o.py", 'ctxs["b2"] = ctxs["raw"]  # nothing reached', 'ctxs["b2"] = ("(no excerpts)", 0)  # nothing reached'),
+ # WR-A (writing layer contract v1, rule S1): the gate is told who the people in the chat are.
+ ("WR-A: gate does not pass people on", "engram_structure.py", "parsed = interpret(speaker, text, date=date, people=people)", "parsed = interpret(speaker, text, date=date)"),
+ ("WR-A: assistant label kept as a person", "engram_structure.py", 'people = tuple(p for p in people if _speaker_role(p) == "other")', "people = tuple(people)"),
+ ("WR-A: speaker always counted as a person", "engram_structure.py", "parsed = interpret(speaker, text, date=date, people=people)", "parsed = interpret(speaker, text, date=date, people=people + (speaker,))"),
+ ("WR-A: only the first person listed counts", "engram_structure.py", 'people = tuple(p for p in people if _speaker_role(p) == "other")', 'people = tuple(p for p in people if _speaker_role(p) == "other")[:1]'),
 ]
 ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
  ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
@@ -366,7 +371,7 @@ ERC = [
  ('B5 A2: a number nested in a list is not found', 'engram_erc/evaluation.py', '        return any(_holds_non_finite(member) for member in value)', '        return False'),
  ('B5 A2: an infinity is not counted as not finite', 'engram_erc/evaluation.py', '        return not math.isfinite(value)', '        return math.isnan(value)'),
 ]
-SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
+SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_base2_gate_people.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
           # B5 adds the explain() lines; their tests are in their own file, run after the unedited adapter tests.
           "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py tests/test_erc_overlay_conclusion_time.py"),
           # The byte-pin test is left out on purpose: every mutation of a pinned file changes its bytes, so the pin would
