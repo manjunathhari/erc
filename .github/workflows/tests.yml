@@ -1,4 +1,4 @@
-# Runs the test suite on every push to erc-adapter-1, so results can be read by anyone and do not depend on a
+# Runs the test suite on every push to erc-adapter-1 and engram-core-redesign, so results can be read by anyone and do not depend on a
 # reported run. Verification only: it changes no application code and adds no runtime dependency.
 #
 # The environment mirrors the one in which the baseline numbers were recorded (f175f03: 1,277 passed, 4 failed):
@@ -9,9 +9,9 @@ name: tests
 
 on:
   push:
-    branches: [erc-adapter-1]
+    branches: [erc-adapter-1, engram-core-redesign]
   pull_request:
-    branches: [erc-adapter-1]
+    branches: [erc-adapter-1, engram-core-redesign]
   workflow_dispatch:
     inputs:
       breakages:
