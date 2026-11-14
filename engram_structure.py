@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from engram_knowledge.database import KnowledgeBase
-from engram_knowledge.fact_validator import ACCEPTED, REJECTED, UNCERTAIN, Candidate, FactValidator, SourceLine
+from engram_knowledge.fact_validator import ACCEPTED, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine
 from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
@@ -237,7 +237,7 @@ class StructureLayer:
         """RM-a (4A12, 4A17): the shared checker's own support check for a vocabulary word, in fixed-list mode. Returns ""
         when the sentence supports the word, otherwise the checker's reason ("nothing in the source says <word>")."""
         d = self.word_checker.validate(Candidate(subject, word, obj, (sid,), method="structure", version=RULES_VERSION), [self.line(sid)])
-        return next((r for r in d.reasons if r == f"nothing in the source says {word}"), "")
+        return next((r for r in d.reasons if r in (f"nothing in the source says {word}", NOT_COMPLETED)), "")
 
     def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
         """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing.

@@ -19,6 +19,15 @@ SHORT_WINDOW = 6
 # OQ-1 (4A17): "am", "im" and "is" are in status's cue words, but alone they say nothing about a status ("I am allergic to
 # penicillin"). For status only, they do not count as support; status's own state words (single, married ...) still do.
 LINKING_ONLY = {"status": {"am", "im", "is"}}
+# Step 3a: attended, visited and completed are sent to ERC as completed happenings, so a sentence supports one of them only if it
+# states one: a completed form of the word, and nothing that makes it a habit ("every Sunday") or something still to come.
+# "was" alone says nothing of attendance ("I was sick", "I was at home"): it counts only in the phrase "was there for".
+COMPLETED_PHRASES = {"attended": ("was there for",)}
+COMPLETED_FORMS = {"attended": {"attended", "went"}, "visited": {"visited", "went", "travelled", "traveled"}, "completed": {"completed", "finished", "graduated", "done"}}
+RECURRING = set("every each daily weekly monthly yearly annually usually often regularly always sometimes generally normally occasionally frequently routinely "
+                "weekends weekdays mornings evenings nights mondays tuesdays wednesdays thursdays fridays saturdays sundays".split())
+NOT_YET = set("will gonna tomorrow next upcoming plan planning intend".split())
+NOT_COMPLETED = "the source does not state a completed happening"
 
 
 @dataclass(frozen=True)
@@ -92,6 +101,10 @@ class FactValidator:
         # Predicate: does that sentence use a word for this kind of fact?
         cues = set() if open_predicate else {stem(w) for w in PREDICATE_CUES.get(word, "").split() if w not in LINKING_ONLY.get(word, ())}
         if cues and not cues & set(held): unsure.append(f"nothing in the source says {word}")
+        if not open_predicate and word in COMPLETED_FORMS:
+            said_words, run = set(tokens(sentence)), " " + " ".join(tokens(sentence)) + " "
+            stated = COMPLETED_FORMS[word] & said_words or any(f" {p} " in run for p in COMPLETED_PHRASES.get(word, ()))
+            if not stated or RECURRING & said_words or NOT_YET & said_words or " going to " in run: unsure.append(NOT_COMPLETED)
 
         # Negation and uncertainty near the object.
         at = held.index(wanted[0])

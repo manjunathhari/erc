@@ -35,6 +35,12 @@ class SlotState:
     unmatched: list = field(default_factory=list)  # closing statements naming a value not held: kept and shown, but not a conflict
 
 
+def outside(fact):
+    """A record the writer marked as outside the vocabulary (`metadata.vocabulary = outside`). Told by the marker alone, never by the
+    predicate's text: a wording can equal a vocabulary word ("likes"). A record with no marker is not outside."""
+    return (fact.metadata or {}).get("vocabulary") == "outside"
+
+
 class StateEngine:
     def __init__(self, kb):
         self.kb = kb
@@ -134,7 +140,7 @@ class StateEngine:
             x = self.kb.get(r[0])
             f = x.fact
             valid = f.validation_status != "rejected" if validations is None else f.validation_status in validations
-            if f.status in statuses and valid and f.source_type == "explicit" and f.fact_type != "plan" and slot_of(f.predicate):
+            if f.status in statuses and valid and f.source_type == "explicit" and f.fact_type != "plan" and slot_of(f.predicate) and not outside(f):
                 said, speakers = self._evidence(x)
                 out.append(dict(fact=f, slot=slot_of(f.predicate), said=said, speakers=speakers, when=f.valid_from or (said[0] if said else None)))
         return out
@@ -277,7 +283,7 @@ class StateEngine:
         """What this observation would conflict with, if saved. Changes nothing."""
         f = record.fact
         slot = slot_of(f.predicate)
-        if f.fact_type == "plan" or not slot or f.source_type != "explicit": return []
+        if f.fact_type == "plan" or not slot or f.source_type != "explicit" or outside(f): return []
         said, speakers = self._evidence(record)
         trial = self._observations(f.subject_id) + [dict(fact=f, slot=slot, said=said, speakers=speakers, when=f.valid_from or (said[0] if said else None))]
         periods, conflicts = self._build(trial, slot)

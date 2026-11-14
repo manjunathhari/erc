@@ -116,6 +116,18 @@ BASE2 = [
  ('Step 3 SV11 an outside code without its system', 'engram_knowledge/schema.py', 'CHECK((outside_system IS NULL) = (outside_code IS NULL)),', 'CHECK(1),'),
  ('Step 3 SV12 a word with no owner', 'engram_knowledge/schema.py', 'owner TEXT NOT NULL CHECK(length(trim(owner)) > 0),', 'owner TEXT,'),
  ('Step 3 SV13 a column of the vocabulary table is missing', 'engram_knowledge/schema.py', '        source_version TEXT,\n', ''),
+ # Step 3a: the shared checker's completed-happening check for attended, visited and completed.
+ ('Step 3a SC1: a habit counted as a completed happening', 'engram_knowledge/fact_validator.py', 'or RECURRING & said_words or NOT_YET', 'or NOT_YET'),
+ ('Step 3a SC2: something still to come counted as a completed happening', 'engram_knowledge/fact_validator.py', 'or NOT_YET & said_words or', 'or'),
+ ("Step 3a SC3: 'going to' counted as a completed happening", 'engram_knowledge/fact_validator.py', ' or " going to " in run:', ':'),
+ ('Step 3a SC4: no completed form required', 'engram_knowledge/fact_validator.py', 'if not stated or RECURRING', 'if RECURRING'),
+ ('Step 3a SC5: the habit read from the whole message, not the sentence that holds the object', 'engram_knowledge/fact_validator.py', 'said_words, run = set(tokens(sentence)), " " + " ".join(tokens(sentence)) + " "', 'said_words, run = set(tokens(holder.text)), " " + " ".join(tokens(holder.text)) + " "'),
+ ('Step 3a SC6: the completed-happening check applied to another event word', 'engram_knowledge/fact_validator.py', '"completed": {"completed", "finished", "graduated", "done"}}', '"completed": {"completed", "finished", "graduated", "done"}, "bought": {"bought"}}'),
+ ('Step 3a SC7: the completed-happening check never made', 'engram_knowledge/fact_validator.py', 'if not stated or RECURRING & said_words or NOT_YET & said_words or " going to " in run: unsure.append(NOT_COMPLETED)', 'pass'),
+ ('Step 3a SC8: base 2 files a held habit under the event word', 'engram_structure.py', 'if r in (f"nothing in the source says {word}", NOT_COMPLETED)), "")', 'if r == f"nothing in the source says {word}"), "")'),
+ ("Step 3a SC10: 'was' alone counted as attendance", 'engram_knowledge/fact_validator.py', 'COMPLETED_FORMS = {"attended": {"attended", "went"},', 'COMPLETED_FORMS = {"attended": {"attended", "went", "was"},'),
+ ("Step 3a SC11: the phrase 'was there for' no longer counted", 'engram_knowledge/fact_validator.py', ' or any(f" {p} " in run for p in COMPLETED_PHRASES.get(word, ()))', ''),
+ ('Step 3a SC9: the doubt given another wording', 'engram_knowledge/fact_validator.py', 'NOT_COMPLETED = "the source does not state a completed happening"', 'NOT_COMPLETED = "not a completed happening"'),
 ]
 ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
  ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
@@ -148,7 +160,7 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ('events dated like states', 'erc_overlay/knowledge.py', 'return self._occurrence(x) if x.fact.predicate in EVENTS else self._state_time(x.fact, periods)', 'return self._state_time(x.fact, periods)'),
  ('event given a synthetic end at as_of', 'erc_overlay/knowledge.py', 'valid_time=sent if isinstance(sent, TimeInterval) else None, occurred=sent if isinstance(sent, Occurrence) else None,', 'valid_time=sent if isinstance(sent, TimeInterval) else (TimeInterval(sent.earliest, as_of + ONE_DAY) if sent is not None and sent.earliest else None), occurred=None,'),
  ("event dated by the period's start, not its own sentence", "erc_overlay/knowledge.py", "if x.fact.valid_from: return x.fact.valid_from\n        days = []", "if x.fact.valid_from: return x.fact.valid_from\n        return None\n        days = []"),
- ("state predicates counted as events", "erc_overlay/knowledge.py", "EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)", "EVENTS = frozenset({**OPENS, **CLOSES})"),
+ ("state predicates counted as events", "erc_overlay/knowledge.py", 'EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event")', 'EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event") | frozenset({**OPENS, **CLOSES})'),  # re-pointed at step 3a
  ("diagnostic fields dropped from explain", "erc_overlay/reasoner.py", 'lines.append(f"left out: fact {l.fact_id} ({l.reason}; status {s[\'status\']}, validation {s[\'validation_status\']}, "\n                         f"source {s[\'source_type\']}; needs {l.needs})")', 'lines.append(f"left out: fact {l.fact_id} ({l.reason})")'),
  # B2a: adapter enrichment (claude/erc-b2a-spec.md, section 8). Additive only: each breakage either drops or falsifies an addition,
  # or lets a later increment's change (B2b) arrive early.
@@ -240,6 +252,20 @@ ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1
  ('B5 explain: the chosen derivation is listed again', 'erc_overlay/reasoner.py', '            for d in ev.derivations[1:]:', '            for d in ev.derivations:'),
  ("B5 explain: another derivation shown with the conclusion's decision", 'erc_overlay/reasoner.py', '({d.decision.value}) from: ', '({ev.decision.value}) from: '),
  ('B5 explain: derivations left out by the limit are not mentioned', 'erc_overlay/reasoner.py', 'if "ALTERNATIVE_DERIVATIONS_TRUNCATED" in ev.limitations: lines.append', 'if False: lines.append'),
+ # Step 3a: the adapter's event list (part A) and the outside-vocabulary marker in the adapter and the state engine (part B).
+ ('Step 3a SA1: attended, visited and completed dropped from the event list', 'erc_overlay/knowledge.py', 'EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event")', 'EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)'),
+ ('Step 3a SA2: every vocabulary word counted as an event', 'erc_overlay/knowledge.py', 'EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event")', 'EVENTS = frozenset(PREDICATE_TYPES)'),
+ ('Step 3a SA3: one of the three words left out of the event list', 'erc_overlay/knowledge.py', 'EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event")', 'EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event") - {"completed"}'),
+ ('Step 3a SB1: the adapter sends a record marked outside', 'erc_overlay/knowledge.py', '                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n', '                    if (f.metadata or {}).get("vocabulary") == "never":  # told by the marker alone, never by the predicate\'s text\n'),
+ ('Step 3a SB2: the adapter reads the predicate instead of the marker', 'erc_overlay/knowledge.py', '                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n', "                    if f.predicate not in PREDICATE_TYPES:  # told by the marker alone, never by the predicate's text\n"),
+ ('Step 3a SB3: the adapter treats a record with no marker as outside', 'erc_overlay/knowledge.py', '                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n', '                    if (f.metadata or {}).get("vocabulary") != "in":  # told by the marker alone, never by the predicate\'s text\n'),
+ ('Step 3a SB4: an outside record left out without being reported', 'erc_overlay/knowledge.py', '                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n                        left_out.append(LeftOut(f.fact_id, OUTSIDE, state, "a vocabulary word")); continue\n', '                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n                        continue\n'),
+ ('Step 3a SB5: the plan check runs before the marker', 'erc_overlay/knowledge.py', '                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n                        left_out.append(LeftOut(f.fact_id, OUTSIDE, state, "a vocabulary word")); continue\n                    if f.fact_type == "plan":\n                        left_out.append(LeftOut(f.fact_id, "plan", state, "none")); continue\n', '                    if f.fact_type == "plan":\n                        left_out.append(LeftOut(f.fact_id, "plan", state, "none")); continue\n                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate\'s text\n                        left_out.append(LeftOut(f.fact_id, OUTSIDE, state, "a vocabulary word")); continue\n'),
+ ('Step 3a SB6: an outside record reported as needing nothing', 'erc_overlay/knowledge.py', '                        left_out.append(LeftOut(f.fact_id, OUTSIDE, state, "a vocabulary word")); continue\n', '                        left_out.append(LeftOut(f.fact_id, OUTSIDE, state, "none")); continue\n'),
+ ('Step 3a SB7: the state engine plays a record marked outside', 'engram_knowledge/state_engine.py', 'and slot_of(f.predicate) and not outside(f):', 'and slot_of(f.predicate):'),
+ ('Step 3a SB8: the state engine reads the predicate instead of the marker', 'engram_knowledge/state_engine.py', 'return (fact.metadata or {}).get("vocabulary") == "outside"', 'return slot_of(fact.predicate) is None'),
+ ('Step 3a SB9: the state engine treats a record with no marker as outside', 'engram_knowledge/state_engine.py', 'return (fact.metadata or {}).get("vocabulary") == "outside"', 'return (fact.metadata or {}).get("vocabulary") != "in"'),
+ ('Step 3a SB10: a trial conflict is run for a record marked outside', 'engram_knowledge/state_engine.py', 'or f.source_type != "explicit" or outside(f): return []', 'or f.source_type != "explicit": return []'),
 ]
 # ERC temporal contract foundation, increment B1 (ERC 0.5.0)
 ERC = [
@@ -453,9 +479,13 @@ SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_base2_gate_
                           # WR-BC adds its three test files.
                           "tests/test_wr_b_dating.py tests/test_wr_c_vocabulary.py tests/test_wr_bc_replacement.py "
                           # Step 3 adds the store reservation's tests.
-                          "tests/test_store_reservation.py"),
+                          "tests/test_store_reservation.py "
+                          # Step 3a adds the completed-happening check's tests.
+                          "tests/test_step3a_completed_happening.py"),
           # B5 adds the explain() lines; their tests are in their own file, run after the unedited adapter tests.
-          "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py tests/test_erc_overlay_conclusion_time.py"),
+          "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py tests/test_erc_overlay_conclusion_time.py "
+                              # Step 3a adds its adapter and state-engine tests.
+                              "tests/test_step3a_adapter.py"),
           # The byte-pin test is left out on purpose: every mutation of a pinned file changes its bytes, so the pin would
           # "catch" all of them and prove nothing about behaviour.
           # B4 adds its own tests. Its two byte checks are left out for the same reason: the release pins, and the check

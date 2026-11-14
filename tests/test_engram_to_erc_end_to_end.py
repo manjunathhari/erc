@@ -14,8 +14,8 @@ every case runs on two writers:
 The proposals are hand-written and no model is called: this tests what the writer does with a correct proposal.
 Made-up people only. Cases C01 to C11 and the rule case C09 are those of the E-A2 to E-A7 audit (13 November 2026),
 which found that base 2 supplies 2 of the 11 needs and the classic writer 10. C12 is new here: a plain happening with
-an exact day. It fails on both writers, so it has no passing control; C01 makes the same kind of check and passes on
-the classic writer.
+an exact day. It failed on both writers until step 3a, when the adapter began to count attended, visited and completed
+as events.
 
 Cases that fail today are marked xfail(strict=True) with the reason. Strict means the mark must be removed when the
 writer is fixed: a marked case that starts passing fails the run until someone takes the mark off on purpose.
@@ -213,10 +213,8 @@ B2_NO_END = "base 2 never closes a state: it has no closing words and no stated 
 B2_SLOT = "base 2's predicates are wordings, so two wordings of one slot are not seen as the same slot"
 FAILS_TODAY = {
     # WR-BC removed the base 2 lines for C01, C02, C03, C04, C05, C06b, C08, C10 and C11 (each now passes).
-    (BASE2, "C12"): B2_PREDICATE,
+    # Step 3a removed both C12 lines: the adapter counts attended as an event, on base 2 and on the classic writer.
     (CLASSIC, "C04"): "the classic writer takes one stated time, the start; a stated end has nowhere to go",
-    (CLASSIC, "C12"): "the adapter counts only words that open or close a slot (moved_to, started_job, left_job...) as events; "
-                      "attended is filed correctly and then sent as a state",
 }
 
 

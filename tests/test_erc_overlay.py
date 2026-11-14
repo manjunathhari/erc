@@ -1252,6 +1252,7 @@ def test_b3_the_same_conclusion_with_no_second_value_is_accepted(world):
 # ======================================================================================================================
 import zoneinfo
 
+from engram_knowledge.normalizer import PREDICATE_TYPES
 from engram_knowledge.transition import CLOSES, OPENS
 
 AT_2022 = dt.datetime(2022, 6, 1, tzinfo=UTC)
@@ -1609,10 +1610,14 @@ def test_b2b_an_event_is_sent_as_an_occurrence_with_no_validity_interval(world, 
 def test_b2b_the_said_day_bounds_an_event_only_under_the_three_conditions_and_the_event_vocabulary_is_pinned(world):
     """Section 6, OP-5. (1) The predicate is one of Engram's event predicates, all completed happenings: this set is pinned, and
     the test fails when a predicate is added or removed, so a new one cannot get the bound without a decision. (2) A plan is left
-    out. (3) Only a sentence linked as supporting evidence gives the bound: a dated sentence that merely qualifies does not."""
+    out. (3) Only a sentence linked as supporting evidence gives the bound: a dated sentence that merely qualifies does not.
+    Step 3a (the decision this test asks for; B2b Amendment 2): attended, visited and completed join the 14. The set is every
+    vocabulary word typed as an event, and the 14 that open or close another word's slot are all still in it."""
     assert overlay_knowledge.EVENTS == frozenset({"started_job", "moved_to", "got_married", "bought", "adopted", "started_hobby", "joined",
-                                                  "left_job", "divorced", "sold", "lost", "gave_away", "stopped_hobby", "left_group"})
-    assert overlay_knowledge.EVENTS == frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)
+                                                  "left_job", "divorced", "sold", "lost", "gave_away", "stopped_hobby", "left_group",
+                                                  "attended", "visited", "completed"})
+    assert overlay_knowledge.EVENTS == frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event")
+    assert frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s) < overlay_knowledge.EVENTS
     told, _ = world.obs("Asha", "moved_to", "Delhi")
     planned, _ = world.obs("Asha", "moved_to", "Goa", plan=True)
     f = KnowledgeFact.create(world.who("Asha"), "sold", "text", "attribute", "explicit", object_value="car", validation_status="accepted")

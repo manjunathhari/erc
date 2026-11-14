@@ -34,6 +34,12 @@ How P1 facts become ERC propositions, so that ERC sees what the knowledge layers
   retracted and invalidated facts are left out. Any combination not in the table is left out as "unmapped state": the table fails
   closed. Every left-out fact is reported with its reason, its state and what it needs. Plans are left out: a plan is never a state.
 - Functional predicates: P1's single-valued slots, and the predicates that open or close them.
+- Events (step 3a, 14 Nov 2026; B2b Amendment 2): every word the vocabulary types as an event, 17 in all: the 14 that open or
+  close another word's slot, and attended, visited and completed, which have no slot. Each is sent as an occurrence, never as a
+  state. The set is pinned by tests: a word cannot join it, and so cannot receive the said-day bound, without a decision.
+- Outside the vocabulary (step 3a; contract C11 and R1, Amendment 6): a record the writer marked `metadata.vocabulary = outside`
+  is left out, "outside the vocabulary", before anything else about it is read, and is never a bridge. It is told by the marker
+  alone, never by the predicate's text. A record with no marker (the classic path, base 2 before WR-BC) is not outside.
 - Evidence: one Evidence per source sentence, linked to each fact it supports, contradicts or qualifies, so a sentence counts once.
 - Enrichment (B2a, 10 Nov 2026; claude/erc-b2a-spec.md): information Engram holds and ERC does not yet read travels beside what
   is sent, and changes nothing that is sent. (1) Sentence evidence carries the day it was said: `observed_at` is the first instant
@@ -59,12 +65,14 @@ from typing import NamedTuple
 from engram_erc import (Evidence, EvidenceKind, EvidenceLink, EvidenceRelation, Occurrence, Proposition, PropositionKind, ReasoningRequest,
                         SourceKind, TimeInterval)
 from engram_knowledge.models import FactWithEvidence, normalize_name
+from engram_knowledge.normalizer import PREDICATE_TYPES
 from engram_knowledge.state_engine import COUNTED, StateEngine
 from engram_knowledge.temporal import said_on, span, step_before
 from engram_knowledge.transition import CLOSES, OPENS, SINGLE, slot_of
 
 FUNCTIONAL = frozenset(SINGLE) | frozenset(p for p, s in {**OPENS, **CLOSES}.items() if s in SINGLE)
-EVENTS = frozenset(p for p, s in {**OPENS, **CLOSES}.items() if p != s)  # started_job, moved_to, left_job...: a happening, not a state
+EVENTS = frozenset(w for w, t in PREDICATE_TYPES.items() if t == "event")  # every vocabulary word typed as an event: a happening, not a state (step 3a)
+OUTSIDE = "outside the vocabulary"        # a record the writer marked `vocabulary = outside`: stored, never sent (step 3a, R1)
 ONE_DAY = dt.timedelta(days=1)
 FETCHED = COUNTED + ("superseded",)  # superseded facts are read as history; retracted and invalidated never
 # The observations that build the periods the adapter dates facts by: active, accepted (and, in the engine, explicit). A fact the
@@ -250,6 +258,8 @@ class KnowledgeAdapter:
                 for x in self.kb.about_entity(ent, statuses=FETCHED, source_types=None):
                     f = x.fact
                     state = self._state(f)
+                    if (f.metadata or {}).get("vocabulary") == "outside":  # told by the marker alone, never by the predicate's text
+                        left_out.append(LeftOut(f.fact_id, OUTSIDE, state, "a vocabulary word")); continue
                     if f.fact_type == "plan":
                         left_out.append(LeftOut(f.fact_id, "plan", state, "none")); continue
                     rule = map_state(f.status, f.validation_status, f.source_type)
