@@ -208,7 +208,7 @@ def test_old_data_that_breaks_the_new_rules_changes_nothing(path, extra, why):
 
 def test_migrate_refuses_what_it_cannot_do(path):
     db = sqlite3.connect(path)
-    for v in ("0", "4", "banana"):
+    for v in ("0", "5", "banana"):
         with pytest.raises(RecordError, match="Nothing was changed"): migrate(db, v)
     assert migrate(db, str(S.SCHEMA_VERSION)) == []
     db.close()
@@ -279,6 +279,6 @@ def test_a_version_two_database_gains_the_decision_table_and_loses_nothing(path)
     m.close()
     m = E.ChatMemory(path)
     assert {t: m.db.execute(f"SELECT * FROM {t} ORDER BY 1").fetchall() for t in before} == before
-    assert m.db.execute("SELECT value FROM knowledge_meta").fetchone()[0] == "3" and m.db.execute("SELECT count(*) FROM state_reviews").fetchone()[0] == 0
+    assert m.db.execute("SELECT value FROM knowledge_meta").fetchone()[0] == str(S.SCHEMA_VERSION) and m.db.execute("SELECT count(*) FROM state_reviews").fetchone()[0] == 0
     assert KnowledgeBase(m.db).integrity_check() == []
     m.close()

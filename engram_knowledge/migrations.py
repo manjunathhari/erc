@@ -21,7 +21,12 @@ def _v2_to_v3(db):
     for statement in [x for x in SCHEMA.split(";") if "state_reviews" in x]: db.execute(statement)
 
 
-STEPS = {1: _v1_to_v2, 2: _v2_to_v3}
+def _v3_to_v4(db):
+    """Adds two empty tables: the typed relationships and the vocabulary. Nothing existing changes, and nothing writes to them yet."""
+    for statement in [x for x in SCHEMA.split(";") if "record_relations" in x or "vocabulary" in x]: db.execute(statement)
+
+
+STEPS = {1: _v1_to_v2, 2: _v2_to_v3, 3: _v3_to_v4}
 
 
 def stored_version(db):

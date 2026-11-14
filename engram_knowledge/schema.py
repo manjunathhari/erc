@@ -1,6 +1,6 @@
 """The knowledge tables. Version 2 adds checks inside the database itself, so bad values are refused even by code that skips the checks in models.py,
 and lets two entities share a name or an alias."""
-SCHEMA_VERSION = 3
+SCHEMA_VERSION = 4
 TABLES = ("entities", "entity_aliases", "knowledge_records", "record_evidence")
 
 V1_SCHEMA = """
@@ -87,6 +87,45 @@ SCHEMA = """
         created_at TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS state_reviews_keep ON state_reviews(keep_fact_id);
     CREATE INDEX IF NOT EXISTS state_reviews_other ON state_reviews(other_fact_id);
+    CREATE TABLE IF NOT EXISTS record_relations(
+        relation_id TEXT PRIMARY KEY,
+        relation TEXT NOT NULL CHECK(relation IN ('supports', 'updates', 'extends', 'contradicts', 'derives', 'qualifies', 'mentions', 'relates_to')),
+        from_kind TEXT NOT NULL CHECK(from_kind IN ('sentence', 'fact', 'entity')),
+        from_id TEXT NOT NULL CHECK(length(from_id) > 0),
+        to_kind TEXT NOT NULL CHECK(to_kind IN ('sentence', 'fact', 'entity')),
+        to_id TEXT NOT NULL CHECK(length(to_id) > 0),
+        basis_sentence TEXT CHECK(basis_sentence IS NULL OR length(basis_sentence) > 0),
+        method TEXT NOT NULL CHECK(length(trim(method)) > 0),
+        version TEXT,
+        created_at TEXT NOT NULL,
+        CHECK((from_kind = 'fact' AND to_kind = 'fact' AND relation <> 'mentions')
+              OR (relation = 'mentions' AND from_kind = 'sentence' AND to_kind = 'entity')
+              OR (relation = 'relates_to' AND from_kind = 'entity' AND to_kind = 'entity')),
+        CHECK(NOT (from_kind = to_kind AND from_id = to_id)),
+        CHECK(relation <> 'mentions' OR COALESCE(basis_sentence = from_id, 0)),  -- COALESCE: a missing basis must not pass as unknown
+        CHECK(relation <> 'relates_to' OR basis_sentence IS NOT NULL));
+    CREATE UNIQUE INDEX IF NOT EXISTS record_relations_same ON record_relations(relation, from_kind, from_id, to_kind, to_id, COALESCE(basis_sentence, ''), method);
+    CREATE INDEX IF NOT EXISTS record_relations_from ON record_relations(from_kind, from_id);
+    CREATE INDEX IF NOT EXISTS record_relations_to ON record_relations(to_kind, to_id);
+    CREATE INDEX IF NOT EXISTS record_relations_basis ON record_relations(basis_sentence);
+    CREATE TABLE IF NOT EXISTS vocabulary(
+        domain TEXT NOT NULL CHECK(length(trim(domain)) > 0),
+        word TEXT NOT NULL CHECK(length(trim(word)) > 0),
+        fact_type TEXT NOT NULL CHECK(fact_type IN ('attribute', 'relationship', 'event', 'preference', 'plan', 'observation')),
+        time_kind TEXT NOT NULL CHECK(time_kind IN ('state', 'event')),
+        cardinality TEXT CHECK(cardinality IN ('single', 'many')),
+        opens TEXT, closes TEXT,
+        cue_words TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(cue_words)),
+        outside_system TEXT, outside_code TEXT,
+        source TEXT NOT NULL CHECK(length(trim(source)) > 0),
+        source_version TEXT,
+        vocabulary_version TEXT NOT NULL CHECK(length(trim(vocabulary_version)) > 0),
+        status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'deprecated')),
+        owner TEXT NOT NULL CHECK(length(trim(owner)) > 0),
+        state_engine_approved INTEGER NOT NULL DEFAULT 0 CHECK(state_engine_approved IN (0, 1)),
+        CHECK((outside_system IS NULL) = (outside_code IS NULL)),
+        PRIMARY KEY(domain, word));
+    CREATE INDEX IF NOT EXISTS vocabulary_word ON vocabulary(word);
     CREATE INDEX IF NOT EXISTS record_evidence_source ON record_evidence(source_kind, source_id);
     CREATE INDEX IF NOT EXISTS record_evidence_fact ON record_evidence(fact_id);
     CREATE INDEX IF NOT EXISTS knowledge_records_subject ON knowledge_records(subject_id);
