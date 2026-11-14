@@ -46,14 +46,16 @@ def file(m, key, subject, obj):
 
 def test_parse_keeps_good_proposals_and_drops_bad_ones():
     reply = json.dumps({"facts": [
-        dict(line="D1:1", subject="I", object="Dave"),
-        dict(line="D1:1", subject="I", object="studio"),     # second for one line: dropped
+        dict(line="D1:1", subject="I", word="other", object="Dave"),
+        dict(line="D1:1", subject="I", word="works_at", object="studio"),   # second for one line: kept (WR-BC, WP-2)
+        dict(line="D1:1", subject="I", word="other", object="Dave"),       # an exact repeat: dropped
         dict(line="D9:9", subject="I", object="x"),          # unknown line: dropped
         dict(line="D1:2", subject="", object="Boston"),      # no subject: dropped
-        dict(line="D1:3", subject="my sister", object="Paris"),
+        dict(line="D1:3", subject="my sister", object="Paris"),             # no word: "other"
         "not a dict"]})
     got = S.parse_proposals("Here you go: " + reply, {"D1:1", "D1:2", "D1:3"})
-    assert got == [dict(line="D1:1", subject="I", object="Dave"), dict(line="D1:3", subject="my sister", object="Paris")]
+    assert got == [dict(line="D1:1", subject="I", word="other", object="Dave"), dict(line="D1:1", subject="I", word="works_at", object="studio"),
+                   dict(line="D1:3", subject="my sister", word="other", object="Paris")]
 
 
 @pytest.mark.parametrize("junk", ["", "no json", "{bad json", json.dumps({"facts": "x"}), json.dumps([1, 2])])
@@ -89,7 +91,7 @@ def test_a_plain_statement_is_stored_with_its_sentence_and_date(m):
     out = file(m, "job", "I", "Dave")
     assert out.verdict == "accepted" and out.fact_id
     rec = KnowledgeBase(m.db).get(out.fact_id)
-    assert rec.fact.object_value == "Dave" and rec.fact.valid_from == "2023-03-03" and rec.fact.status == "active"
+    assert rec.fact.object_value == "Dave" and rec.fact.valid_from is None and rec.fact.status == "active"  # WR-BC, TD7: the said day is not a start
     assert [e.source_id for e in rec.evidence] == [str(m.ids["job"])]
     assert KnowledgeBase(m.db).entity(rec.fact.subject_id).canonical_name == "User"
 
@@ -160,11 +162,14 @@ def test_a_missing_sentence_is_rejected(m):
 # ---------- versions and repeats ----------
 
 def test_a_newer_version_replaces_the_older_one_and_both_are_kept(m):
-    old = file(m, "bikes3", "I", "3 bikes")
-    new = file(m, "bikes4", "I", "4 bikes")
+    L = S.StructureLayer(m.db)
+    # WR-BC 4A15: number has no state slot, so base 2 versions it. The kind stays "" exactly as the file() helper passes it.
+    old = L.file(m.ids["bikes3"], "I", "3 bikes", "", word="number")
+    new = L.file(m.ids["bikes4"], "I", "4 bikes", "", word="number")
     kb = KnowledgeBase(m.db)
     o, n = kb.get(old.fact_id).fact, kb.get(new.fact_id).fact
-    assert o.status == "superseded" and o.valid_to == "2023-04-09" and n.status == "active" and n.valid_from == "2023-04-09"
+    assert o.predicate == n.predicate == "number"
+    assert o.status == "superseded" and o.valid_from is None and o.valid_to is None and n.status == "active" and n.valid_from is None  # TD7
     g = S.StructureLayer(m.db).graph()
     assert [g.facts[f]["object"] for f in g.by_subject["user"]] == ["3 bikes", "4 bikes"]  # every version, oldest first
 

@@ -324,7 +324,7 @@ def main():
             props, layer, seen = proposals_for(q), S.StructureLayer(m.db), {"accepted": 0, "uncertain": 0, "rejected": 0}
             for i, s in zip(q["haystack_session_ids"], q["haystack_sessions"]):  # chats in their order, so versions are in order
                 for p in props[session_key(i, s)]:
-                    if p["line"] in sid_of: seen[layer.file(sid_of[p["line"]], p["subject"], p["object"], p.get("kind", "")).verdict] += 1
+                    if p["line"] in sid_of: seen[layer.file(sid_of[p["line"]], p["subject"], p["object"], p.get("kind", ""), word=p.get("word", "")).verdict] += 1
             g = layer.graph()
             fids = S.walk(g, q["question"], info["sids"][: a.seed_facts], a.hops, hubs=("User", "Assistant"))
             sec, used_f = S.facts_section(m, g, fids, a.facts_tokens)

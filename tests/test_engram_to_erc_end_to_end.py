@@ -22,7 +22,8 @@ writer is fixed: a marked case that starts passing fails the run until someone t
 To see the failures themselves:  python -m pytest tests/test_engram_to_erc_end_to_end.py --runxfail
 
 One seam: `file_with_base2` below is the only place that knows the base 2 writer's interface (a subject and an object
-copied from the sentence). If a later contract changes that interface, this function changes and the cases do not.
+copied from the sentence, and since WR-BC the vocabulary word). If a later contract changes that interface, this function
+changes and the cases do not; WR-BC added each base 2 proposal's word to the case data.
 """
 import datetime as dt
 
@@ -48,10 +49,10 @@ def day(moment):
 
 
 def file_with_base2(layer, sid, speaker, text, date, proposal):
-    """Today's base 2 interface: the gate reads the sentence, then one (subject, object) proposal is filed."""
-    subject, obj = proposal
+    """Base 2's interface since WR-BC: the gate reads the sentence, then one (subject, object, word) proposal is filed."""
+    subject, obj, word = proposal
     _, kind = S.gate(speaker, text, date)
-    return layer.file(sid, subject, obj, kind)
+    return layer.file(sid, subject, obj, kind, word=word)
 
 
 def file_with_classic(pipe, sid, proposal):
@@ -184,25 +185,25 @@ def c12(w):
 
 MARCH5 = "1:00 pm on 5 March, 2024"
 CASES = {
-    "C01": (c01, [("10:00 am on 10 April, 2023", "I moved to Chennai in March 2023.", [("moved_to", "Chennai", "March 2023")], [("I", "Chennai")])]),
-    "C02": (c02, [(MARCH5, "I have worked at Apollo since 2019.", [("works_at", "Apollo", "2019")], [("I", "Apollo")])]),
-    "C03": (c03, [(MARCH5, "I work at Apollo.", [("works_at", "Apollo", "")], [("I", "Apollo")])]),
-    "C04": (c04, [(MARCH5, "I worked at Apollo from 2018 to 2021.", [("works_at", "Apollo", "2018")], [("I", "Apollo")])]),
-    "C05": (c05, [("9:00 am on 1 January, 2024", "I work at Apollo.", [("works_at", "Apollo", "")], [("I", "Apollo")]),
-                  ("9:00 am on 1 March, 2024", "I left Apollo.", [("left_job", "Apollo", "")], [("I", "Apollo")])]),
-    "C06a": (c06a, [("9:00 am on 1 January, 2024", "I live in Pune.", [("lives_in", "Pune", "")], [("I", "Pune")]),
-                    ("9:00 am on 1 March, 2024", "I live in Delhi.", [("lives_in", "Delhi", "")], [("I", "Delhi")])]),
-    "C06b": (c06b, [("9:00 am on 1 January, 2024", "I live in Pune.", [("lives_in", "Pune", "")], [("I", "Pune")]),
-                    ("9:00 am on 1 March, 2024", "I live in Delhi.", [("lives_in", "Delhi", "")], [("I", "Delhi")])]),
-    "C07": (c07, [("", "I own a cat.", [("owns", "cat", "")], [("I", "cat")])]),
-    "C08": (c08, [(MARCH5, "I have lived in Pune since 2022.", [("lives_in", "Pune", "2022")], [("I", "Pune")]),
-                  ("2:00 pm on 5 March, 2024", "My home has been in Mysore since 2022.", [("lives_in", "Mysore", "2022")], [("My home", "Mysore")])]),
-    "C10": (c10, [("9:00 am on 1 July, 2023", "I moved to Chennai in March 2023.", [("moved_to", "Chennai", "March 2023")], [("I", "Chennai")]),
-                  ("9:05 am on 1 July, 2023", "I started a job at Apollo in June 2023.", [("started_job", "Apollo", "June 2023")], [("I", "Apollo")])]),
-    "C11": (c11, [("9:00 am on 1 July, 2023", "I moved to Chennai in March 2023.", [("moved_to", "Chennai", "March 2023")], [("I", "Chennai")]),
-                  ("9:00 am on 1 August, 2023", "My move to Chennai was in March 2023.", [("moved_to", "Chennai", "March 2023")], [("My move", "Chennai")])]),
+    "C01": (c01, [("10:00 am on 10 April, 2023", "I moved to Chennai in March 2023.", [("moved_to", "Chennai", "March 2023")], [("I", "Chennai", "moved_to")])]),
+    "C02": (c02, [(MARCH5, "I have worked at Apollo since 2019.", [("works_at", "Apollo", "2019")], [("I", "Apollo", "works_at")])]),
+    "C03": (c03, [(MARCH5, "I work at Apollo.", [("works_at", "Apollo", "")], [("I", "Apollo", "works_at")])]),
+    "C04": (c04, [(MARCH5, "I worked at Apollo from 2018 to 2021.", [("works_at", "Apollo", "2018")], [("I", "Apollo", "works_at")])]),
+    "C05": (c05, [("9:00 am on 1 January, 2024", "I work at Apollo.", [("works_at", "Apollo", "")], [("I", "Apollo", "works_at")]),
+                  ("9:00 am on 1 March, 2024", "I left Apollo.", [("left_job", "Apollo", "")], [("I", "Apollo", "left_job")])]),
+    "C06a": (c06a, [("9:00 am on 1 January, 2024", "I live in Pune.", [("lives_in", "Pune", "")], [("I", "Pune", "lives_in")]),
+                    ("9:00 am on 1 March, 2024", "I live in Delhi.", [("lives_in", "Delhi", "")], [("I", "Delhi", "lives_in")])]),
+    "C06b": (c06b, [("9:00 am on 1 January, 2024", "I live in Pune.", [("lives_in", "Pune", "")], [("I", "Pune", "lives_in")]),
+                    ("9:00 am on 1 March, 2024", "I live in Delhi.", [("lives_in", "Delhi", "")], [("I", "Delhi", "lives_in")])]),
+    "C07": (c07, [("", "I own a cat.", [("owns", "cat", "")], [("I", "cat", "owns")])]),
+    "C08": (c08, [(MARCH5, "I have lived in Pune since 2022.", [("lives_in", "Pune", "2022")], [("I", "Pune", "lives_in")]),
+                  ("2:00 pm on 5 March, 2024", "My home has been in Mysore since 2022.", [("lives_in", "Mysore", "2022")], [("My home", "Mysore", "lives_in")])]),
+    "C10": (c10, [("9:00 am on 1 July, 2023", "I moved to Chennai in March 2023.", [("moved_to", "Chennai", "March 2023")], [("I", "Chennai", "moved_to")]),
+                  ("9:05 am on 1 July, 2023", "I started a job at Apollo in June 2023.", [("started_job", "Apollo", "June 2023")], [("I", "Apollo", "started_job")])]),
+    "C11": (c11, [("9:00 am on 1 July, 2023", "I moved to Chennai in March 2023.", [("moved_to", "Chennai", "March 2023")], [("I", "Chennai", "moved_to")]),
+                  ("9:00 am on 1 August, 2023", "My move to Chennai was in March 2023.", [("moved_to", "Chennai", "March 2023")], [("My move", "Chennai", "moved_to")])]),
     "C12": (c12, [("2:15 pm on 3 March, 2023", "I attended a half marathon on 25 February 2023.",
-                   [("attended", "half marathon", "25 February 2023")], [("I", "half marathon")])]),
+                   [("attended", "half marathon", "25 February 2023")], [("I", "half marathon", "attended")])]),
 }
 
 # What fails today, and why. Recorded before the writer is changed; each line comes off when its case is fixed.
@@ -211,9 +212,8 @@ B2_SAID_DAY = "base 2 stores the day the sentence was said as the day the fact b
 B2_NO_END = "base 2 never closes a state: it has no closing words and no stated end"
 B2_SLOT = "base 2's predicates are wordings, so two wordings of one slot are not seen as the same slot"
 FAILS_TODAY = {
-    (BASE2, "C01"): B2_PREDICATE, (BASE2, "C02"): B2_SAID_DAY, (BASE2, "C03"): B2_SAID_DAY, (BASE2, "C04"): B2_NO_END,
-    (BASE2, "C05"): B2_NO_END, (BASE2, "C06b"): B2_SAID_DAY, (BASE2, "C08"): B2_SLOT, (BASE2, "C10"): B2_PREDICATE,
-    (BASE2, "C11"): B2_SLOT, (BASE2, "C12"): B2_PREDICATE,
+    # WR-BC removed the base 2 lines for C01, C02, C03, C04, C05, C06b, C08, C10 and C11 (each now passes).
+    (BASE2, "C12"): B2_PREDICATE,
     (CLASSIC, "C04"): "the classic writer takes one stated time, the start; a stated end has nowhere to go",
     (CLASSIC, "C12"): "the adapter counts only words that open or close a slot (moved_to, started_job, left_job...) as events; "
                       "attended is filed correctly and then sent as a state",
@@ -247,13 +247,13 @@ WORDINGS = [("I work at Manipal.", "I"), ("I am working at Manipal.", "I"), ("My
 
 
 @pytest.mark.parametrize("writer", [
-    pytest.param(BASE2, marks=pytest.mark.xfail(strict=True, reason="C09 on base2: " + B2_PREDICATE + ", so a rule written on works_at never matches")),
+    BASE2,   # WR-BC: the C09 mark removed (base 2 files works_at for all three wordings)
     CLASSIC])
 def test_one_rule_fires_for_three_wordings_of_one_fact(tmp_path, writer):
     fired = 0
     for n, (text, subject) in enumerate(WORDINGS):
         (tmp_path / str(n)).mkdir()
-        w = World(tmp_path / str(n), writer, [(MARCH5, text, [("works_at", "Manipal", "")], [(subject, "Manipal")])])
+        w = World(tmp_path / str(n), writer, [(MARCH5, text, [("works_at", "Manipal", "")], [(subject, "Manipal", "works_at")])])
         try:
             r = w.ask(U(2024, 6, 1), EMPLOYED)
             fired += r is not None and len(r.result.conclusion_refs) > 0

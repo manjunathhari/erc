@@ -40,6 +40,8 @@ from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
 from engram_knowledge.models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, normalize_name
+from engram_knowledge.normalizer import PREDICATE_CUES, PREDICATE_TYPES, stem, time_value
+from engram_knowledge.transition import slot_of
 
 RULES_VERSION = "base2-1"
 MONTHS = "january february march april may june july august september october november december".split()
@@ -58,14 +60,58 @@ def gate(speaker: str, text: str, date: str = "", people: Iterable[str] = ()) ->
     return decision.decision == "candidate" and decision.keep_as == "none", decision.content_kind
 
 
+# ---------- 2b. dates stated in the sentence (WR-B, rules TD1 to TD10) ----------
+
+_SHORT = dict(jan="january", feb="february", mar="march", apr="april", jun="june", jul="july", aug="august",
+              sep="september", sept="september", oct="october", nov="november", dec="december")
+_DATE = re.compile(r"\[([^\]]+)\]|\b\d{1,2}(?:st|nd|rd|th)?\s+(?:" + "|".join(MONTHS) + r")\s+\d{4}|\b(?:" + "|".join(MONTHS)
+                   + r")\s+\d{1,2}(?:st|nd|rd|th)?,?\s+\d{4}|\b(?:" + "|".join(MONTHS) + r")\s+\d{4}|\b\d{4}-\d{2}(?:-\d{2})?\b|\b(?:19|20)\d{2}\b", re.I)
+_ROLE = (("start", re.compile(r"\b(?:since|from|starting|beginning)\s*$", re.I)),
+         ("end", re.compile(r"\b(?:until|till|to|through)\s*$", re.I)))
+
+
+def stated_dates(text: str, date_said: str = "") -> tuple[tuple[str, str], ...]:
+    """The dates a sentence states, each with its role (start, end or event), read by fixed rules. TD1: relative words are
+    resolved from the said day by the existing reader (engram_chat.with_dates); TD8: short month names are read; TD9: a month or
+    day with no year gives nothing; TD6: a vague expression gives nothing; TD5: dates whose roles do not settle give nothing;
+    TD7: the said day itself is never returned unless the sentence states it."""
+    import engram_chat as E   # imported here: engram_chat imports this module
+    t = re.sub(r"\b(" + "|".join(_SHORT) + r")\.?(?=\s+(?:\d{1,2}(?:st|nd|rd|th)?\s+)?\d{4}\b)", lambda m: _SHORT[m[1].lower()], text, flags=re.I)
+    t = re.sub(r"\b(?:early|mid|late)[\s-]+((?:19|20)\d{2})\b", r"\1", t, flags=re.I)
+    shown = E.with_dates(t, date_said) if date_said else t
+    found = []
+    for m in _DATE.finditer(shown):
+        inner = m.group(1)
+        if inner is not None and re.search(r"\b(?:before|after|between)\b", inner, re.I): return ()  # vague ("a few weeks before ...")
+        value = time_value(inner if inner is not None else m.group(0))
+        if not value and inner is not None:  # a season of a known year ("last summer [summer 2024]"): the year
+            y = re.fullmatch(r"\D*((?:19|20)\d{2})\D*", inner)
+            value = y[1] if y else None
+        if not value: continue
+        before = shown[:m.start()]
+        if inner is not None:  # the role word stands before the relative expression, not before its bracket
+            before = re.sub(r"\S+(?:\s+\S+){0,3}\s*$", "", before) if not re.search(r"\b(?:since|from|until|till)\s+\S+(?:\s+\S+){0,3}\s*$", before, re.I) else re.sub(r"(since|from|until|till)\s+\S+(?:\s+\S+){0,3}\s*$", r"\1", before, flags=re.I)
+        role = next((r for r, rx in _ROLE if rx.search(before)), "event")
+        if role == "end" and re.search(r"\bto\s*$", before, re.I) and not any(r == "start" for _, r in found): role = "event"
+        found.append((value, role))
+    roles = [r for _, r in found]
+    if not found: return ()
+    if len(found) == 1: return tuple(found)
+    if sorted(roles) in (["end", "start"],): return tuple(found)
+    return ()
+
+
 # ---------- 3. the writer ----------
-WRITER_PROMPT = """Each line below is one sentence a person said in a conversation, with its line id. For each line that states a lasting fact (something the person or someone they mention has, is, did, plans, likes or is called), copy from that line:
-- "subject": who or what the fact is about, exactly as written in the line ("I" when it is the speaker; e.g. "my sister", "Max");
+VOCABULARY_WORDS = ", ".join(PREDICATE_TYPES)   # the 31 words, read from the vocabulary in code (WR-C, 1.2)
+
+WRITER_PROMPT = """Each line below is one sentence a person said in a conversation, with its line id. For each fact a line states that lasts (something the person or someone they mention has, is, did, plans, likes or is called), copy from that line:
+- "subject": who or what the fact is about, as written in the line ("I" when it is the speaker; e.g. "my sister", "Max"). When the speaker names a thing of their own, such as "my job", "my home" or "my move", the fact is about the speaker: write "I";
+- "word": the one word from this list that says what kind of fact it is, or "other" if none fits: {words};
 - "object": the specific thing the line states about the subject (a name, place, item, number or activity), copied word for word from the line, as short as possible.
 
-Skip lines that only give a feeling, a reaction, an opinion about something else, a wish or a maybe, a question, or small talk. Write at most one fact per line and never use words that are not in the line.
+Skip lines that only give a feeling, a reaction, an opinion about something else, a wish or a maybe, a question, or small talk. A line may state more than one fact: give each its own entry. Never use words that are not in the line.
 
-Return a JSON object {{"facts": [{{"line": "<line id>", "subject": "...", "object": "..."}}, ...]}}. If no line states a lasting fact, return {{"facts": []}}.
+Return a JSON object {{"facts": [{{"line": "<line id>", "subject": "...", "word": "...", "object": "..."}}, ...]}}. If no line states a lasting fact, return {{"facts": []}}.
 
 Lines:
 {lines}"""
@@ -73,11 +119,18 @@ Lines:
 
 def writer_prompt(lines: Iterable[tuple[str, str]]) -> str:
     """lines: (line_id, sentence) for the gated sentences of one chat."""
-    return WRITER_PROMPT.format(lines="\n".join(f"{i} {t}" for i, t in lines))
+    return WRITER_PROMPT.format(words=VOCABULARY_WORDS, lines="\n".join(f"{i} {t}" for i, t in lines))
+
+
+def vocabulary_word(word) -> str:
+    """The writer's word tidied ("Works_At " -> "works_at"); anything outside the vocabulary is "other"."""
+    w = str(word or "").strip().lower()
+    return w if w in PREDICATE_TYPES else "other"
 
 
 def parse_proposals(reply: str, valid_lines: set[str]) -> list[dict]:
-    """Writer reply -> [{line, subject, object}]. Unknown line ids and empty fields are dropped; one per line; never raises."""
+    """Writer reply -> [{line, subject, word, object}]. Unknown line ids and empty fields are dropped; a line may give several
+    proposals (WP-2), and only an exact repeat is dropped; any date in the reply is ignored (4A16); never raises."""
     try:
         m = re.search(r"\{.*\}", reply or "", re.S)
         rows = json.loads(m.group(0)).get("facts", []) if m else []
@@ -87,9 +140,11 @@ def parse_proposals(reply: str, valid_lines: set[str]) -> list[dict]:
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict): continue
         line, subj, obj = str(r.get("line", "")).strip(), str(r.get("subject", "")).strip(), str(r.get("object", "")).strip()
-        if line not in valid_lines or line in seen or not subj or not obj: continue
-        seen.add(line)
-        out.append(dict(line=line, subject=subj[:120], object=obj[:200]))
+        if line not in valid_lines or not subj or not obj: continue
+        row = dict(line=line, subject=subj[:120], word=vocabulary_word(r.get("word")), object=obj[:200])
+        if tuple(row.values()) in seen: continue
+        seen.add(tuple(row.values()))
+        out.append(row)
     return out
 
 
@@ -135,6 +190,13 @@ def iso_day(date_said: str) -> str | None:
     return f"{int(m.group(3)):04d}-{MONTHS.index(m.group(2).lower()) + 1:02d}-{int(m.group(1)):02d}"
 
 
+def my_own(subject: str, word: str) -> bool:
+    """RM-b (4A13, OQ-2): "my X" is the speaker when X is one of the word's own cue words ("my job" for works_at, "my home"
+    for lives_in, "my move" for moved_to). "my sister" and "my daughter" are not, so they stay with the person named."""
+    m = re.fullmatch(r"my\s+(\w+)", " ".join((subject or "").lower().split()))
+    return bool(m) and stem(m[1]) in {stem(w) for w in PREDICATE_CUES.get(word, "").split()}
+
+
 @dataclass
 class Outcome:
     verdict: str                 # accepted, uncertain or rejected
@@ -150,6 +212,7 @@ class StructureLayer:
         self.db = db
         self.kb = KnowledgeBase(db)
         self.validator = FactValidator(self.kb, open_predicate=True)
+        self.word_checker = FactValidator(self.kb)   # fixed-list mode: only its word-support check is used (RM-a)
 
     def line(self, sid: int) -> SourceLine | None:
         row = self.db.execute("SELECT sid, speaker, text, date FROM sentences WHERE sid=?", (sid,)).fetchone()
@@ -170,31 +233,50 @@ class StructureLayer:
         doubts = tuple(r for r in d.reasons if r != "reported by someone else, not the subject")
         return (UNCERTAIN if doubts else ACCEPTED), doubts, d
 
-    def file(self, sid: int, subject: str, obj: str, kind: str = "") -> Outcome:
-        """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing."""
+    def word_supported(self, sid: int, subject: str, obj: str, word: str) -> str:
+        """RM-a (4A12, 4A17): the shared checker's own support check for a vocabulary word, in fixed-list mode. Returns ""
+        when the sentence supports the word, otherwise the checker's reason ("nothing in the source says <word>")."""
+        d = self.word_checker.validate(Candidate(subject, word, obj, (sid,), method="structure", version=RULES_VERSION), [self.line(sid)])
+        return next((r for r in d.reasons if r == f"nothing in the source says {word}"), "")
+
+    def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
+        """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing.
+        `word` is the writer's vocabulary word (WR-C); "" or "other" files the fact outside the vocabulary, by its wording.
+        Dates come only from the sentence (WR-B, 4A16); the said day is never stored as a start or an end (TD7)."""
+        word = vocabulary_word(word)
+        in_vocab = word != "other"
+        if in_vocab and my_own(subject, word): subject = "I"          # RM-b (4A13): "my job" is the speaker's
         verdict, reasons, d = self.check(sid, subject, obj)
         if verdict == REJECTED: return Outcome(REJECTED, reasons)
         src = self.line(sid)
         if verdict == UNCERTAIN:
-            item = dict(subject=subject, object=obj, source_sids=[sid], method="structure", version=RULES_VERSION)
+            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION)
             return Outcome(UNCERTAIN, reasons, review_id=self.kb.add_review(json.dumps(item), list(reasons), [sid]))
+        held = self.word_supported(sid, subject, obj, word) if in_vocab else ""
+        notes = (f"word held: {held}",) if held else ()
+        if held: in_vocab = False                                     # RM-a: filed by its wording only
         who = d.subject.entity_id or self.kb.add_entity(Entity.create(d.subject.name, "unknown")).entity_id
-        key, day = version_key(src.text, obj), iso_day(src.date)
+        wording = version_key(src.text, obj)
+        key = word if in_vocab else wording
+        dates = stated_dates(src.text, src.date)
+        start = next((v for v, r in dates if r in ("start", "event")), None)
+        end = next((v for v, r in dates if r == "end"), None)
         mine = self.kb.about_entity(who, statuses=("active", "superseded"))
         same = [x for x in mine if normalize_name(x.fact.object_value or "") == normalize_name(obj) and x.fact.predicate == key]
         if same:  # the same fact said again: more evidence, not a second fact
             if not any(e.source_id == str(sid) for e in same[0].evidence):
                 self.kb.add_evidence(FactEvidence.create(same[0].fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION))
-            return Outcome(ACCEPTED, (), fact_id=same[0].fact.fact_id)
-        fact = KnowledgeFact.create(who, key, "text", FACT_TYPE.get(kind, "observation"), "explicit", object_value=obj,
-                                    validation_status="accepted", valid_from=day,
-                                    metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date))
+            return Outcome(ACCEPTED, notes, fact_id=same[0].fact.fact_id)
+        fact = KnowledgeFact.create(who, key, "text", PREDICATE_TYPES[key] if in_vocab else FACT_TYPE.get(kind, "observation"), "explicit",
+                                    object_value=obj, validation_status="accepted", valid_from=start, valid_to=end,
+                                    metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date, wording=wording,
+                                                  vocabulary="in" if in_vocab else "outside"))
         stored = self.kb.add(FactWithEvidence(fact, (FactEvidence.create(fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION),)))
-        for old in mine:  # a newer value for the same subject and wording replaces the older one; the old one is kept
-            if old.fact.status == "active" and old.fact.predicate == key:
-                ends = day if day and (not old.fact.valid_from or day >= old.fact.valid_from) else None
-                self.kb.set_status(old.fact.fact_id, "superseded", note=f"replaced by {fact.fact_id}", valid_to=ends)
-        return Outcome(ACCEPTED, (), fact_id=stored.fact.fact_id)
+        if slot_of(key) is None:  # 4A15: a slotted word's replacement is the state engine's; every other fact keeps base 2's versioning
+            for old in mine:  # a newer value for the same subject and wording replaces the older one; the old one is kept
+                if old.fact.status == "active" and old.fact.predicate == key and (old.fact.metadata or {}).get("wording", old.fact.predicate) == wording:
+                    self.kb.set_status(old.fact.fact_id, "superseded", note=f"replaced by {fact.fact_id}")   # TD7: no end stored
+        return Outcome(ACCEPTED, notes, fact_id=stored.fact.fact_id)
 
     def graph(self) -> "FactGraph":
         """Every active or superseded fact with its subject, object and source sentences. Invalidated and
@@ -273,5 +355,5 @@ def facts_section(memory, g: FactGraph, fact_ids: list[str], budget: int,
     return out, count_tokens(out)
 
 
-__all__ = ["RULES_VERSION", "gate", "WRITER_PROMPT", "writer_prompt", "parse_proposals", "is_partial_date", "copied",
+__all__ = ["RULES_VERSION", "gate", "stated_dates", "VOCABULARY_WORDS", "WRITER_PROMPT", "writer_prompt", "vocabulary_word", "parse_proposals", "my_own", "is_partial_date", "copied",
            "version_key", "iso_day", "Outcome", "StructureLayer", "FactGraph", "walk", "facts_section"]

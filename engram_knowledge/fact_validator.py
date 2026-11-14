@@ -16,6 +16,9 @@ HYPOTHETICAL = set("if maybe might perhaps could would wish hope hoping thinking
 OTHER_ACTOR = set("he she they his her their sister brother friend mom dad mother father son daughter husband wife cousin aunt uncle neighbor neighbour colleague boss".split())
 RELATIONS = {"married_to", "parent_of", "friend_of"}
 SHORT_WINDOW = 6
+# OQ-1 (4A17): "am", "im" and "is" are in status's cue words, but alone they say nothing about a status ("I am allergic to
+# penicillin"). For status only, they do not count as support; status's own state words (single, married ...) still do.
+LINKING_ONLY = {"status": {"am", "im", "is"}}
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,7 @@ class Candidate:
     method: str = ""
     version: str = ""
     raw: str = ""
+    end: str = ""          # WR-B (A2): a stated end; checked against the source like the time
 
 
 @dataclass(frozen=True)
@@ -45,6 +49,7 @@ class Decision:
     subject: Resolution | None = None
     predicate: str = ""
     time: str | None = None
+    end: str | None = None
 
 
 class FactValidator:
@@ -85,7 +90,7 @@ class FactValidator:
         held = stems(sentence)
 
         # Predicate: does that sentence use a word for this kind of fact?
-        cues = set() if open_predicate else {stem(w) for w in PREDICATE_CUES.get(word, "").split()}
+        cues = set() if open_predicate else {stem(w) for w in PREDICATE_CUES.get(word, "").split() if w not in LINKING_ONLY.get(word, ())}
         if cues and not cues & set(held): unsure.append(f"nothing in the source says {word}")
 
         # Negation and uncertainty near the object.
@@ -112,12 +117,17 @@ class FactValidator:
             else: unsure.append("reported by someone else, not the subject")
 
         # Time must come from the source.
-        when = None
+        when = until = None
+        in_source = set().union(*(time_values_in(s.text, s.date) for s in lines))
         if tidy(candidate.time):
             when = time_value(candidate.time)
             if when is None: unsure.append("time is not a plain date")
-            elif when not in set().union(*(time_values_in(s.text, s.date) for s in lines)): unsure.append("time is not in the source")
-        return Decision(UNCERTAIN if unsure else ACCEPTED, tuple(unsure), who, word, when)
+            elif when not in in_source: unsure.append("time is not in the source")
+        if tidy(candidate.end):
+            until = time_value(candidate.end)
+            if until is None: unsure.append("end is not a plain date")
+            elif until not in in_source: unsure.append("end is not in the source")
+        return Decision(UNCERTAIN if unsure else ACCEPTED, tuple(unsure), who, word, when, until)
 
 
 class KnowledgePipeline:
@@ -149,7 +159,7 @@ class KnowledgePipeline:
             return self.kb.get(same[0].fact.fact_id)
         target = self.kb.resolve(candidate.object) if decision.predicate in RELATIONS else None
         fact = KnowledgeFact.create(who, decision.predicate, "entity" if target else "text", PREDICATE_TYPES[decision.predicate], "explicit", object_value=None if target else candidate.object, object_entity_id=target,
-                                    validation_status="accepted", valid_from=decision.time, metadata=dict(checked_by=checked_by))
+                                    validation_status="accepted", valid_from=decision.time, valid_to=decision.end, metadata=dict(checked_by=checked_by))
         return self.kb.add(FactWithEvidence(fact, tuple(FactEvidence.create(fact.fact_id, s, extraction_method=candidate.method or None, extraction_version=candidate.version or None) for s in candidate.source_sids)))
 
     def approve(self, review_id, entity_name=None):

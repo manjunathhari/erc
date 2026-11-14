@@ -38,6 +38,37 @@ BASE2 = [
  ("WR-A: assistant label kept as a person", "engram_structure.py", 'people = tuple(p for p in people if _speaker_role(p) == "other")', "people = tuple(people)"),
  ("WR-A: speaker always counted as a person", "engram_structure.py", "parsed = interpret(speaker, text, date=date, people=people)", "parsed = interpret(speaker, text, date=date, people=people + (speaker,))"),
  ("WR-A: only the first person listed counts", "engram_structure.py", 'people = tuple(p for p in people if _speaker_role(p) == "other")', 'people = tuple(p for p in people if _speaker_role(p) == "other")[:1]'),
+ # WR-BC (Amendment 4): WR-B dating (BB), WR-C vocabulary word (BC), and the two together (BJ). claude/engram-wr-bc-tests-first.md, section 6.
+ ("WR-B BB1: the said day stored as the start again", "engram_structure.py", 'start = next((v for v, r in dates if r in ("start", "event")), None)', 'start = next((v for v, r in dates if r in ("start", "event")), None) or iso_day(src.date)'),
+ ("WR-B BB2: role words ignored, every date an event", "engram_structure.py", 'role = next((r for r, rx in _ROLE if rx.search(before)), "event")', 'role = "event"'),
+ ("WR-B BB3: short month names not expanded", "engram_structure.py", r'    t = re.sub(r"\b(" + "|".join(_SHORT) + r")', r'    t = text; _ = re.sub(r"\b(" + "|".join(_SHORT) + r")'),
+ ("WR-B BB4: a month with no year given the said day's year", "engram_structure.py", r'    shown = E.with_dates(t, date_said) if date_said else t', r'    shown = re.sub(r"\b(" + "|".join(MONTHS) + r")\b(?!\s+\d)", lambda m: m[1] + " " + date_said[-4:], E.with_dates(t, date_said) if date_said else t, flags=re.I)'),
+ ("WR-B BB5: a stated year with early, mid or late given no date (AM4-4)", "engram_structure.py", r'    t = re.sub(r"\b(?:early|mid|late)[\s-]+((?:19|20)\d{2})\b", r"\1", t, flags=re.I)', r'    if re.search(r"\b(?:early|mid|late)[\s-]+(?:19|20)\d{2}", t, re.I): return ()'),
+ ("WR-B BB6: a vague expression accepted", "engram_structure.py", r'if inner is not None and re.search(r"\b(?:before|after|between)\b", inner, re.I): return ()', r'if False: return ()'),
+ ("WR-B BB7: dates whose roles do not settle stored anyway", "engram_structure.py", "    return ()\n\n\n# ---------- 3. the writer", "    return tuple(found)\n\n\n# ---------- 3. the writer"),
+ ("WR-B BB8: a replaced version's end set to the said day", "engram_structure.py", 'note=f"replaced by {fact.fact_id}")   # TD7', 'note=f"replaced by {fact.fact_id}", valid_to=iso_day(src.date))   # TD7'),
+ ("WR-B BB9: classic back end: an end not checked against its source", "engram_knowledge/fact_validator.py", 'elif until not in in_source: unsure.append("end is not in the source")', 'elif False: pass'),
+ ("WR-B BB10: classic back end: a stated end dropped", "engram_knowledge/fact_validator.py", 'valid_to=decision.end, metadata=dict(checked_by=checked_by))', 'valid_to=None, metadata=dict(checked_by=checked_by))'),
+ ("WR-C BC1: the word ignored, predicate always the wording", "engram_structure.py", "key = word if in_vocab else wording", "key = wording; in_vocab = False"),
+ ("WR-C BC2: the marker folded into the predicate", "engram_structure.py", "key = word if in_vocab else wording", 'key = word if in_vocab else "other:" + wording'),
+ ("WR-C BC3: vocabulary not written", "engram_structure.py", 'vocabulary="in" if in_vocab else "outside"))', '))'),
+ ("WR-C BC4: checked_by not written (L5)", "engram_structure.py", 'metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date, wording=wording,', 'metadata=dict(said_on=src.date, wording=wording,'),
+ ("WR-C BC5: the support check skipped for vocabulary words", "engram_structure.py", 'held = self.word_supported(sid, subject, obj, word) if in_vocab else ""', 'held = ""'),
+ ("WR-C BC6: a held word sent to review instead of filed by its wording", "engram_structure.py", "if held: in_vocab = False", "if held: return Outcome(UNCERTAIN, (held,))"),
+ ("WR-C BC7: the my + thing rule removed", "engram_structure.py", 'if in_vocab and my_own(subject, word): subject = "I"', "if False: pass"),
+ ("WR-C BC8: the my + thing rule applied to persons", "engram_structure.py", '    return bool(m) and stem(m[1]) in {stem(w) for w in PREDICATE_CUES.get(word, "").split()}', '    return bool(m)'),
+ ("WR-C BC9: only the first proposal per line kept", "engram_structure.py", "if tuple(row.values()) in seen: continue", "if line in {k[0] for k in seen}: continue"),
+ ("WR-C BC10: an unknown word kept as given", "engram_structure.py", 'return w if w in PREDICATE_TYPES else "other"', 'return w or "other"'),
+ ("WR-C BC11: one word left out of the prompt", "engram_structure.py", 'VOCABULARY_WORDS = ", ".join(PREDICATE_TYPES)', 'VOCABULARY_WORDS = ", ".join(list(PREDICATE_TYPES)[1:])'),
+ ("WR-C BC12: the status rule removed (OQ-1)", "engram_knowledge/fact_validator.py", 'LINKING_ONLY = {"status": {"am", "im", "is"}}', "LINKING_ONLY = {}"),
+ ("WR-C BC13: linking verbs dropped for every word, not only status (OQ-1)", "engram_knowledge/fact_validator.py", "if w not in LINKING_ONLY.get(word, ())}", 'if w not in {"am", "im", "is", "was"}}'),
+ ("WR-C BC14: the parser passes a reply's date fields through (4A16)", "engram_structure.py", 'row = dict(line=line, subject=subj[:120], word=vocabulary_word(r.get("word")), object=obj[:200])', 'row = dict(line=line, subject=subj[:120], word=vocabulary_word(r.get("word")), object=obj[:200], **{k: r[k] for k in ("date", "start", "end") if k in r})'),
+ ("WR-C BC15: the runner files without the word (4A19)", "kit_tools/lme_gpt4o.py", ', word=p.get("word", "")).verdict', ').verdict'),
+ ("WR-BC BJ1: base 2 supersedes slotted words as well", "engram_structure.py", "if slot_of(key) is None:  # 4A15", "if True:  # 4A15"),
+ ("WR-BC BJ2: base 2 never supersedes vocabulary words", "engram_structure.py", "if slot_of(key) is None:  # 4A15", "if not in_vocab:  # 4A15"),
+ ("WR-BC BJ3: ownership read from a hard-coded list", "engram_structure.py", "if slot_of(key) is None:  # 4A15", 'if not in_vocab or key in ("number", "plans", "attended", "visited", "completed"):  # 4A15'),
+ ("WR-BC BJ4: a closing word filed outside the vocabulary", "engram_structure.py", 'in_vocab = word != "other"', 'in_vocab = word not in ("other", "left_job")'),
+ ("WR-BC BJ5: the record's dates read from the writer's proposal, not from the sentence", "engram_structure.py", "dates = stated_dates(src.text, src.date)", "dates = stated_dates(obj, src.date)"),
 ]
 ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
  ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
@@ -371,7 +402,9 @@ ERC = [
  ('B5 A2: a number nested in a list is not found', 'engram_erc/evaluation.py', '        return any(_holds_non_finite(member) for member in value)', '        return False'),
  ('B5 A2: an infinity is not counted as not finite', 'engram_erc/evaluation.py', '        return not math.isfinite(value)', '        return math.isnan(value)'),
 ]
-SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_base2_gate_people.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py"),
+SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_base2_gate_people.py tests/test_entity_validation.py tests/test_p2_pipeline.py tests/test_knowledge_store.py "
+                          # WR-BC adds its three test files.
+                          "tests/test_wr_b_dating.py tests/test_wr_c_vocabulary.py tests/test_wr_bc_replacement.py"),
           # B5 adds the explain() lines; their tests are in their own file, run after the unedited adapter tests.
           "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py tests/test_erc_overlay_conclusion_time.py"),
           # The byte-pin test is left out on purpose: every mutation of a pinned file changes its bytes, so the pin would
