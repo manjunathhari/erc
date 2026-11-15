@@ -28,6 +28,59 @@ RECURRING = set("every each daily weekly monthly yearly annually usually often r
                 "weekends weekdays mornings evenings nights mondays tuesdays wednesdays thursdays fridays saturdays sundays".split())
 NOT_YET = set("will gonna tomorrow next upcoming plan planning intend".split())
 NOT_COMPLETED = "the source does not state a completed happening"
+# Stage 2, Increment 1 (contract step WR-D; contract Amendment 7). Fixed word lists, matched on whole words with case
+# ignored; any change to a list is an amendment. claude/engram-stage2-inc1-spec-draft3.md, section 4.
+CONDITION, NEAR_MISS, PASSING = "the source states a condition", "the source states a near miss", "the source states a passing state"
+LIST, PAIR, OPINION = "object is a list; each part needs its own proposal", "object may be two things", "an opinion about something else"
+CONDITION_MARKERS = ("if", "unless", "in case", "as long as", "provided that", "providing that", "assuming", "suppose", "supposing")
+NEAR_MISS_MARKERS = ("almost", "nearly", "came close to", "on the verge of")
+AMOUNT_AFTER = set("a an all every everyone everything always half twice double".split())   # "almost ten years", "almost always"
+COMPARISON_AFTER = set("as like here there".split())                                         # CP-2: "almost as old", "almost there"
+MORE_NUMBERS = set("thirteen fourteen fifteen sixteen seventeen eighteen nineteen sixty seventy eighty ninety thousand million billion".split())
+DAY_MARKERS = ("today", "tonight", "this morning", "this afternoon", "this evening", "right now", "at the moment", "for now", "for the time being")
+MOOD_PHRASES = ("tired of", "sick of", "fed up with", "in the mood for")
+STATE_WORDS = {w for w, kind in PREDICATE_TYPES.items() if kind != "event" and w != "plans"}   # the 13 vocabulary state words
+MOOD_WORDS = {"likes", "dislikes", "hobby"}                                                     # D2-1, 7A3
+OPINION_MARKERS = ("i think", "i believe", "i feel that", "i guess", "i reckon", "i find", "in my view", "in my opinion", "it seems", "seems to me")
+NOT_OPINION_AFTER = {"i believe": {"in"}, "i think": {"of", "about"}}                           # CP-3
+# E (4.6, TF-3): for started_job these cue words do not count on their own; one of the specific words must be there too.
+GENERAL_ONLY = {"started_job": {"start", "started", "new", "joined"}}
+SPECIFIC = {"started_job": set("job hired work working employed position role career company".split())}
+
+
+def _at(words, phrase):
+    """Where a marker begins in a sentence's words. Whole words only: "if" is not found in "life"."""
+    p = phrase.split()
+    return [i for i in range(len(words) - len(p) + 1) if words[i:i + len(p)] == p]
+
+
+def _has(words, markers):
+    return any(_at(words, m) for m in markers)
+
+
+def _near_miss(words):
+    for m in NEAR_MISS_MARKERS:
+        for i in _at(words, m):
+            after = words[i + 1] if " " not in m and i + 1 < len(words) else ""   # the exception is for "almost" and "nearly" only
+            amount = after.lstrip("$")[:1].isdigit() or after in MORE_NUMBERS or after in AMOUNT_AFTER
+            if not (amount or after in COMPARISON_AFTER): return True
+    return False
+
+
+def _opinion(words):
+    for m in OPINION_MARKERS:
+        for i in _at(words, m):
+            after = (words[i + len(m.split()):] or [""])[0]
+            if after not in NOT_OPINION_AFTER.get(m, ()): return True
+    return False
+
+
+def _separators(obj):
+    """S6 (4.4; 7A2, 7A4): what joins the parts of an object. A comma between two digits ("1,200") is not counted."""
+    o = (obj or "").lower()
+    commas = len(re.findall(r",(?!(?<=\d,)\d)", o))
+    joins = o.count(";") + len(re.findall(r"(?<![\w&])(?:and|or|plus|&)(?![\w&])", o)) + len(re.findall(r"\bas\s+well\s+as\b", o))
+    return commas, joins
 
 
 @dataclass(frozen=True)
@@ -100,7 +153,10 @@ class FactValidator:
 
         # Predicate: does that sentence use a word for this kind of fact?
         cues = set() if open_predicate else {stem(w) for w in PREDICATE_CUES.get(word, "").split() if w not in LINKING_ONLY.get(word, ())}
-        if cues and not cues & set(held): unsure.append(f"nothing in the source says {word}")
+        supported = not cues or bool(cues & set(held))
+        if supported and word in GENERAL_ONLY:   # E: a general cue alone does not say it
+            supported = bool((cues - {stem(w) for w in GENERAL_ONLY[word]}) & set(held)) or bool(SPECIFIC[word] & set(tokens(sentence)))
+        if not supported: unsure.append(f"nothing in the source says {word}")
         if not open_predicate and word in COMPLETED_FORMS:
             said_words, run = set(tokens(sentence)), " " + " ".join(tokens(sentence)) + " "
             stated = COMPLETED_FORMS[word] & said_words or any(f" {p} " in run for p in COMPLETED_PHRASES.get(word, ()))
@@ -113,6 +169,19 @@ class FactValidator:
         if word != "dislikes" and (NEGATION & set(near) or "no longer" in said_plain or "used to" in said_plain): unsure.append("the source may negate this")
         if word != "plans" and HYPOTHETICAL & set(near): unsure.append("the source may be hypothetical")
         if sentence.rstrip().endswith("?"): unsure.append("the source is a question")
+
+        # Stage 2, Increment 1: a condition, a near miss, one thing as object, an opinion about something else, a passing state.
+        spoken = tokens(sentence)
+        if _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)
+        if _near_miss(spoken): unsure.append(NEAR_MISS)
+        commas, joins = _separators(candidate.object)
+        if commas + joins >= 2: return Decision(REJECTED, (LIST,), who, word)
+        if joins == 1: unsure.append(PAIR)
+        about_speaker = normalize_name(who.name) == normalize_name(holder.speaker) or bool(who.entity_id) and self.resolver.kb.resolve(holder.speaker) == who.entity_id
+        if _opinion(spoken) and not about_speaker: unsure.append(OPINION)
+        # S5 is applied after the word-support check, to a vocabulary word the sentence supports (I1-5, 7A3).
+        day, mood = _has(spoken, DAY_MARKERS), _has(spoken, MOOD_PHRASES)
+        if not open_predicate and supported and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)
 
         # Attribution: is this the subject's own statement?
         if normalize_name(holder.speaker) == "assistant" and normalize_name(who.name) != "assistant":

@@ -35,7 +35,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from engram_knowledge.database import KnowledgeBase
-from engram_knowledge.fact_validator import ACCEPTED, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine
+from engram_knowledge.fact_validator import ACCEPTED, PASSING, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine
 from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
@@ -109,7 +109,7 @@ WRITER_PROMPT = """Each line below is one sentence a person said in a conversati
 - "word": the one word from this list that says what kind of fact it is, or "other" if none fits: {words};
 - "object": the specific thing the line states about the subject (a name, place, item, number or activity), copied word for word from the line, as short as possible.
 
-Skip lines that only give a feeling, a reaction, an opinion about something else, a wish or a maybe, a question, or small talk. A line may state more than one fact: give each its own entry. Never use words that are not in the line.
+Skip lines that only give a feeling, a reaction, an opinion about something else, a wish or a maybe, a question, or small talk. A line may state more than one fact: give each its own entry. When a line lists several things, such as "tea, coffee and juice", give each thing its own entry and never put the list in one object. Never use words that are not in the line.
 
 Return a JSON object {{"facts": [{{"line": "<line id>", "subject": "...", "word": "...", "object": "..."}}, ...]}}. If no line states a lasting fact, return {{"facts": []}}.
 
@@ -239,6 +239,11 @@ class StructureLayer:
         d = self.word_checker.validate(Candidate(subject, word, obj, (sid,), method="structure", version=RULES_VERSION), [self.line(sid)])
         return next((r for r in d.reasons if r in (f"nothing in the source says {word}", NOT_COMPLETED)), "")
 
+    def passing_state(self, sid: int, subject: str, obj: str, word: str) -> bool:
+        """S5 (Stage 2, Increment 1; 7A1, 7A3): the shared checker's passing-state rule, in fixed-list mode. True only for a
+        vocabulary state word the sentence supports; a word held back by the support check is never held by this rule."""
+        return PASSING in self.word_checker.validate(Candidate(subject, word, obj, (sid,), method="structure", version=RULES_VERSION), [self.line(sid)]).reasons
+
     def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
         """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing.
         `word` is the writer's vocabulary word (WR-C); "" or "other" files the fact outside the vocabulary, by its wording.
@@ -255,6 +260,9 @@ class StructureLayer:
         held = self.word_supported(sid, subject, obj, word) if in_vocab else ""
         notes = (f"word held: {held}",) if held else ()
         if held: in_vocab = False                                     # RM-a: filed by its wording only
+        if word != "other" and self.passing_state(sid, subject, obj, word):   # S5: after the word-support check
+            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION)
+            return Outcome(UNCERTAIN, (PASSING,), review_id=self.kb.add_review(json.dumps(item), [PASSING], [sid]))
         who = d.subject.entity_id or self.kb.add_entity(Entity.create(d.subject.name, "unknown")).entity_id
         wording = version_key(src.text, obj)
         key = word if in_vocab else wording

@@ -128,6 +128,47 @@ BASE2 = [
  ("Step 3a SC10: 'was' alone counted as attendance", 'engram_knowledge/fact_validator.py', 'COMPLETED_FORMS = {"attended": {"attended", "went"},', 'COMPLETED_FORMS = {"attended": {"attended", "went", "was"},'),
  ("Step 3a SC11: the phrase 'was there for' no longer counted", 'engram_knowledge/fact_validator.py', ' or any(f" {p} " in run for p in COMPLETED_PHRASES.get(word, ()))', ''),
  ('Step 3a SC9: the doubt given another wording', 'engram_knowledge/fact_validator.py', 'NOT_COMPLETED = "the source does not state a completed happening"', 'NOT_COMPLETED = "not a completed happening"'),
+ # Stage 2, Increment 1 (WR-D; contract Amendment 7): the checker additions. claude/engram-stage2-inc1-spec-draft3.md, section 10.2;
+ # IB27 added on 15 November (the single semicolon, Amendment 1 to that text). Run with their tests by claude/stage2/inc1/build/inc1_breakages.py.
+ ('S2-I1 IB1: the condition rule looks only at the six words before the object', 'engram_knowledge/fact_validator.py', '        if _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)', '        if _has(near, CONDITION_MARKERS): unsure.append(CONDITION)'),
+ ('S2-I1 IB2: plans exempted from the condition rule', 'engram_knowledge/fact_validator.py', '        if _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)', '        if word != "plans" and _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)'),
+ ('S2-I1 IB3: "if" matched inside a word', 'engram_knowledge/fact_validator.py', '        if _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)', '        if any(m in sentence.lower() for m in CONDITION_MARKERS): unsure.append(CONDITION)'),
+ ('S2-I1 IB4: the amount exception removed from the near-miss rule', 'engram_knowledge/fact_validator.py', '            amount = after.lstrip("$")[:1].isdigit() or after in MORE_NUMBERS or after in AMOUNT_AFTER', '            amount = False'),
+ ('S2-I1 IB5: as, like, here, there removed from the exception', 'engram_knowledge/fact_validator.py', 'COMPARISON_AFTER = set("as like here there".split())', 'COMPARISON_AFTER = set()'),
+ ('S2-I1 IB6: the near-miss rule removed', 'engram_knowledge/fact_validator.py', '        if _near_miss(spoken): unsure.append(NEAR_MISS)', '        if False: unsure.append(NEAR_MISS)'),
+ ('S2-I1 IB7: the passing-state rule applied to event words', 'engram_knowledge/fact_validator.py', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)', '        if not open_predicate and supported and (day or word in MOOD_WORDS and mood): unsure.append(PASSING)'),
+ ('S2-I1 IB8: the passing-state rule applied to facts outside the vocabulary (in the open checker, whatever the word)', 'engram_knowledge/fact_validator.py', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)', '        if supported and (day or word in MOOD_WORDS and mood): unsure.append(PASSING)'),
+ ('S2-I1 IB9: the passing-state rule applied before the word-support check', 'engram_knowledge/fact_validator.py', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)', '        if not open_predicate and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)'),
+ ('S2-I1 IB10: "now" added as a day marker', 'engram_knowledge/fact_validator.py', 'DAY_MARKERS = ("today", ', 'DAY_MARKERS = ("now", "today", '),
+ ('S2-I1 IB11: "feel like" added back as a mood phrase', 'engram_knowledge/fact_validator.py', 'MOOD_PHRASES = ("tired of", ', 'MOOD_PHRASES = ("feel like", "tired of", '),
+ ('S2-I1 IB12: the mood phrases removed', 'engram_knowledge/fact_validator.py', 'MOOD_PHRASES = ("tired of", "sick of", "fed up with", "in the mood for")', 'MOOD_PHRASES = ()'),
+ ('S2-I1 IB13: the day markers removed', 'engram_knowledge/fact_validator.py', 'DAY_MARKERS = ("today", "tonight", "this morning", "this afternoon", "this evening", "right now", "at the moment", "for now", "for the time being")', 'DAY_MARKERS = ()'),
+ ('S2-I1 IB14: a list of three held and not refused', 'engram_knowledge/fact_validator.py', '        if commas + joins >= 2: return Decision(REJECTED, (LIST,), who, word)', '        if commas + joins >= 2: unsure.append(LIST)'),
+ ('S2-I1 IB15: a single "and" accepted', 'engram_knowledge/fact_validator.py', '(?:and|or|plus|&)', '(?:or|plus|&)'),
+ ('S2-I1 IB16: a single comma treated as a list', 'engram_knowledge/fact_validator.py', '        if commas + joins >= 2: return', '        if commas or joins >= 2: return'),
+ ('S2-I1 IB17: a comma between digits counted', 'engram_knowledge/fact_validator.py', 'r",(?!(?<=\\d,)\\d)"', 'r","'),
+ ('S2-I1 IB18: the opinion rule applied when the subject is the speaker', 'engram_knowledge/fact_validator.py', '        if _opinion(spoken) and not about_speaker:', '        if _opinion(spoken):'),
+ ('S2-I1 IB19: "i believe in" or "i think about" counted as a marker', 'engram_knowledge/fact_validator.py', 'NOT_OPINION_AFTER = {"i believe": {"in"}, "i think": {"of", "about"}}', 'NOT_OPINION_AFTER = {}'),
+ ('S2-I1 IB20: the opinion rule removed', 'engram_knowledge/fact_validator.py', '        if _opinion(spoken) and not about_speaker:', '        if False:'),
+ ('S2-I1 IB21: a general cue word counts on its own for started_job', 'engram_knowledge/fact_validator.py', '        if supported and word in GENERAL_ONLY:', '        if False and word in GENERAL_ONLY:'),
+ ('S2-I1 IB22: an unsupported started_job sent to review and not filed by its wording', 'engram_structure.py', '        if held: in_vocab = False', '        if held and word == "started_job": return Outcome(UNCERTAIN, (held,))\n        if held: in_vocab = False'),
+ ("S2-I1 IB23a: the condition rule placed on base 2's path only", 'engram_knowledge/fact_validator.py', '        if _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)', '        if open_predicate and _has(spoken, CONDITION_MARKERS): unsure.append(CONDITION)'),
+ ("S2-I1 IB23b: the near-miss rule placed on base 2's path only", 'engram_knowledge/fact_validator.py', '        if _near_miss(spoken):', '        if open_predicate and _near_miss(spoken):'),
+ ("S2-I1 IB23c: the list rule placed on base 2's path only", 'engram_knowledge/fact_validator.py', '        if commas + joins >= 2: return', '        if open_predicate and commas + joins >= 2: return'),
+ ("S2-I1 IB23d: the pair rule placed on base 2's path only", 'engram_knowledge/fact_validator.py', '        if joins == 1: unsure.append(PAIR)', '        if open_predicate and joins == 1: unsure.append(PAIR)'),
+ ("S2-I1 IB23e: the opinion rule placed on base 2's path only", 'engram_knowledge/fact_validator.py', '        if _opinion(spoken) and not about_speaker:', '        if open_predicate and _opinion(spoken) and not about_speaker:'),
+ ("S2-I1 IB24a: a held proposal stored (the checker's doubts)", 'engram_structure.py', '        if verdict == UNCERTAIN:\n', '        if False:\n'),
+ ('S2-I1 IB24b: a held proposal stored (the passing-state rule on the main path)', 'engram_structure.py', '        if word != "other" and self.passing_state(sid, subject, obj, word):', '        if False and self.passing_state(sid, subject, obj, word):'),
+ ('S2-I1 IB24c: reason text changed: a condition', 'engram_knowledge/fact_validator.py', '"the source states a condition"', '"the source has a condition"'),
+ ('S2-I1 IB24d: reason text changed: a near miss', 'engram_knowledge/fact_validator.py', '"the source states a near miss"', '"the source has a near miss"'),
+ ('S2-I1 IB24e: reason text changed: a passing state', 'engram_knowledge/fact_validator.py', '"the source states a passing state"', '"the source has a passing state"'),
+ ('S2-I1 IB24f: reason text changed: a list', 'engram_knowledge/fact_validator.py', '"object is a list; each part needs its own proposal"', '"object is a list"'),
+ ('S2-I1 IB24g: reason text changed: a pair', 'engram_knowledge/fact_validator.py', '"object may be two things"', '"object may be 2 things"'),
+ ('S2-I1 IB24h: reason text changed: an opinion', 'engram_knowledge/fact_validator.py', '"an opinion about something else"', '"an opinion on something else"'),
+ ('S2-I1 IB25a: the prompt sentence absent', 'engram_structure.py', ' When a line lists several things, such as "tea, coffee and juice", give each thing its own entry and never put the list in one object.', ''),
+ ('S2-I1 IB25b: another word of the prompt changed', 'engram_structure.py', 'Never use words that are not in the line.', 'Never use any words that are not in the line.'),
+ ('S2-I1 IB26: a mood phrase applied to a state word other than likes, dislikes or hobby', 'engram_knowledge/fact_validator.py', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in STATE_WORDS and mood): unsure.append(PASSING)'),
+ ('S2-I1 IB27: a single semicolon accepted as one thing', 'engram_knowledge/fact_validator.py', 'joins = o.count(";") + len(', 'joins = len('),
 ]
 ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
  ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
@@ -481,7 +522,9 @@ SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_base2_gate_
                           # Step 3 adds the store reservation's tests.
                           "tests/test_store_reservation.py "
                           # Step 3a adds the completed-happening check's tests.
-                          "tests/test_step3a_completed_happening.py"),
+                          "tests/test_step3a_completed_happening.py "
+                          # Stage 2, Increment 1 adds the checker additions' tests.
+                          "tests/test_stage2_inc1_checker.py"),
           # B5 adds the explain() lines; their tests are in their own file, run after the unedited adapter tests.
           "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py tests/test_erc_overlay_conclusion_time.py "
                               # Step 3a adds its adapter and state-engine tests.

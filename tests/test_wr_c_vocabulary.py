@@ -133,15 +133,15 @@ def test_a_vocabulary_record_has_the_word_as_predicate_and_keeps_its_wording(mem
 
 @pytest.mark.parametrize("word", ["other", ""])
 def test_an_other_record_keeps_the_wording_as_predicate_and_the_gates_type(mem, word):
-    text = "I speak Kannada and Tamil."
-    f = mem.fact(mem.file(text, "I", "Kannada and Tamil", word))
-    assert f.predicate == S.version_key(text, "Kannada and Tamil") == f.metadata["wording"]
+    text = "I speak Kannada."
+    f = mem.fact(mem.file(text, "I", "Kannada", word))
+    assert f.predicate == S.version_key(text, "Kannada") == f.metadata["wording"]
     assert f.metadata["vocabulary"] == "outside"
     assert f.fact_type == S.FACT_TYPE[S.gate("User", text, SAID)[1]]                                    # A1
 
 
 def test_no_predicate_carries_a_marker(mem):
-    mem.file("I speak Kannada and Tamil.", "I", "Kannada and Tamil", "other")
+    mem.file("I speak Kannada.", "I", "Kannada", "other")
     mem.file("I work at Manipal.", "I", "Manipal", "works_at")
     for predicate, _ in mem.records():
         assert "other" not in predicate and ":" not in predicate
@@ -150,7 +150,7 @@ def test_no_predicate_carries_a_marker(mem):
 def test_every_record_carries_both_new_keys(mem):
     """C14 over a mixed set, including a held word (RM-a) and a person's fact."""
     mem.file("I work at Manipal.", "I", "Manipal", "works_at")
-    mem.file("I speak Kannada and Tamil.", "I", "Kannada and Tamil", "other")
+    mem.file("I speak Kannada.", "I", "Kannada", "other")
     mem.file("I was diagnosed with asthma in 2015.", "I", "asthma", "status")
     mem.file("My sister lives in Paris.", "my sister", "Paris", "lives_in")
     rows = mem.records()
@@ -161,7 +161,7 @@ def test_every_record_carries_both_new_keys(mem):
 
 
 def test_c11_an_outside_record_gets_no_state_slot(mem):
-    f = mem.fact(mem.file("I speak Kannada and Tamil.", "I", "Kannada and Tamil", "other"))
+    f = mem.fact(mem.file("I speak Kannada.", "I", "Kannada", "other"))
     assert slot_of(f.predicate) is None
 
 
@@ -303,7 +303,7 @@ def test_rm_c_a_relatives_name_is_filed_under_the_relative_by_its_wording(mem):
 # ---------------------------------------------------------------- L5: the graph walk still finds base 2's records
 def test_l5_the_walk_finds_vocabulary_and_outside_records(mem):
     a = mem.fact(mem.file("I work at Manipal.", "I", "Manipal", "works_at"))
-    b = mem.fact(mem.file("I speak Kannada and Tamil.", "I", "Kannada and Tamil", "other"))
+    b = mem.fact(mem.file("I speak Kannada.", "I", "Kannada", "other"))
     g = mem.layer.graph()
     assert a.fact_id in g.facts and b.fact_id in g.facts
 
