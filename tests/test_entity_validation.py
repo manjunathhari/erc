@@ -235,7 +235,7 @@ def test_sharing_only_a_little_word_does_not_make_two_names_alike(m):
     kb.add_entity(Entity.create("my sister", "unknown"))
     from engram_knowledge.entity_resolver import EntityResolver
     r = EntityResolver(kb).resolve("my brother", [SourceLine(1, "Asha", "My brother lives in Paris.")])
-    assert r.status == "new" and r.name == "my brother"
+    assert r.status == "new" and r.name == "Asha's brother"
     # a shared real word still counts as possibly the same person
     kb.add_entity(Entity.create("Ben Thomas", "person"))
     assert EntityResolver(kb).resolve("Ben", [SourceLine(1, "Ben", "I adopted a llama.")]).status == "ambiguous"

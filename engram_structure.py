@@ -35,6 +35,7 @@ from dataclasses import dataclass, field
 from typing import Iterable
 
 from engram_knowledge.database import KnowledgeBase
+from engram_knowledge.entity_resolver import entity_for
 from engram_knowledge.fact_validator import ACCEPTED, PASSING, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine
 from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
@@ -263,7 +264,7 @@ class StructureLayer:
         if word != "other" and self.passing_state(sid, subject, obj, word):   # S5: after the word-support check
             item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION)
             return Outcome(UNCERTAIN, (PASSING,), review_id=self.kb.add_review(json.dumps(item), [PASSING], [sid]))
-        who = d.subject.entity_id or self.kb.add_entity(Entity.create(d.subject.name, "unknown")).entity_id
+        who = entity_for(self.kb, d.subject, sid)   # Stage 2, Increment 2: a relation and its scoped alias, created only now
         wording = version_key(src.text, obj)
         key = word if in_vocab else wording
         dates = stated_dates(src.text, src.date)

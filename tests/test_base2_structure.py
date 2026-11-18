@@ -125,7 +125,7 @@ def test_date_rule_rejects_a_bare_day_and_keeps_a_full_date(m):
 def test_who_rule_accepts_someone_named_in_the_sentence(m):
     out = file(m, "sis", "my sister", "Paris")
     assert out.verdict == "accepted"
-    assert KnowledgeBase(m.db).entity(KnowledgeBase(m.db).get(out.fact_id).fact.subject_id).canonical_name == "my sister"
+    assert KnowledgeBase(m.db).entity(KnowledgeBase(m.db).get(out.fact_id).fact.subject_id).canonical_name == "User's sister"
 
 
 def test_who_rule_rejects_a_subject_who_neither_speaks_nor_is_named(m):
@@ -213,7 +213,7 @@ def test_walk_respects_the_hop_limit(m, chain):
     two = S.walk(chain, "x", seed_sids=[m.ids["job"]], hops=2, hubs=["User"])
     assert [chain.facts[f]["object"] for f in one] == ["dave"]
     assert [chain.facts[f]["object"] for f in two] == ["dave", "boston"]
-    assert S.walk(chain, "Where does my sister live?", hops=1, hubs=["User"]) != []
+    assert S.walk(chain, "Where does User's sister live?", hops=1, hubs=["User"]) != []
 
 
 def test_facts_are_shown_as_their_original_sentences_with_dates(m, chain):

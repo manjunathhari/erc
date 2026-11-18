@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from .database import KnowledgeBase
 from .models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, RecordError, normalize_name, tidy
 
-from .entity_resolver import EntityResolver, Resolution
+from .entity_resolver import EntityResolver, Resolution, entity_for
 from .normalizer import PREDICATE_CUES, PREDICATE_TYPES, content_stems, predicate, stem, stems, time_value, time_values_in, tokens
 
 ACCEPTED, UNCERTAIN, REJECTED = "accepted", "uncertain", "rejected"
@@ -190,7 +190,8 @@ class FactValidator:
             speaker_is_subject = normalize_name(holder.speaker) == normalize_name(who.name) or self.resolver.kb.resolve(holder.speaker) == who.entity_id and who.entity_id
             first = {"i", "im", "ive", "ill", "id", "my", "me", "we", "our", "us"}
             words = set(tokens(sentence))
-            names_subject = bool(set(tokens(who.name)) & words)
+            # A relation is named by the speaker's own words for it ("my mom"), not by its display name ("Asha's mother").
+            names_subject = bool(set(tokens(candidate.subject if who.relation else who.name)) & words)
             if speaker_is_subject:
                 before = set(tokens(sentence)[:at + 1])
                 if not first & words and "you" in words: unsure.append("the speaker is talking about someone else")
@@ -234,7 +235,7 @@ class KnowledgePipeline:
         return decision, None
 
     def _store(self, candidate, decision, checked_by, entity_id=None):
-        who = entity_id or decision.subject.entity_id or self.kb.add_entity(Entity.create(decision.subject.name, "unknown")).entity_id
+        who = entity_id or entity_for(self.kb, decision.subject, candidate.source_sids[0])
         same = [x for x in self.kb.about(self.kb.entity(who).canonical_name, statuses=None) if x.fact.predicate == decision.predicate and normalize_name(x.fact.object_value) == normalize_name(candidate.object)]
         if same:
             for sid in candidate.source_sids: self.kb.add_evidence(FactEvidence.create(same[0].fact.fact_id, sid, extraction_method=candidate.method or None, extraction_version=candidate.version or None))
