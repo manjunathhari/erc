@@ -49,16 +49,69 @@ MONTHS = "january february march april may june july august september october no
 
 # ---------- 2. the gate ----------
 
-def gate(speaker: str, text: str, date: str = "", people: Iterable[str] = ()) -> tuple[bool, str]:
-    """P2.1 interpreter + P2.2 policy on one sentence. True only for a 'candidate' (not review, not ignore).
-    Returns (picked, content kind); the kind is a hint for the P1 fact type.
-    `people` names the people in the chat (WR-A, rule S1), so a named speaker counts as a person talking about their
-    own life. An assistant, system or tool label in it is dropped first: it never counts as a person (W16). With no
-    `people`, every decision is as before."""
-    people = tuple(p for p in people if _speaker_role(p) == "other")
+# Stage 2, Increment 3: the first filter (frozen specification claude/engram-stage2-inc3-spec-draft6.md, sections 2 to 4).
+A7_HOLD = "the source gives someone else's words"          # DQ-5; the plain apostrophe U+0027 (his answer at 20:36)
+FILTER_NOTES = ("unresolved_context_reference", "uncertain_or_conditional_content", "unsupported_content_kind",
+                "attribution_not_confirmed", "interpreter_flagged_for_review")          # section 3.2: the only notes
+_DROPPED = ("non_user_speaker", "short_reply", "interaction_not_memory_content")        # A3 (1), (4), (5), (6); DQ-2
+_STILL_HELD = ("correction_requires_target_resolution", "speaker_role_unknown")       # A6; DQ-1
+_PASSED_NOW = ("not_about_the_speaker",)                                                # S2-11
+# Section 3.1, list L-G (DQ-3): greeting, thanks and acknowledgement words stripped from the start of the sentence.
+_LG = (r"hey|hi|hiya|hello|yo|good\s+morning|good\s+afternoon|good\s+evening|thanks|thank\s+you|thx|ty|wow|whoa|oh|ooh|"
+       r"aw|aww|yay|yeah|yes|yep|ok|okay|sure|cool|great|nice|awesome|amazing|congrats|congratulations|haha|lol|omg|"
+       r"so|really|totally|absolutely|definitely|indeed|right|exactly|true|agreed|sounds\s+good|that's\s+(?:great|awesome|"
+       r"amazing|cool|so\s+cool|wonderful|lovely|sweet|so\s+sweet)|glad|me\s+too|same|bye|see\s+you|take\s+care|cheers|"
+       r"much|so\s+much|a\s+lot|again")
+
+
+@dataclass(frozen=True)
+class FilterResult:
+    """The first filter's result for one sentence (section 4.1, DQ-6)."""
+    passes: bool      # the writer sees the sentence
+    kind: str         # today's content kind, unchanged
+    note: str         # one of FILTER_NOTES, or ""
+    hold: str         # A7_HOLD, or ""
+    reason: str       # today's first reason code, always kept
+
+
+def words_after_greeting(text: str, names: Iterable[str]) -> int:
+    """Section 3.1: the words left after removing, from the start and repeatedly, L-G words and the chat's names with the
+    punctuation and spaces that follow them. The sentence itself is never cut."""
+    t = (text or "").replace("’", "'")
+    nm = "|".join(re.escape(n) for n in names if n)
+    lead = re.compile(rf"^\s*(?:(?:{_LG}){'|' + nm if nm else ''})\b[\s,!.?:;~-]*", re.I)
+    prev = None
+    while prev != t:
+        prev, t = t, lead.sub("", t, count=1)
+    return len(re.findall(r"[A-Za-z0-9']+", t))
+
+
+def first_filter(speaker: str, text: str, date: str = "", people: Iterable[str] = ()) -> FilterResult:
+    """Stage 2, Increment 3 (section 2): today's interpreter and evaluate, run exactly as gate ran them, read through the
+    decisions A3 to A7a, CF-1, CF-2 and DQ-1 to DQ-3. A reason code the table does not name keeps today's answer."""
+    people = tuple(p for p in people if _speaker_role(p) == "other")                 # W16: assistant labels dropped first
     parsed = interpret(speaker, text, date=date, people=people)
     decision = evaluate(parsed)
-    return decision.decision == "candidate" and decision.keep_as == "none", decision.content_kind
+    reason = decision.reason_codes[0] if decision.reason_codes else ""
+    kind = decision.content_kind
+    today = decision.decision == "candidate" and decision.keep_as == "none"
+    if today: return FilterResult(True, kind, "", "", reason)
+    if reason in _DROPPED or reason in _STILL_HELD: return FilterResult(False, kind, "", "", reason)
+    if reason == "social_or_acknowledgement":                                         # A3 (2), (3) and A4
+        return FilterResult(words_after_greeting(text, people) >= 4, kind, "", "", reason)
+    if reason in _PASSED_NOW: return FilterResult(True, kind, "", "", reason)
+    if reason == "externally_attributed_statement": return FilterResult(True, kind, "", A7_HOLD, reason)   # A7, A7a
+    if reason in FILTER_NOTES: return FilterResult(True, kind, reason, "", reason)    # A5, CF-2, DQ-2
+    return FilterResult(today, kind, "", "", reason)
+
+
+def gate(speaker: str, text: str, date: str = "", people: Iterable[str] = ()) -> tuple[bool, str]:
+    """Whether the writer sees the sentence, and its content kind (a hint for the P1 fact type). Since Stage 2, Increment 3
+    both come from `first_filter` (section 4.1). `people` names the people in the chat (WR-A, rule S1), so a named speaker
+    counts as a person talking about their own life. An assistant, system or tool label in it is dropped first: it never
+    counts as a person (W16)."""
+    r = first_filter(speaker, text, date, people)
+    return r.passes, r.kind
 
 
 # ---------- 2b. dates stated in the sentence (WR-B, rules TD1 to TD10) ----------
@@ -245,6 +298,13 @@ class StructureLayer:
         vocabulary state word the sentence supports; a word held back by the support check is never held by this rule."""
         return PASSING in self.word_checker.validate(Candidate(subject, word, obj, (sid,), method="structure", version=RULES_VERSION), [self.line(sid)]).reasons
 
+    def filter_of(self, sid: int) -> FilterResult:
+        """DQ-4 (a): the first filter's result for a stored sentence, from its speaker, text and date, with the speakers
+        recorded in the same chat (in the order they were recorded) as the people; first_filter drops assistant labels."""
+        speaker, text, date, chat = self.db.execute("SELECT speaker, text, date, chat FROM sentences WHERE sid=?", (sid,)).fetchone()
+        people = tuple(r[0] for r in self.db.execute("SELECT speaker FROM sentences WHERE chat IS ? GROUP BY speaker ORDER BY MIN(sid)", (chat,)))
+        return first_filter(speaker, text, date or "", people)
+
     def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
         """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing.
         `word` is the writer's vocabulary word (WR-C); "" or "other" files the fact outside the vocabulary, by its wording.
@@ -253,16 +313,21 @@ class StructureLayer:
         in_vocab = word != "other"
         if in_vocab and my_own(subject, word): subject = "I"          # RM-b (4A13): "my job" is the speaker's
         verdict, reasons, d = self.check(sid, subject, obj)
-        if verdict == REJECTED: return Outcome(REJECTED, reasons)
+        if verdict == REJECTED: return Outcome(REJECTED, reasons)    # 1: a rejected proposal stays rejected, never queued
         src = self.line(sid)
-        if verdict == UNCERTAIN:
+        f = self.filter_of(sid)                                       # DQ-4 (a): worked out here, so no caller can skip it
+        if f.hold:                                                    # 2: the A7 hold; nothing is stored
             item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION)
+            return Outcome(UNCERTAIN, (f.hold,), review_id=self.kb.add_review(json.dumps(item), [f.hold], [sid]))
+        noted = dict(filter_note=f.note) if f.note else {}            # section 4.3: the key only when there is a note
+        if verdict == UNCERTAIN:
+            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **noted)
             return Outcome(UNCERTAIN, reasons, review_id=self.kb.add_review(json.dumps(item), list(reasons), [sid]))
         held = self.word_supported(sid, subject, obj, word) if in_vocab else ""
         notes = (f"word held: {held}",) if held else ()
         if held: in_vocab = False                                     # RM-a: filed by its wording only
         if word != "other" and self.passing_state(sid, subject, obj, word):   # S5: after the word-support check
-            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION)
+            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **noted)
             return Outcome(UNCERTAIN, (PASSING,), review_id=self.kb.add_review(json.dumps(item), [PASSING], [sid]))
         who = entity_for(self.kb, d.subject, sid)   # Stage 2, Increment 2: a relation and its scoped alias, created only now
         wording = version_key(src.text, obj)
@@ -279,7 +344,7 @@ class StructureLayer:
         fact = KnowledgeFact.create(who, key, "text", PREDICATE_TYPES[key] if in_vocab else FACT_TYPE.get(kind, "observation"), "explicit",
                                     object_value=obj, validation_status="accepted", valid_from=start, valid_to=end,
                                     metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date, wording=wording,
-                                                  vocabulary="in" if in_vocab else "outside"))
+                                                  vocabulary="in" if in_vocab else "outside", **noted))
         stored = self.kb.add(FactWithEvidence(fact, (FactEvidence.create(fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION),)))
         if slot_of(key) is None:  # 4A15: a slotted word's replacement is the state engine's; every other fact keeps base 2's versioning
             for old in mine:  # a newer value for the same subject and wording replaces the older one; the old one is kept

@@ -51,7 +51,7 @@ def test_t2_a_named_speaker_told_who_the_people_are_passes_20_of_20_facts():
 
 
 def test_t2_a_named_speaker_told_who_the_people_are_stops_what_user_stops():
-    assert passed("Asha", NOT_FACTS, people=("Asha",)) == passed("User", NOT_FACTS) == 4
+    assert passed("Asha", NOT_FACTS, people=("Asha",)) == passed("User", NOT_FACTS) == 10
 
 
 @pytest.mark.parametrize("text", ALL)
@@ -62,7 +62,7 @@ def test_told_the_gate_decides_for_a_named_speaker_exactly_as_for_user_today(tex
 
 # ---------- not told: unchanged ----------
 
-@pytest.mark.parametrize("speaker,facts,stopped", [("User", 20, 16), ("Asha", 0, 20), ("Assistant", 0, 20)])
+@pytest.mark.parametrize("speaker,facts,stopped", [("User", 20, 10), ("Asha", 0, 20), ("Assistant", 0, 20)])
 def test_not_told_the_gate_is_as_today(speaker, facts, stopped):
     assert passed(speaker, FACTS) == facts and len(NOT_FACTS) - passed(speaker, NOT_FACTS) == stopped
 
