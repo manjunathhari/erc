@@ -36,12 +36,13 @@ from typing import Iterable
 
 from engram_knowledge.database import KnowledgeBase
 from engram_knowledge.entity_resolver import entity_for
-from engram_knowledge.fact_validator import ACCEPTED, PASSING, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine
+from engram_knowledge import relations as _R
+from engram_knowledge.fact_validator import ACCEPTED, CONDITION, CONDITION_MARKERS, PASSING, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine, _has
 from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
 from engram_knowledge.models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, normalize_name
-from engram_knowledge.normalizer import PREDICATE_CUES, PREDICATE_TYPES, stem, time_value
+from engram_knowledge.normalizer import PREDICATE_CUES, PREDICATE_TYPES, stem, time_value, tokens
 from engram_knowledge.transition import slot_of
 
 RULES_VERSION = "base2-1"
@@ -182,24 +183,183 @@ def vocabulary_word(word) -> str:
     return w if w in PREDICATE_TYPES else "other"
 
 
-def parse_proposals(reply: str, valid_lines: set[str]) -> list[dict]:
+def parse_proposals(reply: str, valid_lines: set[str], block_lines: set[str] | None = None) -> list[dict]:
     """Writer reply -> [{line, subject, word, object}]. Unknown line ids and empty fields are dropped; a line may give several
-    proposals (WP-2), and only an exact repeat is dropped; any date in the reply is ignored (4A16); never raises."""
+    proposals (WP-2), and only an exact repeat is dropped; any date in the reply is ignored (4A16); never raises.
+    Stage 2, Increment 4 (N8 (b)): with block_lines (every line id of the reading's block), a proposal is dropped only when the
+    reply is unreadable, its subject or object is empty, or its line is not in block_lines; "subject_from" is kept as given,
+    whatever it is, and the fixed checks decide. Without block_lines, exactly today's behaviour."""
     try:
         m = re.search(r"\{.*\}", reply or "", re.S)
         rows = json.loads(m.group(0)).get("facts", []) if m else []
     except (ValueError, AttributeError):
         return []
+    allowed = valid_lines if block_lines is None else set(block_lines)
     out, seen = [], set()
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict): continue
         line, subj, obj = str(r.get("line", "")).strip(), str(r.get("subject", "")).strip(), str(r.get("object", "")).strip()
-        if line not in valid_lines or not subj or not obj: continue
+        if line not in allowed or not subj or not obj: continue
         row = dict(line=line, subject=subj[:120], word=vocabulary_word(r.get("word")), object=obj[:200])
+        if block_lines is not None and r.get("subject_from") is not None: row["subject_from"] = str(r["subject_from"]).strip()
         if tuple(row.values()) in seen: continue
         seen.add(tuple(row.values()))
         out.append(row)
     return out
+
+
+# ---------- 3b. reading a block of conversation (Stage 2, Increment 4) ----------
+# Frozen specification claude/engram-stage2-inc4-spec-draft5-revision2.md (sections 2 to 4), contract Amendment 9.
+
+@dataclass(frozen=True)
+class BlockLine:
+    """One line of a chat's block, in one reading (section 2.1, B-1 to B-6)."""
+    line_id: str
+    speaker: str
+    text: str
+    citable: bool     # said by the reading speaker and passed by the first filter (B-3)
+    kind: str         # the first filter's content kind, for citable lines; "" otherwise
+
+
+def _is_person(speaker: str) -> bool:
+    """B-2, W16: a speaker who is not an assistant, system or tool label (read from the label alone, as first_filter does)."""
+    return _speaker_role(speaker) not in ("assistant", "system", "tool")
+
+
+def readings(lines, date: str = "", people: Iterable[str] = ()) -> list[tuple[str, list[BlockLine]]]:
+    """B-1 to B-5. lines: the chat's (line_id, speaker, text) in order. One (reading speaker, block) per person speaker, in the
+    order they first speak. In a reading, a line is citable when the reading speaker said it and the first filter passes it;
+    every other line is read-only. Assistant, system and tool lines are not in the block."""
+    people = tuple(people)
+    kept = [(str(i), sp, t) for i, sp, t in lines if _is_person(sp)]
+    order = list(dict.fromkeys(sp for _, sp, _ in kept))
+    out = []
+    for who in order:
+        block = []
+        for i, sp, t in kept:
+            r = first_filter(sp, t, date, people) if sp == who else None
+            block.append(BlockLine(i, sp, t, bool(r and r.passes), r.kind if r and r.passes else ""))
+        out.append((who, block))
+    return out
+
+
+# Section 4, the block prompt: approved as Draft 2 (claude/engram-stage2-inc4-block-prompt-draft2.md), his word of
+# 21 November 2026, 08:05. Template SHA-256 273eacee2c0f01e4c7f21179699e721b5821b45be963641e29479f04c706071d.
+_BORROW = ('Give facts only from lines that are not marked (read only). Below, a person\'s name also means a relation without a '
+           'name, such as "my sister". A name may be copied from a line of either speaker; a relation without a name may be '
+           'copied only from a line said by the same speaker as the line that states the fact. If a line names a person only '
+           'as he, she, him, her, his or hers, you may copy that person\'s name from one other line of the chat and give that '
+           'line\'s id as "subject_from". Copy the name word for word. Never copy anything else from another line.')
+# Built from today's prompt by fixed replacements (P-1 to P-7 of the approved Draft 2), so every rule of today's prompt is
+# kept by construction (section 4) and appears once in this file.
+BLOCK_PROMPT = (WRITER_PROMPT
+    .replace("Each line below is one sentence a person said in a conversation, with its line id. For each fact a line states "
+             "that lasts (something the person or", "Each line below is one sentence said in a conversation, shown with its "
+             "line id and who said it. For each fact a line states that lasts (something its speaker or")                # P-1, P-2
+    .replace('("I" when it is the speaker;', '("I" when it is the line\'s speaker;')                                      # P-3
+    .replace("\n\nReturn a JSON object", "\n\n" + _BORROW + "\n\nReturn a JSON object")                                # P-4, P-7
+    .replace('"object": "..."}}, ...]}}.', '"object": "...", "subject_from": "<line id>"}}, ...]}}. Leave out "subject_from" '
+             'when the subject is not copied from another line.'))                                                    # P-5, P-6
+
+
+def block_prompt(block: Iterable[BlockLine]) -> str:
+    """The writer's prompt for one reading (section 4): each line as "<id> <speaker>: <sentence>", a read-only line with
+    "(read only)" after its id. WRITER_PROMPT and writer_prompt are unchanged (N7)."""
+    shown = "\n".join(f"{b.line_id} {'' if b.citable else '(read only) '}{b.speaker}: {b.text}" for b in block)
+    return BLOCK_PROMPT.format(words=VOCABULARY_WORDS, lines=shown)
+
+
+# Section 2.6: the reason strings, exact, with the plain apostrophe U+0027.
+READ_ONLY = "the sentence is shown for reading only"                  # 2a
+NAME_IS_MAIN = "the name's line is the main line"                     # 2b
+NAME_NOT_HERE = "the name's line is not in this chat"                 # 2b'
+NO_REFERENCE = "the sentence does not refer to a person"              # 2c
+RELATION_OTHER = "a relation is borrowed only from the same speaker"  # 2d
+NEARER_NAME = "another name is as near or nearer"                     # 2e
+REFERENCE_WORDS = re.compile(r"(?<![\w'])(?:he|she|him|her|his|hers)(?![\w'])", re.I)   # 2.4, N2 (a); "they" does not count (N4)
+_WEEKDAYS = "monday tuesday wednesday thursday friday saturday sunday".split()
+# 2.5, list L-NN: never a name.
+L_NN = ({"i", "i'm", "i've", "i'd", "i'll", "ok", "okay", "oh", "wow", "hey", "hi", "hello", "thanks", "thank", "yes", "yeah", "no",
+         "god", "mr", "mrs", "ms", "dr"} | set(_WEEKDAYS) | set(MONTHS)
+        | {w for w in re.findall(r"[a-z']+", _LG) if len(w) > 1})
+_NAME_KINDS = ("one", "several", "family")                            # L2a, L2b, L3a (N9 (b))
+
+
+def _relation_names(text: str) -> list[str]:
+    """2.5: "my" + a relation word of L2a, L2b or L3a with no name given ("my sister"), as "my <relation>"."""
+    words = _R._words(text)
+    out = []
+    for i, w in enumerate(words):
+        if w.lower() != "my": continue
+        for k in range(1, 5):
+            part = words[i + 1:i + 1 + k]
+            if len(part) < k or "," in part: break
+            rel = _R.read_relation(part)
+            if rel is None: continue
+            if rel.kind in _NAME_KINDS and not rel.name:
+                nxt = words[i + 1 + k] if i + 1 + k < len(words) else ""
+                named = nxt[:1].isupper() and _R.read_relation(part + [nxt.strip("'")])
+                if not (named and named.name): out.append("my " + rel.relation)
+            break
+    return out
+
+
+def _capital_names(text: str, speakers: set, later: set) -> list[str]:
+    """2.5 (N1 (a)): runs of words each beginning with a capital letter, a trailing "'s" dropped, that are not a speaker, not
+    on L-NN, and not the first word of their line unless the same word appears elsewhere in the chat not first in its line."""
+    t = (text or "").replace("\u2019", "'")
+    runs, cur, last = [], [], None
+    for n, m in enumerate(re.finditer(r"[A-Za-z][A-Za-z'-]*", t)):
+        w = re.sub(r"'s$", "", m.group(0))
+        out = not w[:1].isupper() or w.lower() in L_NN or w.lower() in speakers or (n == 0 and w not in later)
+        if out or not (cur and t[last:m.start()].strip() == ""):
+            if cur: runs.append(" ".join(cur))
+            cur = [] if out else [w]
+        else:
+            cur.append(w)
+        last = m.end()
+    if cur: runs.append(" ".join(cur))
+    return runs
+
+
+def _later_words(texts) -> set:
+    """Capitalised words that appear somewhere not first in their line."""
+    out = set()
+    for t in texts:
+        for n, m in enumerate(re.finditer(r"[A-Za-z][A-Za-z'-]*", (t or "").replace("\u2019", "'"))):
+            if n: out.add(re.sub(r"'s$", "", m.group(0)))
+    return out
+
+
+def names_in(text: str, speakers: Iterable[str], later: set) -> list[str]:
+    """Every name a line holds (2.5): capitalised names, and relations without a name counted as names."""
+    return _capital_names(text, {normalize_name(x) for x in speakers}, later) + _relation_names(text)
+
+
+def _same_name(subject: str, name: str) -> bool:
+    """The subject is that name: equal names, or a relation with a name whose name it is, or the same relation."""
+    if normalize_name(subject) == normalize_name(name): return True
+    read = _R.read_subject(subject)
+    if read and read[0] == "my":
+        rel = read[2]
+        return normalize_name(rel.name) == normalize_name(name) if rel.name else normalize_name("my " + rel.relation) == normalize_name(name)
+    return False
+
+
+def nearest_ok(block: list[tuple], main: int, name: int, subject: str) -> bool:
+    """2e (Q7 (4), N3 (a), D2-3): the name line is the one line, before or after, holding a name at the least distance; that
+    line holds exactly one name; and the subject is that name. block: [(sid, speaker, text)] in order."""
+    speakers = {sp for _, sp, _ in block}
+    later = _later_words(t for _, _, t in block)
+    at = [k for k, (sid, _, _) in enumerate(block) if sid == main][0]
+    found = [(abs(k - at), k, names_in(t, speakers, later)) for k, (sid, _, t) in enumerate(block) if sid != main]
+    found = [f for f in found if f[2]]
+    if not found: return False
+    least = min(d for d, _, _ in found)
+    nearest = [f for f in found if f[0] == least]
+    if len(nearest) != 1 or len(nearest[0][2]) != 1: return False
+    _, k, (only,) = nearest[0]
+    return block[k][0] == name and _same_name(subject, only)
 
 
 # ---------- 4. the rules ----------
@@ -272,14 +432,17 @@ class StructureLayer:
         row = self.db.execute("SELECT sid, speaker, text, date FROM sentences WHERE sid=?", (sid,)).fetchone()
         return SourceLine(*row) if row else None
 
-    def check(self, sid: int, subject: str, obj: str) -> tuple[str, tuple, object]:
-        """The fixed rules for one proposal. Returns (verdict, reasons, P2 decision or None)."""
+    def check(self, sid: int, subject: str, obj: str, name_line: int | None = None) -> tuple[str, tuple, object]:
+        """The fixed rules for one proposal. Returns (verdict, reasons, P2 decision or None). name_line (Stage 2, Increment 4,
+        Q7): a borrowed subject's name line, passed by `file` only when it is a line of the block; the resolver and the
+        who-rule read it as well as the sentence. Every other check reads the sentence alone, as today."""
         src = self.line(sid)
         if src is None: return REJECTED, ("the cited sentence does not exist",), None
         if not copied(obj, src.text): return REJECTED, ("object not copied word for word from the sentence",), None
         if is_partial_date(obj): return REJECTED, ("object is only a partial or relative date",), None
         cand = Candidate(subject, version_key(src.text, obj), obj, (sid,), method="structure", version=RULES_VERSION)
-        d = self.validator.validate(cand, [src])
+        named = [self.line(name_line)] if name_line is not None and name_line != sid else []
+        d = self.validator.validate_borrowed(cand, [src], named) if named else self.validator.validate(cand, [src])
         if d.verdict == REJECTED: return REJECTED, d.reasons, d
         # Who-rule: the subject is the speaker, or is named in the sentence. P2's attribution check already rejects a
         # subject who is neither ("the speaker of the source is someone else"); it sends "named but not the speaker" to
@@ -305,10 +468,63 @@ class StructureLayer:
         people = tuple(r[0] for r in self.db.execute("SELECT speaker FROM sentences WHERE chat IS ? GROUP BY speaker ORDER BY MIN(sid)", (chat,)))
         return first_filter(speaker, text, date or "", people)
 
-    def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
+    def block_of(self, sid: int) -> tuple[list[tuple], tuple]:
+        """The block of the stored chat a sentence is in (B-1, B-5): its person lines as (sid, speaker, text), in recorded
+        order, and the chat's recorded speakers as the people (as filter_of works them out, DQ-4)."""
+        chat = self.db.execute("SELECT chat FROM sentences WHERE sid=?", (sid,)).fetchone()
+        if chat is None: return [], ()
+        rows = self.db.execute("SELECT sid, speaker, text FROM sentences WHERE chat IS ? ORDER BY sid", (chat[0],)).fetchall()
+        people = tuple(dict.fromkeys(sp for _, sp, _ in rows))
+        return [(i, sp, t) for i, sp, t in rows if _is_person(sp)], people
+
+    def _hold(self, sid, subject, obj, word, reasons, sids, noted=None):
+        item = dict(subject=subject, object=obj, word=word, source_sids=list(sids), method="structure", version=RULES_VERSION, **(noted or {}))
+        return Outcome(UNCERTAIN, tuple(reasons), review_id=self.kb.add_review(json.dumps(item), list(reasons), list(sids)))
+
+    def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "", subject_from=None, reading=None) -> Outcome:
         """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing.
         `word` is the writer's vocabulary word (WR-C); "" or "other" files the fact outside the vocabulary, by its wording.
-        Dates come only from the sentence (WR-B, 4A16); the said day is never stored as a start or an end (TD7)."""
+        Dates come only from the sentence (WR-B, 4A16); the said day is never stored as a start or an end (TD7).
+        Stage 2, Increment 4 (section 2.3, contract Amendment 9): `reading` is the reading speaker; `subject_from` is the name
+        line's sentence id, or the line id as given when it is not a line of the chat. With both left out, exactly today's."""
+        if subject_from is None and reading is None: return self._file_today(sid, subject, obj, kind, word)
+        return self._file_block(sid, subject, obj, kind, word, subject_from, reading)
+
+    def _file_block(self, sid, subject, obj, kind, word, subject_from, reading) -> Outcome:
+        """Section 2.3: step 1 (today's checks; the name line read by the resolver and the who-rule, Q7), then steps 2a to 4,
+        which only add a hold (Q10, D2-1), then step 5 as today. The first failing step in table order gives the reason."""
+        word = vocabulary_word(word)
+        in_vocab = word not in ("other",)
+        subject = "I" if in_vocab and my_own(subject, word) else subject    # RM-b (4A13): "my job" is the speaker's
+        block, people = self.block_of(sid)
+        here = {i for i, _, _ in block}
+        borrowed = subject_from is not None
+        given = subject_from if isinstance(subject_from, int) else (int(subject_from) if str(subject_from).strip().isdigit() else None)
+        name = given if borrowed and given in here and given != sid else None        # a valid name line of this block
+        verdict, reasons, d = self.check(sid, subject, obj, name_line=name)
+        if verdict == REJECTED: return Outcome(REJECTED, reasons)    # 1: a rejected proposal stays rejected, never queued (D2-1)
+        src = self.line(sid)
+        f = self.filter_of(sid)
+        noted = dict(filter_note=f.note) if f.note else {}            # section 4.3: the note from the main line only
+        sids = [sid] + ([name] if name is not None else [])
+        if verdict == UNCERTAIN: return self._hold(sid, subject, obj, word, reasons, sids, noted)   # held at step 1: its reason
+        held = None
+        if reading is not None and not (src.speaker == reading and sid in here and f.passes): held = READ_ONLY     # 2a
+        elif borrowed and given == sid: held = NAME_IS_MAIN                                                          # 2b
+        elif borrowed and name is None: held = NAME_NOT_HERE                                                         # 2b'
+        elif borrowed and not REFERENCE_WORDS.search(src.text): held = NO_REFERENCE                                 # 2c
+        elif borrowed:
+            read = _R.read_subject(subject)
+            other = self.line(name).speaker != src.speaker
+            if read and read[0] == "my" and not read[2].name and other: held = RELATION_OTHER                     # 2d
+            elif not nearest_ok(block, sid, name, subject): held = NEARER_NAME                                      # 2e
+            elif _has(tokens(self.line(name).text), CONDITION_MARKERS): held = CONDITION                            # 3
+        if held: return self._hold(sid, subject, obj, word, [held], sids, noted)
+        if f.hold or (name is not None and self.filter_of(name).hold):                                              # 4: A7
+            return self._hold(sid, subject, obj, word, [A7_HOLD], sids)
+        return self._store(sid, subject, obj, kind, word, in_vocab, d, src, noted, name)
+
+    def _file_today(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
         word = vocabulary_word(word)
         in_vocab = word != "other"
         if in_vocab and my_own(subject, word): subject = "I"          # RM-b (4A13): "my job" is the speaker's
@@ -323,13 +539,19 @@ class StructureLayer:
         if verdict == UNCERTAIN:
             item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **noted)
             return Outcome(UNCERTAIN, reasons, review_id=self.kb.add_review(json.dumps(item), list(reasons), [sid]))
+        return self._store(sid, subject, obj, kind, word, in_vocab, d, src, noted)
+
+    def _store(self, sid, subject, obj, kind, word, in_vocab, d, src, noted, name=None) -> Outcome:
+        """Step 5, as today: word support, passing state, storing and versioning. A name line (Increment 4) is recorded with
+        the role `qualifies` (Q6), and a borrowed subject's alias rests on it (Q9 (iii))."""
+        sids = [sid] + ([name] if name is not None else [])
         held = self.word_supported(sid, subject, obj, word) if in_vocab else ""
         notes = (f"word held: {held}",) if held else ()
         if held: in_vocab = False                                     # RM-a: filed by its wording only
         if word != "other" and self.passing_state(sid, subject, obj, word):   # S5: after the word-support check
-            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **noted)
-            return Outcome(UNCERTAIN, (PASSING,), review_id=self.kb.add_review(json.dumps(item), [PASSING], [sid]))
-        who = entity_for(self.kb, d.subject, sid)   # Stage 2, Increment 2: a relation and its scoped alias, created only now
+            item = dict(subject=subject, object=obj, word=word, source_sids=sids, method="structure", version=RULES_VERSION, **noted)
+            return Outcome(UNCERTAIN, (PASSING,), review_id=self.kb.add_review(json.dumps(item), [PASSING], sids))
+        who = entity_for(self.kb, d.subject, sid if name is None else name)   # Increment 2: a relation and its scoped alias, created only now
         wording = version_key(src.text, obj)
         key = word if in_vocab else wording
         dates = stated_dates(src.text, src.date)
@@ -345,7 +567,9 @@ class StructureLayer:
                                     object_value=obj, validation_status="accepted", valid_from=start, valid_to=end,
                                     metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date, wording=wording,
                                                   vocabulary="in" if in_vocab else "outside", **noted))
-        stored = self.kb.add(FactWithEvidence(fact, (FactEvidence.create(fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION),)))
+        evidence = (FactEvidence.create(fact.fact_id, sid, extraction_method="structure", extraction_version=RULES_VERSION),)
+        if name is not None: evidence += (FactEvidence.create(fact.fact_id, name, evidence_role="qualifies", extraction_method="structure", extraction_version=RULES_VERSION),)
+        stored = self.kb.add(FactWithEvidence(fact, evidence))
         if slot_of(key) is None:  # 4A15: a slotted word's replacement is the state engine's; every other fact keeps base 2's versioning
             for old in mine:  # a newer value for the same subject and wording replaces the older one; the old one is kept
                 if old.fact.status == "active" and old.fact.predicate == key and (old.fact.metadata or {}).get("wording", old.fact.predicate) == wording:
@@ -429,5 +653,5 @@ def facts_section(memory, g: FactGraph, fact_ids: list[str], budget: int,
     return out, count_tokens(out)
 
 
-__all__ = ["RULES_VERSION", "gate", "stated_dates", "VOCABULARY_WORDS", "WRITER_PROMPT", "writer_prompt", "vocabulary_word", "parse_proposals", "my_own", "is_partial_date", "copied",
+__all__ = ["RULES_VERSION", "gate", "BlockLine", "readings", "BLOCK_PROMPT", "block_prompt", "stated_dates", "VOCABULARY_WORDS", "WRITER_PROMPT", "writer_prompt", "vocabulary_word", "parse_proposals", "my_own", "is_partial_date", "copied",
            "version_key", "iso_day", "Outcome", "StructureLayer", "FactGraph", "walk", "facts_section"]

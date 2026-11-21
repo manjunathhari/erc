@@ -26,7 +26,7 @@ BASE2 = [
  ("walk ignores links", "engram_structure.py", "if o and o not in seen_subj and o not in hub and o in g.by_subject:", "if False:"),
  ("budget ignored", "engram_structure.py", 'if count_tokens("\\n".join(lines + [text])) > budget: continue', "pass"),
  ("paraphrase instead of sentence", "engram_structure.py", "text = memory.text_of([sid])", "text = g.facts[fid]['subject'] + ' ' + g.facts[fid]['object']"),
- ("gate lets everything through", "engram_structure.py", 'return decision.decision == "candidate" and decision.keep_as == "none"', "return True"),
+ ("gate lets everything through", "engram_structure.py", '    today = decision.decision == "candidate" and decision.keep_as == "none"', "    today = True"),
  ("open-predicate skips negation", "engram_knowledge/fact_validator.py", 'if word != "dislikes" and (NEGATION', 'if not open_predicate and word != "dislikes" and (NEGATION'),
  ("resolver loop back", "engram_knowledge/entity_resolver.py", "if normalize_name(speaker) in FIRST_PERSON:", "if False:"),
  ("resolver little words back", "engram_knowledge/entity_resolver.py", "set(normalize_name(name).split()) - LITTLE", "set(normalize_name(name).split())"),
@@ -51,7 +51,7 @@ BASE2 = [
  ("WR-B BB10: classic back end: a stated end dropped", "engram_knowledge/fact_validator.py", 'valid_to=decision.end, metadata=dict(checked_by=checked_by))', 'valid_to=None, metadata=dict(checked_by=checked_by))'),
  ("WR-C BC1: the word ignored, predicate always the wording", "engram_structure.py", "key = word if in_vocab else wording", "key = wording; in_vocab = False"),
  ("WR-C BC2: the marker folded into the predicate", "engram_structure.py", "key = word if in_vocab else wording", 'key = word if in_vocab else "other:" + wording'),
- ("WR-C BC3: vocabulary not written", "engram_structure.py", 'vocabulary="in" if in_vocab else "outside"))', '))'),
+ ("WR-C BC3: vocabulary not written", "engram_structure.py", 'vocabulary="in" if in_vocab else "outside", **noted))', '**noted))'),
  ("WR-C BC4: checked_by not written (L5)", "engram_structure.py", 'metadata=dict(checked_by="rules " + RULES_VERSION, said_on=src.date, wording=wording,', 'metadata=dict(said_on=src.date, wording=wording,'),
  ("WR-C BC5: the support check skipped for vocabulary words", "engram_structure.py", 'held = self.word_supported(sid, subject, obj, word) if in_vocab else ""', 'held = ""'),
  ("WR-C BC6: a held word sent to review instead of filed by its wording", "engram_structure.py", "if held: in_vocab = False", "if held: return Outcome(UNCERTAIN, (held,))"),
@@ -169,6 +169,33 @@ BASE2 = [
  ('S2-I1 IB25b: another word of the prompt changed', 'engram_structure.py', 'Never use words that are not in the line.', 'Never use any words that are not in the line.'),
  ('S2-I1 IB26: a mood phrase applied to a state word other than likes, dislikes or hobby', 'engram_knowledge/fact_validator.py', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in MOOD_WORDS and mood): unsure.append(PASSING)', '        if not open_predicate and supported and (word in STATE_WORDS and day or word in STATE_WORDS and mood): unsure.append(PASSING)'),
  ('S2-I1 IB27: a single semicolon accepted as one thing', 'engram_knowledge/fact_validator.py', 'joins = o.count(";") + len(', 'joins = len('),
+ # Stage 2, Increment 4 (block reading; frozen spec claude/engram-stage2-inc4-spec-draft5-revision2.md, section 7.3).
+ # The 23 breakages of claude/engram-stage2-inc4-breakage-plan-r1.md, run 21 November (claude/engram-stage2-inc4-breakages-report-r1.md):
+ # 22 caught. BR11 is a KNOWN MISS: no test can catch it, because step 1 holds that case before step 2d is reached (T-1).
+ # It is listed so that the miss stays visible; on every run it prints MISSED and the total reads one short.
+ ("S2-I4 BR1: make the other person's passing lines citable", 'engram_structure.py', 'r = first_filter(sp, t, date, people) if sp == who else None', 'r = first_filter(sp, t, date, people)'),
+ ('S2-I4 BR2: read the chat once only', 'engram_structure.py', '    for who in order:\n', '    for who in order[:1]:\n'),
+ ('S2-I4 BR3: let a read-only main line through', 'engram_structure.py', 'if reading is not None and not (src.speaker == reading and sid in here and f.passes): held = READ_ONLY', 'if False: held = READ_ONLY'),
+ ('S2-I4 BR4: drop a read-only main line in the parser', 'engram_structure.py', 'allowed = valid_lines if block_lines is None else set(block_lines)', 'allowed = valid_lines if block_lines is None else set(block_lines) & set(valid_lines)'),
+ ('S2-I4 BR5: drop a proposal for a bad subject_from in the parser', 'engram_structure.py', 'if block_lines is not None and r.get("subject_from") is not None: row["subject_from"] = str(r["subject_from"]).strip()', 'if block_lines is not None and r.get("subject_from") is not None:\n            row["subject_from"] = str(r["subject_from"]).strip()\n            if row["subject_from"] not in block_lines or row["subject_from"] == line: continue'),
+ ("S2-I4 BR6: drop the who-rule's name-line reading", 'engram_knowledge/fact_validator.py', '& (words | {w for s in named for w in tokens(s.text)}))', '& words)'),
+ ('S2-I4 BR7: drop the reference-word check', 'engram_structure.py', 'elif borrowed and not REFERENCE_WORDS.search(src.text): held = NO_REFERENCE', 'elif False: held = NO_REFERENCE'),
+ ('S2-I4 BR8: count "they"', 'engram_structure.py', '(?:he|she|him|her|his|hers)', '(?:he|she|him|her|his|hers|they)'),
+ ('S2-I4 BR9: accept a tie', 'engram_structure.py', 'nearest = [f for f in found if f[0] == least]', 'nearest = [f for f in found if f[0] == least][:1]'),
+ ('S2-I4 BR10: accept a nearest line with two names', 'engram_structure.py', 'if len(nearest) != 1 or len(nearest[0][2]) != 1: return False\n    _, k, (only,) = nearest[0]', 'if len(nearest) != 1: return False\n    _, k, (only, *_) = nearest[0]'),
+ ('S2-I4 BR11 KNOWN MISS (T-1; expected MISSED, step 1 holds this case first): borrow a relation from the other person', 'engram_structure.py', 'if read and read[0] == "my" and not read[2].name and other: held = RELATION_OTHER', 'if False: held = RELATION_OTHER'),
+ ('S2-I4 BR12: let step 2 turn a rejection into a hold', 'engram_structure.py', 'if verdict == REJECTED: return Outcome(REJECTED, reasons)    # 1: a rejected proposal stays rejected, never queued (D2-1)', 'if verdict == REJECTED: return self._hold(sid, subject, obj, word, reasons, [sid])'),
+ ('S2-I4 BR13: hold, instead of reject, a borrowed name step 1 rejects (D2-1)', 'engram_structure.py', 'if verdict == REJECTED: return Outcome(REJECTED, reasons)    # 1: a rejected proposal stays rejected, never queued (D2-1)', 'if verdict == REJECTED: return self._hold(sid, subject, obj, word, reasons, [sid]) if borrowed else Outcome(REJECTED, reasons)'),
+ ("S2-I4 BR14: skip 2b' when the name is in the main line", 'engram_structure.py', 'elif borrowed and name is None: held = NAME_NOT_HERE', 'elif False: held = NAME_NOT_HERE'),
+ ("S2-I4 BR15: merge 2b into 2b''s reason", 'engram_structure.py', 'elif borrowed and given == sid: held = NAME_IS_MAIN', 'elif borrowed and given == sid: held = NAME_NOT_HERE'),
+ ("S2-I4 BR16: stop counting the other person's relation as a nearer name (D2-3)", 'engram_structure.py', 'found = [(abs(k - at), k, names_in(t, speakers, later)) for k, (sid, _, t) in enumerate(block) if sid != main]', 'found = [(abs(k - at), k, names_in(t, speakers, later) if sp == block[at][1] else _capital_names(t, {normalize_name(x) for x in speakers}, later)) for k, (sid, sp, t) in enumerate(block) if sid != main]'),
+ ('S2-I4 BR17: use a curly apostrophe in a reason string', 'engram_structure.py', 'NAME_IS_MAIN = "the name\'s line is the main line"', 'NAME_IS_MAIN = "the name\u2019s line is the main line"'),
+ ('S2-I4 BR18: record the name line as supports', 'engram_structure.py', 'evidence_role="qualifies"', 'evidence_role="supports"'),
+ ('S2-I4 BR19: put the alias on the main line', 'engram_structure.py', 'who = entity_for(self.kb, d.subject, sid if name is None else name)', 'who = entity_for(self.kb, d.subject, sid)'),
+ ("S2-I4 BR20: clear the fact's subject when the name line is deleted", 'engram_knowledge/evidence.py', '        if supported:\n            db.execute("UPDATE knowledge_records SET status=\'needs_review\'', '        if supported:\n            db.execute("UPDATE knowledge_records SET subject_id=NULL WHERE fact_id=?", (fact,))\n            db.execute("UPDATE knowledge_records SET status=\'needs_review\''),
+ ('S2-I4 BR21: read every Increment 1 check on the name line', 'engram_structure.py', 'elif _has(tokens(self.line(name).text), CONDITION_MARKERS): held = CONDITION', "elif _has(tokens(self.line(name).text), CONDITION_MARKERS + __import__('engram_knowledge.fact_validator', fromlist=['x']).NEAR_MISS_MARKERS + __import__('engram_knowledge.fact_validator', fromlist=['x']).OPINION_MARKERS + __import__('engram_knowledge.fact_validator', fromlist=['x']).DAY_MARKERS): held = CONDITION"),
+ ('S2-I4 BR22: drop the A7 check on the name line', 'engram_structure.py', 'if f.hold or (name is not None and self.filter_of(name).hold):', 'if f.hold:'),
+ ('S2-I4 BR23: change WRITER_PROMPT', 'engram_structure.py', 'copy from that line:', 'copy from the line:'),
 ]
 ADAPTER = [  # ERC adapter step 1: the fact-state gate (claude/erc-adapter-step1-eng-review.md)
  ("state record linked as support", "erc_overlay/knowledge.py", "links.append(EvidenceLink(sid, pid, EvidenceRelation.QUALIFIES))", "links.append(EvidenceLink(sid, pid, EvidenceRelation.SUPPORTS))"),
@@ -524,7 +551,9 @@ SUITES = {"base2": (BASE2, "tests/test_base2_structure.py tests/test_base2_gate_
                           # Step 3a adds the completed-happening check's tests.
                           "tests/test_step3a_completed_happening.py "
                           # Stage 2, Increment 1 adds the checker additions' tests.
-                          "tests/test_stage2_inc1_checker.py"),
+                          "tests/test_stage2_inc1_checker.py "
+                          # Stage 2, Increment 4 adds the block reading's tests.
+                          "tests/test_stage2_inc4_block.py"),
           # B5 adds the explain() lines; their tests are in their own file, run after the unedited adapter tests.
           "adapter": (ADAPTER, "tests/test_erc_overlay.py tests/test_state_engine.py tests/test_erc_overlay_conclusion_time.py "
                               # Step 3a adds its adapter and state-engine tests.

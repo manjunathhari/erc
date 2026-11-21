@@ -123,6 +123,14 @@ class FactValidator:
 
     def validate(self, candidate, source_sentences):
         """1 entity references, 2 predicate and object, 3 source support, 4 negation and attribution. Returns a Decision."""
+        return self._validate(candidate, source_sentences, ())
+
+    def validate_borrowed(self, candidate, source_sentences, name_lines):
+        """Stage 2, Increment 4 (Q7; contract Amendment 9): the same checks, for a subject copied from a name line. Only the
+        resolver and the who-rule read the name lines; every other check reads the source sentences alone."""
+        return self._validate(candidate, source_sentences, tuple(name_lines))
+
+    def _validate(self, candidate, source_sentences, name_lines):
         open_predicate = self.open_predicate
         reject, unsure = [], []
         word = tidy(candidate.predicate) if open_predicate else predicate(candidate.predicate)
@@ -135,7 +143,8 @@ class FactValidator:
         wanted = content_stems(candidate.object)
         if not wanted: reject.append("object is empty or has no meaning alone")
 
-        who = self.resolver.resolve(candidate.subject, lines)
+        named = [s for s in name_lines if s is not None]
+        who = self.resolver.resolve(candidate.subject, lines + named)
         if who.status == "absent" or not normalize_name(candidate.subject): reject.append(who.why)
         elif who.status in ("unresolved", "ambiguous"): unsure.append(who.why)
         if reject: return Decision(REJECTED, tuple(reject), who, word)
@@ -191,7 +200,7 @@ class FactValidator:
             first = {"i", "im", "ive", "ill", "id", "my", "me", "we", "our", "us"}
             words = set(tokens(sentence))
             # A relation is named by the speaker's own words for it ("my mom"), not by its display name ("Asha's mother").
-            names_subject = bool(set(tokens(candidate.subject if who.relation else who.name)) & words)
+            names_subject = bool(set(tokens(candidate.subject if who.relation else who.name)) & (words | {w for s in named for w in tokens(s.text)}))
             if speaker_is_subject:
                 before = set(tokens(sentence)[:at + 1])
                 if not first & words and "you" in words: unsure.append("the speaker is talking about someone else")
