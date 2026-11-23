@@ -5,12 +5,19 @@ its own, scoped to the speaker by the metadata keys relation_of (the speaker's e
 first among the speaker's own relations, then among entities that are no one's relation, never through another speaker's
 relation. Frozen specification: claude/engram-stage2-inc2-spec-draft7.md, sections 3, 3.1 and 4. The resolver only reads; what
 a resolution describes is created by `entity_for` when, and only when, its fact is stored (a held fact creates nothing, D1-12.3).
+
+Stage 2, Increment 5 (entity kinds; contract Amendment 10): frozen specification claude/engram-stage2-inc5-spec-draft5.md,
+sections 3 and 4.1. Every entity created is given one of five kinds (3.1), decided before it is created: by rule or by the
+word lists, carried on the resolution as `kind`; otherwise by the writer's kind or the kind given on approval (kinds.decide).
+Step 1' ("our" + an animal or thing) is held; steps 10a and 10b make "my dog", "my turtles" the speaker's own, scoped as
+Increment 2's relations are, so step 10's scoped lookup also finds a speaker's named animal or thing.
 """
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
-from .models import Entity, EntityAlias, normalize_name, tidy
+from .models import Entity, EntityAlias, RecordError, normalize_name, tidy
 from . import relations as R
+from . import kinds as K
 
 FIRST_PERSON = {"i", "me", "my", "myself", "user", "the user", "the speaker", "speaker"}
 # Small words two different names can share without being alike ("my sister", "my brother").
@@ -31,6 +38,8 @@ class Resolution:
     relation: str = ""
     owner: str = ""
     alias: str = ""
+    # Stage 2, Increment 5 (3.2, 3.3): the kind a new entity takes by rule or by the lists, "" when neither gives one.
+    kind: str = ""
 
 
 def _has_name(name, sentences):
@@ -46,15 +55,19 @@ def _bare_name(name):
 
 def entity_for(kb, who, sid):
     """The entity a stored fact goes to: the one resolved, or the one the resolution describes, created now. A relation's
-    owner is created first when it has no entity yet (D1-12.4); a relation's name becomes a scoped alias (D1-10, D1-12.2)."""
+    owner is created first when it has no entity yet (D1-12.4); a relation's name becomes a scoped alias (D1-10, D1-12.2).
+    Stage 2, Increment 5: a new entity is created with the kind on the resolution, decided before (3.5: with no kind decided
+    nothing is created, so this refuses); the owner made for a relation is a speaker, a person (3.2)."""
     if who.entity_id:
         if who.alias: kb.add_alias(EntityAlias.create(who.entity_id, who.alias, "sentence", sid))
         return who.entity_id
+    kind = K.valid(who.kind)
+    if kind is None: raise RecordError(K.no_kind(who.name))
     if who.relation:
-        owner = who.relation_of or kb.add_entity(Entity.create(who.owner, "unknown")).entity_id
-        made = kb.add_entity(Entity.create(who.name, "unknown", metadata=dict(relation_of=owner, relation=who.relation)))
+        owner = who.relation_of or kb.add_entity(Entity.create(who.owner, "person")).entity_id
+        made = kb.add_entity(Entity.create(who.name, kind, metadata=dict(relation_of=owner, relation=who.relation)))
     else:
-        made = kb.add_entity(Entity.create(who.name, "unknown"))
+        made = kb.add_entity(Entity.create(who.name, kind))
     if who.alias: kb.add_alias(EntityAlias.create(made.entity_id, who.alias, "sentence", sid))
     return made.entity_id
 
@@ -121,11 +134,12 @@ class EntityResolver:
             speaker = next(iter(speakers))
             if normalize_name(speaker) in FIRST_PERSON:  # a speaker literally called "User" is a name, not another "I"
                 known = self.kb.resolve(speaker)
-                return Resolution("known", self.kb.entity(known).canonical_name, known) if known else Resolution("new", speaker)
+                return Resolution("known", self.kb.entity(known).canonical_name, known) if known else Resolution("new", speaker, kind="person")
             return self.resolve(speaker, sentences)
         if key in UNCLEAR: return Resolution("unresolved", why=f"'{name}' does not say who")
         held = R.hold_before_relations(name)                                            # steps 1 to 3
         if held: return Resolution("unresolved", why=held)
+        if K.our_own(name): return Resolution("unresolved", why=R.OUR)                 # step 1' (Increment 5): "our dog"
         read = R.read_subject(name)
         if read:                                                                        # steps 4 to 9
             how, owner_name, rel = read
@@ -139,14 +153,26 @@ class EntityResolver:
             if owner == "ambiguous": return Resolution("ambiguous", name, why=f"'{tidy(owner_label)}' names more than one known entity", relation=rel.relation)   # D1-12.5
             if not _has_name(name, sentences): return Resolution("absent", why=f"'{name}' is not in its source")   # D1-12.10
             return self._relation(rel, *owner)
+        own = K.read_own(name)
+        if own:                                                                         # steps 10a and 10b (Increment 5)
+            rel = own.relation
+            if len(speakers) != 1: return Resolution("ambiguous", name, why="first person across different speakers", relation=rel.relation)
+            label = next(iter(speakers))
+            owner = self._owner(label)
+            if owner == "ambiguous": return Resolution("ambiguous", name, why=f"'{tidy(label)}' names more than one known entity", relation=rel.relation)
+            if not _has_name(name, sentences): return Resolution("absent", why=f"'{name}' is not in its source")
+            return self._relation(rel, *owner, kind=own.kind, named_display=rel.kind != "family")   # 10b: "Asha's goldfish"
         return self._bare(name, key, speakers, sentences)                                # steps 10 and 11
 
-    def _relation(self, rel, owner_id, owner_label):
+    def _relation(self, rel, owner_id, owner_label, kind="person", named_display=True):
         """Steps 5b, 7 and 8a to 8f, for one owner. Every existence check looks only at that owner's entities of the same
-        relation identity, the same base word and change marker (the clarification of 20:58 and 21:03, resting on 8A2)."""
+        relation identity, the same base word and change marker (the clarification of 20:58 and 21:03, resting on 8A2).
+        Increment 5: a person's relation is a person (3.2); step 10a ("my dog") follows steps 8a to 8f and step 10b ("my
+        turtles") step 7, for the speaker and the word, with the kind of the word (`kind`). A group's display name never
+        carries its name ("Asha's goldfish"); the name is a scoped alias only (named_display=False, 10b)."""
         stored = self._relations([owner_id], rel.relation) if owner_id else []
         wanted = normalize_name(rel.name)
-        new = Resolution("new", R.display_name(owner_label, rel), relation_of=owner_id, relation=rel.relation, owner=owner_label, alias=rel.name)
+        new = Resolution("new", R.display_name(owner_label, rel if named_display else replace(rel, name="")), relation_of=owner_id, relation=rel.relation, owner=owner_label, alias=rel.name, kind=kind)
 
         def known(eid, alias=""):
             return Resolution("known", self.kb.entity(eid).canonical_name, eid, relation_of=owner_id, relation=rel.relation, alias=alias)
@@ -192,4 +218,5 @@ class EntityResolver:
         if theirs: return Resolution("unresolved", why=R.OTHER_SPEAKERS)                # 4
         if not _has_name(name, sentences): return Resolution("absent", why=f"'{name}' is not in its source")
         if self._similar(name): return Resolution("ambiguous", name, why=f"'{name}' may be someone already known")
-        return Resolution("new", name)                                                  # 5, as today
+        # 5, as today. Increment 5: the lists' kind by the head word (3.3, step 11); a speaker's name is a person (3.4, check 2)
+        return Resolution("new", name, kind=K.kind_of(name) or ("person" if self._speaks_in_chat(name, sentences) else ""))

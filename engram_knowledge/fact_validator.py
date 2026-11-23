@@ -1,12 +1,13 @@
 """Decides whether a candidate fact may be stored. Fixed rules only: a language model never judges its own output."""
 import json
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from .database import KnowledgeBase
 from .models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, RecordError, normalize_name, tidy
 
 from .entity_resolver import EntityResolver, Resolution, entity_for
+from . import kinds as K
 from .normalizer import PREDICATE_CUES, PREDICATE_TYPES, content_stems, predicate, stem, stems, time_value, time_values_in, tokens
 
 ACCEPTED, UNCERTAIN, REJECTED = "accepted", "uncertain", "rejected"
@@ -102,6 +103,7 @@ class Candidate:
     version: str = ""
     raw: str = ""
     end: str = ""          # WR-B (A2): a stated end; checked against the source like the time
+    subject_kind: str | None = None   # Stage 2, Increment 5 (P-4): the writer's kind, optional; only the five exact values count
 
 
 @dataclass(frozen=True)
@@ -239,9 +241,21 @@ class KnowledgePipeline:
 
     def process(self, candidate):
         decision = self.validator.validate(candidate, self.lines(candidate))
+        if decision.verdict == ACCEPTED and not decision.subject.entity_id:   # Stage 2, Increment 5 (P-3, P-1): K-10 at creation only, last
+            kind = K.decide(decision.subject, candidate.subject_kind)
+            if kind is None: decision = Decision(UNCERTAIN, (K.no_kind(candidate.subject),), decision.subject, decision.predicate, decision.time, decision.end)
+            else: decision = replace(decision, subject=replace(decision.subject, kind=kind))
         if decision.verdict == ACCEPTED: return decision, self._store(candidate, decision, "rules " + RULES_VERSION).fact.fact_id
-        if decision.verdict == UNCERTAIN: return decision, self.kb.add_review(json.dumps(candidate.__dict__ | dict(source_sids=list(candidate.source_sids))), list(decision.reasons), list(candidate.source_sids))
+        if decision.verdict == UNCERTAIN: return decision, self.kb.add_review(json.dumps(self._item(candidate)), list(decision.reasons), list(candidate.source_sids))
         return decision, None
+
+    @staticmethod
+    def _item(candidate):
+        """The review item kept for a held candidate. A writer's kind is kept with it when given (P-4, P-6), so it is read again
+        on approval; with none given, the item is exactly today's."""
+        item = candidate.__dict__ | dict(source_sids=list(candidate.source_sids))
+        if candidate.subject_kind is None: item.pop("subject_kind")
+        return item
 
     def _store(self, candidate, decision, checked_by, entity_id=None):
         who = entity_id or entity_for(self.kb, decision.subject, candidate.source_sids[0])
@@ -254,18 +268,35 @@ class KnowledgePipeline:
                                     validation_status="accepted", valid_from=decision.time, valid_to=decision.end, metadata=dict(checked_by=checked_by))
         return self.kb.add(FactWithEvidence(fact, tuple(FactEvidence.create(fact.fact_id, s, extraction_method=candidate.method or None, extraction_version=candidate.version or None) for s in candidate.source_sids)))
 
-    def approve(self, review_id, entity_name=None):
-        """A person accepts a reviewed candidate, and may say which known entity it refers to. The source checks still apply."""
+    def approve(self, review_id, entity_name=None, subject_kind=None):
+        """A person accepts a reviewed candidate, and may say which known entity it refers to. The source checks still apply.
+        Stage 2, Increment 5 (P-5, P-6): when the fact would create a new entity, its kind is the rules' or the lists' first,
+        then the writer's valid kind kept with the fact, then a valid `subject_kind` given here; with none, approval is refused
+        with the K-10 reason and the fact stays in the review list. Naming an existing entity needs no kind.
+        A fact held by base 2 (an item with a "word" and no "predicate") is approved through base 2's own checks
+        (StructureLayer.approve_held) only when it was held for exactly one reason, and that reason is either the K-10 reason
+        for its subject (P-5) or Increment 4's step 2b, "the name's line is the main line" (P-6; his C-4 (b), 23 Nov 14:02).
+        Every other base 2 item is left to today's code below, unchanged."""
         item = self.kb.review(review_id)
         if item is None: raise RecordError("no such review item")
         data = json.loads(item["candidate"])
         if data.get("kind") == "sentence_envelope": raise RecordError("this review item is a sentence, not a fact: it needs who, what and which first")
+        if "predicate" not in data and "word" in data:
+            from engram_structure import NAME_IS_MAIN, StructureLayer   # imported here: engram_structure imports this module
+            if item["reasons"] in ([K.no_kind(data.get("subject", ""))], [NAME_IS_MAIN]):   # his C-4 (b): these two holds only
+                stored = StructureLayer(self.db).approve_held(data, entity_name, subject_kind)
+                self.kb.drop_review(review_id)
+                return stored
         candidate = Candidate(**data | dict(source_sids=tuple(data["source_sids"])))
         decision = self.validator.validate(candidate, self.lines(candidate))
         if decision.verdict == REJECTED: raise RecordError("; ".join(decision.reasons))
         entity_id = self.kb.resolve(entity_name) if entity_name else decision.subject.entity_id
         if entity_name and not entity_id: raise RecordError("no entity by that name")
         if not entity_id and not decision.subject.name: raise RecordError("say which entity this refers to")
+        if not entity_id:
+            kind = K.decide(decision.subject, candidate.subject_kind, subject_kind)
+            if kind is None: raise RecordError(K.no_kind(candidate.subject))
+            decision = replace(decision, subject=replace(decision.subject, kind=kind))
         stored = self._store(candidate, decision, "person", entity_id)
         self.kb.drop_review(review_id)
         return stored

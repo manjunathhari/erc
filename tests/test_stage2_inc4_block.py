@@ -50,12 +50,13 @@ NOT_COPIED = "object not copied word for word from the sentence"
 ACROSS = "first person across different speakers"
 HYPOTHETICAL = "the source may be hypothetical"
 
-# Today's writer prompt, unchanged by Increment 4 (N7): SHA-256 of engram_structure.WRITER_PROMPT at 84abfa7.
-PROMPT_SHA256 = "3d1781cb36f24032fc4d2b154922162ee2545d296b02d84345018dab5e51d31c"
+# Today's writer prompt, unchanged by Increment 4 (N7): SHA-256 of engram_structure.WRITER_PROMPT, at 84abfa7 until Increment 5's approved version B.
+PROMPT_SHA256 = "0a7a0718248d69d2e17f728473d5e4effc5abaf669fd400b90c07424fb6fe878"   # Increment 5: approved version B (writer_B.txt); was 3d1781cb…d31c
 # Section 4: the block prompt's exact text "is pinned by its own SHA-256 in the new test file once approved". Approved:
-# the block prompt, Draft 2 (claude/engram-stage2-inc4-block-prompt-draft2.md), his word of 21 November 08:05. This is the
-# SHA-256 of that prompt filled for the block of test_new_k2_the_block_prompt_is_pinned_by_its_own_sha256.
-BLOCK_PROMPT_SHA256 = "d4e398b237ed37536a4f48dbf1cf9ba75f0674a5b948628aa6f15cbd4a1ecf72"
+# the block prompt, Draft 2 (claude/engram-stage2-inc4-block-prompt-draft2.md), his word of 21 November 08:05, until
+# Increment 5's approved version B. This is the SHA-256 of that prompt filled for the block of
+# test_new_k2_the_block_prompt_is_pinned_by_its_own_sha256.
+BLOCK_PROMPT_SHA256 = "5f97f1d7d898445be55cd6e59f15ff6bd801af1b11c444bef2483fd1763392fd"   # Increment 5: rendered from approved block_B.txt; was d4e398b2…cf72
 
 # Section 4: the two instructions the block prompt adds, word for word.
 READ_ONLY_RULE = "Give facts only from lines that are not marked (read only)."
@@ -100,9 +101,10 @@ class Mem:
         self.m.close_chat(write_note=False)
         return sids
 
-    def file(self, sid, subject, obj, word="other", subject_from=None, reading=None, kind=""):
-        """Section 3: StructureLayer.file with its two new optional arguments."""
-        return self.layer.file(sid, subject, obj, kind, word=word, subject_from=subject_from, reading=reading)
+    def file(self, sid, subject, obj, word="other", subject_from=None, reading=None, kind="", subject_kind=None):
+        """Section 3: StructureLayer.file with its two new optional arguments; Increment 5 (P-2): subject_kind when given."""
+        extra = {} if subject_kind is None else dict(subject_kind=subject_kind)
+        return self.layer.file(sid, subject, obj, kind, word=word, subject_from=subject_from, reading=reading, **extra)
 
     def facts(self):
         return self.m.db.execute("SELECT COUNT(*) FROM knowledge_records").fetchone()[0]
@@ -346,13 +348,13 @@ def test_control_k3_without_block_lines_parsing_is_exactly_todays(text, want):
 # ------------------------------------------------------------------ K4: a borrowed name stored (Q4, Q5, Q6, Q7, N9)
 def test_new_k4_a_name_borrowed_from_the_speakers_line_before_is_stored_under_that_name(mem):
     a, b = mem.chat([("Asha", BOAT), ("Asha", MARINA)])
-    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
+    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
     assert mem.kb.entity(mem.subject_of(fid)).canonical_name == "Tobias"
 
 
 def test_new_k4_the_main_line_supports_and_the_name_line_qualifies(mem):
     a, b = mem.chat([("Asha", BOAT), ("Asha", MARINA)])
-    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
+    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
     assert mem.roles(fid) == {b: "supports", a: "qualifies"}
 
 
@@ -366,7 +368,7 @@ def test_new_k4_a_relation_with_a_name_keeps_its_alias_on_the_name_line(mem):
 
 def test_new_k4_the_who_rule_reads_the_name_line(mem):
     a, b = mem.chat([("Asha", BOAT), ("Asha", MARINA)])
-    out = mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha")
+    out = mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person")
     assert "the speaker of the source is someone else" not in out.reasons and out.verdict == ACCEPTED
 
 
@@ -378,13 +380,13 @@ def test_control_k4_without_a_name_line_the_same_proposal_is_rejected_as_today(m
 
 def test_new_k4_a_name_from_the_other_persons_line_is_stored(mem):
     a, b = mem.chat([("Asha", BOAT), ("Ben", MARINA)])
-    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Ben"))
+    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Ben", subject_kind="person"))
     assert mem.kb.entity(mem.subject_of(fid)).canonical_name == "Tobias" and mem.roles(fid) == {b: "supports", a: "qualifies"}
 
 
 def test_new_k4_a_name_from_a_line_after_is_stored(mem):
     b, a = mem.chat([("Asha", MARINA), ("Asha", BOAT)])
-    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
+    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
     assert mem.roles(fid) == {b: "supports", a: "qualifies"}
 
 
@@ -396,15 +398,15 @@ def test_new_k4_a_same_speaker_relation_without_a_name_is_stored(mem):
 
 def test_new_k4_the_object_and_the_wording_come_from_the_main_line(mem):
     a, b = mem.chat([("Asha", BOAT), ("Asha", MARINA)])
-    fact = mem.kb.get(stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))).fact
+    fact = mem.kb.get(stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))).fact
     assert fact.object_value == "the marina by the bridge"
     assert fact.metadata["wording"] == S.version_key(MARINA, "the marina by the bridge")
 
 
 def test_new_k4_a_later_repeat_adds_a_supporting_sentence(mem):
     a, b, c = mem.chat([("Asha", BOAT), ("Asha", MARINA), ("Asha", MARINA)])
-    first = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
-    again = stored(mem.file(c, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
+    first = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
+    again = stored(mem.file(c, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
     assert again == first and mem.roles(first)[b] == "supports" and mem.roles(first)[c] == "supports"
 
 
@@ -533,7 +535,7 @@ OTHER_MARKERS = [  # Increment 1 markers other than the condition: not read on t
 @pytest.mark.parametrize("cid,name_line", OTHER_MARKERS, ids=[o[0] for o in OTHER_MARKERS])
 def test_new_k7_other_increment_1_markers_in_the_name_line_do_not_hold(mem, cid, name_line):
     a, b = mem.chat([("Asha", name_line), ("Asha", MARINA)])
-    stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
+    stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
 
 
 def test_new_k7_someone_elses_words_in_the_name_line_hold_with_the_a7_reason_and_no_filter_note(mem):
@@ -547,7 +549,7 @@ def test_new_k7_the_note_comes_from_the_main_line_only(mem):
     a, b = mem.chat([("Asha", "Maybe Tobias will open a bakery."), ("Asha", MARINA)])
     assert mem.layer.filter_of(a).note == "uncertain_or_conditional_content"
     assert mem.layer.filter_of(b).note == "unresolved_context_reference"
-    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha"))
+    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Asha", subject_kind="person"))
     assert mem.kb.get(fid).fact.metadata.get("filter_note") == "unresolved_context_reference"
 
 
@@ -628,9 +630,9 @@ def test_new_k9_a_held_proposal_is_removed_whole_when_either_line_goes(mem, whic
 
 
 # ------------------------------------------------------------------ K10: unchanged without the new arguments
-UNCHANGED = [  # (speaker, sentence, subject, object, word, today's verdict and reasons), measured at 84abfa7
+UNCHANGED = [  # (speaker, sentence, subject, object, word, today's verdict and reasons), measured at 84abfa7; "a name" changed by Increment 5 (K-10, his R-4)
     ("Asha", "I work at the harbour office.", "I", "the harbour office", "works_at", (ACCEPTED, ())),
-    ("Asha", BOAT, "Tobias", "an old sailing boat", "other", (ACCEPTED, ())),
+    ("Asha", BOAT, "Tobias", "an old sailing boat", "other", (UNCERTAIN, ("the kind of 'Tobias' is not known",))),  # Increment 5, K-10
     ("Asha", MARINA, "He", "the marina by the bridge", "other", (UNCERTAIN, ("'He' does not say who",))),
     ("Asha", MARINA, "Tobias", "the marina by the bridge", "other", (REJECTED, (NOT_IN_SOURCE,))),
 ]
@@ -650,23 +652,30 @@ def test_new_k10_a_citable_proposal_with_reading_and_no_name_line_files_as_today
     assert (out.verdict, out.reasons) == want
 
 
+def test_new_inc5_k10_a_name_with_a_kind_is_stored(mem):
+    """Increment 5 (his R-4, 22 November 22:16): the "a name" case of UNCHANGED, with subject_kind given, is stored."""
+    [sid] = mem.chat([("Asha", BOAT)])
+    out = mem.file(sid, "Tobias", "an old sailing boat", subject_kind="person")
+    assert (out.verdict, out.reasons) == (ACCEPTED, ())
+
+
 def test_control_k10_the_schema_version_is_4():
     assert SCHEMA_VERSION == 4
 
 
 def test_new_k10_the_state_engine_counts_only_the_main_lines_speaker(mem):
     a, b = mem.chat([("Asha", BOAT), ("Ben", MARINA)])
-    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Ben"))
+    fid = stored(mem.file(b, "Tobias", "the marina by the bridge", subject_from=a, reading="Ben", subject_kind="person"))
     assert StateEngine(mem.kb)._speakers(mem.kb.get(fid)) == {"ben"}
 
 
 # ------------------------------------------------------------------ K11: shapes of the acceptance sentences (D3:13.2, D17:25.3)
 SHAPES = [  # acceptance sentence, the line before (names a thing), made-up sentence of its shape, its object, its own subject,
-           # and today's verdict and reasons for that subject without a name line (measured at 84abfa7; known limit L1)
+           # and today's verdict and reasons for that subject without a name line (measured at 84abfa7; known limit L1); D17:25.3 changed by Increment 5 (K-10, his R-4)
     ("D3:13.2", "Last spring we drove the coast road to Porto.", "It was the longest drive of my life.", "the longest drive",
      "It", (UNCERTAIN, ("'It' does not say who",))),
     ("D17:25.3", "In May we spent a week walking in Galicia.", "That trip changed my whole outlook.", "my whole outlook",
-     "That trip", (ACCEPTED, ())),
+     "That trip", (UNCERTAIN, ("the kind of 'That trip' is not known",))),  # Increment 5, K-10 ("trip" is on no list)
 ]
 
 
@@ -682,6 +691,14 @@ def test_control_k11_without_a_name_line_it_files_as_today_with_its_note(mem, si
     assert mem.layer.filter_of(b).note == "unresolved_context_reference"
     out = mem.layer.file(b, own, obj, word="other")
     assert (out.verdict, out.reasons) == today
+
+
+def test_new_inc5_k11_that_trip_with_a_kind_is_stored(mem):
+    """Increment 5 (his R-4, 22 November 22:16): SHAPES' D17:25.3, its own subject with subject_kind given, is stored."""
+    _, before, text, obj, own, _ = SHAPES[1]
+    a, b = mem.chat([("Asha", before), ("Asha", text)])
+    out = mem.file(b, own, obj, subject_kind="thing")
+    assert (out.verdict, out.reasons) == (ACCEPTED, ())
 
 
 # ------------------------------------------------------------------ K12: D2-1, what step 1 rejects stays rejected

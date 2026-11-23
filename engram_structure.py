@@ -31,17 +31,18 @@ from __future__ import annotations
 
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Iterable
 
 from engram_knowledge.database import KnowledgeBase
 from engram_knowledge.entity_resolver import entity_for
 from engram_knowledge import relations as _R
+from engram_knowledge import kinds as _K
 from engram_knowledge.fact_validator import ACCEPTED, CONDITION, CONDITION_MARKERS, PASSING, REJECTED, UNCERTAIN, Candidate, FactValidator, NOT_COMPLETED, SourceLine, _has
 from engram_knowledge.interpreter import _speaker_role, interpret
 from engram_knowledge.learning import evaluate
 from engram_knowledge.learning_queue import FACT_TYPE
-from engram_knowledge.models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, normalize_name
+from engram_knowledge.models import Entity, FactEvidence, FactWithEvidence, KnowledgeFact, RecordError, normalize_name
 from engram_knowledge.normalizer import PREDICATE_CUES, PREDICATE_TYPES, stem, time_value, tokens
 from engram_knowledge.transition import slot_of
 
@@ -159,14 +160,20 @@ def stated_dates(text: str, date_said: str = "") -> tuple[tuple[str, str], ...]:
 # ---------- 3. the writer ----------
 VOCABULARY_WORDS = ", ".join(PREDICATE_TYPES)   # the 31 words, read from the vocabulary in code (WR-C, 1.2)
 
+# Stage 2, Increment 5 (3.4, O-4): version B of the prompt document, Draft 3 (claude/engram-stage2-inc5-prompt-draft3.md,
+# SHA-256 3b3dbda0...dde7764), made by its two approved changes: the "subject_kind" field line after the subject line (PQ-1),
+# and "subject_kind" directly after "subject" in the JSON shape (PQ-2). Approved texts: WRITER_PROMPT 0a7a0718...6fe878;
+# BLOCK_PROMPT, built from it by Increment 4's replacements below, unchanged, 34360fa9...0c2fc7.
+
 WRITER_PROMPT = """Each line below is one sentence a person said in a conversation, with its line id. For each fact a line states that lasts (something the person or someone they mention has, is, did, plans, likes or is called), copy from that line:
 - "subject": who or what the fact is about, as written in the line ("I" when it is the speaker; e.g. "my sister", "Max"). When the speaker names a thing of their own, such as "my job", "my home" or "my move", the fact is about the speaker: write "I";
+- "subject_kind": what the subject is, one of: person, animal, place, organisation, thing. Leave it out when the line does not make this clear;
 - "word": the one word from this list that says what kind of fact it is, or "other" if none fits: {words};
 - "object": the specific thing the line states about the subject (a name, place, item, number or activity), copied word for word from the line, as short as possible.
 
 Skip lines that only give a feeling, a reaction, an opinion about something else, a wish or a maybe, a question, or small talk. A line may state more than one fact: give each its own entry. When a line lists several things, such as "tea, coffee and juice", give each thing its own entry and never put the list in one object. Never use words that are not in the line.
 
-Return a JSON object {{"facts": [{{"line": "<line id>", "subject": "...", "word": "...", "object": "..."}}, ...]}}. If no line states a lasting fact, return {{"facts": []}}.
+Return a JSON object {{"facts": [{{"line": "<line id>", "subject": "...", "subject_kind": "...", "word": "...", "object": "..."}}, ...]}}. If no line states a lasting fact, return {{"facts": []}}.
 
 Lines:
 {lines}"""
@@ -188,22 +195,25 @@ def parse_proposals(reply: str, valid_lines: set[str], block_lines: set[str] | N
     proposals (WP-2), and only an exact repeat is dropped; any date in the reply is ignored (4A16); never raises.
     Stage 2, Increment 4 (N8 (b)): with block_lines (every line id of the reading's block), a proposal is dropped only when the
     reply is unreadable, its subject or object is empty, or its line is not in block_lines; "subject_from" is kept as given,
-    whatever it is, and the fixed checks decide. Without block_lines, exactly today's behaviour."""
+    whatever it is, and the fixed checks decide. Without block_lines, exactly today's behaviour.
+    Stage 2, Increment 5 (R-1): a "subject_kind" the reply gives is kept exactly as received, in both modes (no trimming; a
+    value that is not one of the five is kept too); `StructureLayer.file` decides. A reply without it parses as today."""
     try:
         m = re.search(r"\{.*\}", reply or "", re.S)
         rows = json.loads(m.group(0)).get("facts", []) if m else []
     except (ValueError, AttributeError):
         return []
     allowed = valid_lines if block_lines is None else set(block_lines)
-    out, seen = [], set()
+    out, seen = [], []   # Increment 5 (R-1, his C-5): a list, compared by value, so a kept list or object value cannot raise
     for r in rows if isinstance(rows, list) else []:
         if not isinstance(r, dict): continue
         line, subj, obj = str(r.get("line", "")).strip(), str(r.get("subject", "")).strip(), str(r.get("object", "")).strip()
         if line not in allowed or not subj or not obj: continue
         row = dict(line=line, subject=subj[:120], word=vocabulary_word(r.get("word")), object=obj[:200])
         if block_lines is not None and r.get("subject_from") is not None: row["subject_from"] = str(r["subject_from"]).strip()
+        if "subject_kind" in r: row["subject_kind"] = r["subject_kind"]   # Increment 5, R-1: exactly as received, whatever it is
         if tuple(row.values()) in seen: continue
-        seen.add(tuple(row.values()))
+        seen.append(tuple(row.values()))
         out.append(row)
     return out
 
@@ -411,6 +421,11 @@ def my_own(subject: str, word: str) -> bool:
     return bool(m) and stem(m[1]) in {stem(w) for w in PREDICATE_CUES.get(word, "").split()}
 
 
+def _kept(subject_kind) -> dict:
+    """Increment 5 (P-2, P-6): the writer's kind as kept with a hold or review item, only when one was given."""
+    return {} if subject_kind is None else dict(subject_kind=subject_kind)
+
+
 @dataclass
 class Outcome:
     verdict: str                 # accepted, uncertain or rejected
@@ -477,20 +492,23 @@ class StructureLayer:
         people = tuple(dict.fromkeys(sp for _, sp, _ in rows))
         return [(i, sp, t) for i, sp, t in rows if _is_person(sp)], people
 
-    def _hold(self, sid, subject, obj, word, reasons, sids, noted=None):
-        item = dict(subject=subject, object=obj, word=word, source_sids=list(sids), method="structure", version=RULES_VERSION, **(noted or {}))
+    def _hold(self, sid, subject, obj, word, reasons, sids, noted=None, subject_kind=None):
+        item = dict(subject=subject, object=obj, word=word, source_sids=list(sids), method="structure", version=RULES_VERSION, **(noted or {}), **_kept(subject_kind))
         return Outcome(UNCERTAIN, tuple(reasons), review_id=self.kb.add_review(json.dumps(item), list(reasons), list(sids)))
 
-    def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "", subject_from=None, reading=None) -> Outcome:
+    def file(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "", subject_from=None, reading=None, *, subject_kind=None) -> Outcome:
         """Checks one proposal and stores it: accepted -> a P1 fact; uncertain -> P1's review queue; rejected -> nothing.
         `word` is the writer's vocabulary word (WR-C); "" or "other" files the fact outside the vocabulary, by its wording.
         Dates come only from the sentence (WR-B, 4A16); the said day is never stored as a start or an end (TD7).
         Stage 2, Increment 4 (section 2.3, contract Amendment 9): `reading` is the reading speaker; `subject_from` is the name
-        line's sentence id, or the line id as given when it is not a line of the chat. With both left out, exactly today's."""
-        if subject_from is None and reading is None: return self._file_today(sid, subject, obj, kind, word)
-        return self._file_block(sid, subject, obj, kind, word, subject_from, reading)
+        line's sentence id, or the line id as given when it is not a line of the chat. With both left out, today's path.
+        Stage 2, Increment 5 (P-2, contract Amendment 10): `subject_kind` is the writer's kind; left out, None, or anything but
+        one of the five exact values means no kind. It is kept with any hold or review item when given (P-6). A fact that would
+        create a new entity with no kind decided is held, last (K-10, P-1)."""
+        if subject_from is None and reading is None: return self._file_today(sid, subject, obj, kind, word, subject_kind=subject_kind)
+        return self._file_block(sid, subject, obj, kind, word, subject_from, reading, subject_kind=subject_kind)
 
-    def _file_block(self, sid, subject, obj, kind, word, subject_from, reading) -> Outcome:
+    def _file_block(self, sid, subject, obj, kind, word, subject_from, reading, subject_kind=None) -> Outcome:
         """Section 2.3: step 1 (today's checks; the name line read by the resolver and the who-rule, Q7), then steps 2a to 4,
         which only add a hold (Q10, D2-1), then step 5 as today. The first failing step in table order gives the reason."""
         word = vocabulary_word(word)
@@ -507,7 +525,7 @@ class StructureLayer:
         f = self.filter_of(sid)
         noted = dict(filter_note=f.note) if f.note else {}            # section 4.3: the note from the main line only
         sids = [sid] + ([name] if name is not None else [])
-        if verdict == UNCERTAIN: return self._hold(sid, subject, obj, word, reasons, sids, noted)   # held at step 1: its reason
+        if verdict == UNCERTAIN: return self._hold(sid, subject, obj, word, reasons, sids, noted, subject_kind)   # held at step 1: its reason
         held = None
         if reading is not None and not (src.speaker == reading and sid in here and f.passes): held = READ_ONLY     # 2a
         elif borrowed and given == sid: held = NAME_IS_MAIN                                                          # 2b
@@ -519,12 +537,20 @@ class StructureLayer:
             if read and read[0] == "my" and not read[2].name and other: held = RELATION_OTHER                     # 2d
             elif not nearest_ok(block, sid, name, subject): held = NEARER_NAME                                      # 2e
             elif _has(tokens(self.line(name).text), CONDITION_MARKERS): held = CONDITION                            # 3
-        if held: return self._hold(sid, subject, obj, word, [held], sids, noted)
+        if held: return self._hold(sid, subject, obj, word, [held], sids, noted, subject_kind)
         if f.hold or (name is not None and self.filter_of(name).hold):                                              # 4: A7
-            return self._hold(sid, subject, obj, word, [A7_HOLD], sids)
-        return self._store(sid, subject, obj, kind, word, in_vocab, d, src, noted, name)
+            return self._hold(sid, subject, obj, word, [A7_HOLD], sids, subject_kind=subject_kind)
+        if borrowed and self._not_a_person(d, subject_kind):        # Increment 5, section 7 (10A5): "he" or "she" borrows only a person
+            return self._hold(sid, subject, obj, word, [_K.BORROWED], sids, noted, subject_kind)
+        return self._store(sid, subject, obj, kind, word, in_vocab, d, src, noted, name, subject_kind=subject_kind)
 
-    def _file_today(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "") -> Outcome:
+    def _not_a_person(self, d, subject_kind) -> bool:
+        """Section 7, E-1: a borrowed name is known not to be a person's when it resolves to an existing entity of kind animal,
+        place, organisation or thing, or the proposal's subject_kind is one of those. With no known kind, borrowed as today."""
+        known = d.subject.entity_id and self.kb.entity(d.subject.entity_id).entity_type in _K.NOT_PERSON
+        return bool(known) or _K.valid(subject_kind) in _K.NOT_PERSON
+
+    def _file_today(self, sid: int, subject: str, obj: str, kind: str = "", word: str = "", subject_kind=None) -> Outcome:
         word = vocabulary_word(word)
         in_vocab = word != "other"
         if in_vocab and my_own(subject, word): subject = "I"          # RM-b (4A13): "my job" is the speaker's
@@ -533,25 +559,35 @@ class StructureLayer:
         src = self.line(sid)
         f = self.filter_of(sid)                                       # DQ-4 (a): worked out here, so no caller can skip it
         if f.hold:                                                    # 2: the A7 hold; nothing is stored
-            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION)
+            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **_kept(subject_kind))
             return Outcome(UNCERTAIN, (f.hold,), review_id=self.kb.add_review(json.dumps(item), [f.hold], [sid]))
         noted = dict(filter_note=f.note) if f.note else {}            # section 4.3: the key only when there is a note
         if verdict == UNCERTAIN:
-            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **noted)
+            item = dict(subject=subject, object=obj, word=word, source_sids=[sid], method="structure", version=RULES_VERSION, **noted, **_kept(subject_kind))
             return Outcome(UNCERTAIN, reasons, review_id=self.kb.add_review(json.dumps(item), list(reasons), [sid]))
-        return self._store(sid, subject, obj, kind, word, in_vocab, d, src, noted)
+        return self._store(sid, subject, obj, kind, word, in_vocab, d, src, noted, subject_kind=subject_kind)
 
-    def _store(self, sid, subject, obj, kind, word, in_vocab, d, src, noted, name=None) -> Outcome:
+    def _store(self, sid, subject, obj, kind, word, in_vocab, d, src, noted, name=None, subject_kind=None) -> Outcome:
         """Step 5, as today: word support, passing state, storing and versioning. A name line (Increment 4) is recorded with
-        the role `qualifies` (Q6), and a borrowed subject's alias rests on it (Q9 (iii))."""
+        the role `qualifies` (Q6), and a borrowed subject's alias rests on it (Q9 (iii)). Increment 5: the K-10 hold, after
+        every other hold (P-1), only when the fact would create a new entity (3.5); nothing is stored then."""
         sids = [sid] + ([name] if name is not None else [])
         held = self.word_supported(sid, subject, obj, word) if in_vocab else ""
         notes = (f"word held: {held}",) if held else ()
         if held: in_vocab = False                                     # RM-a: filed by its wording only
         if word != "other" and self.passing_state(sid, subject, obj, word):   # S5: after the word-support check
-            item = dict(subject=subject, object=obj, word=word, source_sids=sids, method="structure", version=RULES_VERSION, **noted)
+            item = dict(subject=subject, object=obj, word=word, source_sids=sids, method="structure", version=RULES_VERSION, **noted, **_kept(subject_kind))
             return Outcome(UNCERTAIN, (PASSING,), review_id=self.kb.add_review(json.dumps(item), [PASSING], sids))
+        if not d.subject.entity_id:                                   # Increment 5, K-10 (3.5): a new entity needs a kind
+            decided = _K.decide(d.subject, subject_kind)
+            if decided is None: return self._hold(sid, subject, obj, word, [_K.no_kind(subject)], sids, noted, subject_kind)
+            d = replace(d, subject=replace(d.subject, kind=decided))
         who = entity_for(self.kb, d.subject, sid if name is None else name)   # Increment 2: a relation and its scoped alias, created only now
+        return self._write(sid, who, obj, kind, word, in_vocab, notes, src, noted, name)
+
+    def _write(self, sid, who, obj, kind, word, in_vocab, notes, src, noted, name=None) -> Outcome:
+        """Storing and versioning for the entity `who` (step 5, as today, moved here unchanged apart from versioning by speaker,
+        Increment 5, section 6)."""
         wording = version_key(src.text, obj)
         key = word if in_vocab else wording
         dates = stated_dates(src.text, src.date)
@@ -572,9 +608,46 @@ class StructureLayer:
         stored = self.kb.add(FactWithEvidence(fact, evidence))
         if slot_of(key) is None:  # 4A15: a slotted word's replacement is the state engine's; every other fact keeps base 2's versioning
             for old in mine:  # a newer value for the same subject and wording replaces the older one; the old one is kept
-                if old.fact.status == "active" and old.fact.predicate == key and (old.fact.metadata or {}).get("wording", old.fact.predicate) == wording:
+                if old.fact.status == "active" and old.fact.predicate == key and (old.fact.metadata or {}).get("wording", old.fact.predicate) == wording \
+                        and self._said_only_by(old, src.speaker):      # Increment 5, section 6 (10A3): only the same speaker's
                     self.kb.set_status(old.fact.fact_id, "superseded", note=f"replaced by {fact.fact_id}")   # TD7: no end stored
         return Outcome(ACCEPTED, notes, fact_id=stored.fact.fact_id)
+
+    def _said_only_by(self, old, speaker) -> bool:
+        """Section 6, E-3, D-11a: True when every sentence recorded as `supports` for the older fact was said by `speaker`. A
+        `qualifies` name sentence is not counted; a fact supported by more than one speaker is never replaced."""
+        sids = [e.source_id for e in old.evidence if e.evidence_role == "supports"]
+        if not sids: return False
+        for s in sids:
+            row = self.db.execute("SELECT speaker FROM sentences WHERE sid=?", (int(s) if str(s).isdigit() else s,)).fetchone()
+            if row is None or normalize_name(row[0]) != normalize_name(speaker): return False
+        return True
+
+    def approve_held(self, data: dict, entity_name=None, subject_kind=None) -> FactWithEvidence:
+        """P-5, P-6: a person approves a fact base 2 held (called by KnowledgePipeline.approve). The fixed checks run again (a
+        refusal is refused); the doubts that held it are the person's to overrule, as on the classic path. A known entity, or
+        one named by the person, needs no kind; a new one takes the rules' or the lists' kind, else the writer's valid kind
+        kept with the fact, else a valid `subject_kind` given here; with none, approval is refused with the K-10 reason."""
+        sids = [int(x) for x in data.get("source_sids", [])]
+        if not sids: raise RecordError("no source sentence")
+        sid, name = sids[0], (sids[1] if len(sids) > 1 else None)
+        subject, obj = data.get("subject", ""), data.get("object", "")
+        word = vocabulary_word(data.get("word", ""))
+        verdict, reasons, d = self.check(sid, subject, obj, name_line=name)
+        if verdict == REJECTED: raise RecordError("; ".join(reasons))
+        entity_id = self.kb.resolve(entity_name) if entity_name else d.subject.entity_id
+        if entity_name and not entity_id: raise RecordError("no entity by that name")
+        if not entity_id and not d.subject.name: raise RecordError("say which entity this refers to")
+        if not entity_id:
+            decided = _K.decide(d.subject, data.get("subject_kind"), subject_kind)
+            if decided is None: raise RecordError(_K.no_kind(subject))
+            d = replace(d, subject=replace(d.subject, kind=decided))
+        unsupported = self.word_supported(sid, subject, obj, word) if word != "other" else ""   # RM-a, as when stored
+        noted = (dict(filter_note=data["filter_note"]) if data.get("filter_note") else {}) | dict(approved_by="person")
+        who = entity_id or entity_for(self.kb, d.subject, sid if name is None else name)
+        out = self._write(sid, who, obj, "", word, word != "other" and not unsupported, (f"word held: {unsupported}",) if unsupported else (),
+                          self.line(sid), noted, name)
+        return self.kb.get(out.fact_id)
 
     def graph(self) -> "FactGraph":
         """Every active or superseded fact with its subject, object and source sentences. Invalidated and

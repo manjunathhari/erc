@@ -35,8 +35,8 @@ HOLD = "the source gives someone else's words"
 # The five note codes (section 3.2).
 NOTES = {"unresolved_context_reference", "uncertain_or_conditional_content", "unsupported_content_kind",
          "attribution_not_confirmed", "interpreter_flagged_for_review"}
-# The writer's prompt, unchanged by Increment 3 (A1): SHA-256 of engram_structure.WRITER_PROMPT at 4e7e635.
-PROMPT_SHA256 = "3d1781cb36f24032fc4d2b154922162ee2545d296b02d84345018dab5e51d31c"
+# The writer's prompt, unchanged by Increment 3 (A1): SHA-256 of engram_structure.WRITER_PROMPT, at 4e7e635 until Increment 5's approved version B.
+PROMPT_SHA256 = "0a7a0718248d69d2e17f728473d5e4effc5abaf669fd400b90c07424fb6fe878"   # Increment 5: approved version B (writer_B.txt); was 3d1781cb…d31c
 
 # Reason texts of the existing checks (Increments 1 and 2), unchanged.
 CONDITION = "the source states a condition"

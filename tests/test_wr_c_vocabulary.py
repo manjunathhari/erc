@@ -47,9 +47,10 @@ class Mem:
         self.m.close_chat(write_note=False)
         return sid
 
-    def file(self, text, subject, obj, word, said=SAID, sid=None):
+    def file(self, text, subject, obj, word, said=SAID, sid=None, subject_kind=None):
         sid = sid or self.say(text, said)
-        return self.layer.file(sid, subject, obj, S.gate("User", text, said)[1], word=word)
+        extra = {} if subject_kind is None else dict(subject_kind=subject_kind)   # Increment 5 (P-2)
+        return self.layer.file(sid, subject, obj, S.gate("User", text, said)[1], word=word, **extra)
 
     def fact(self, out):
         assert out.verdict == ACCEPTED and out.fact_id, out
@@ -287,8 +288,15 @@ def test_rm_b_holds_whatever_the_model_wrote_as_subject(mem):
 
 def test_oq2_with_other_the_subject_is_left_as_written(mem):
     """OQ-2 (22:55): the "my" + thing rule applies only with a vocabulary word. With "other" nothing changes from today."""
-    f = mem.fact(mem.file("My job is at Manipal.", "My job", "Manipal", "other"))
+    f = mem.fact(mem.file("My job is at Manipal.", "My job", "Manipal", "other", subject_kind="thing"))
     assert mem.who(f).lower() == "my job" and f.metadata["vocabulary"] == "outside"
+
+
+def test_oq2_with_other_and_no_kind_the_subject_is_held(mem):
+    """Increment 5, K-10 (his (c), 18:18): the same line with no subject_kind is held; nothing is stored; not turned into "I"."""
+    out = mem.file("My job is at Manipal.", "My job", "Manipal", "other")
+    assert out.verdict == UNCERTAIN and "the kind of 'My job' is not known" in out.reasons and out.fact_id is None
+    assert mem.m.db.execute("SELECT COUNT(*) FROM knowledge_records").fetchone()[0] == 0
 
 
 # ---------------------------------------------------------------- 4A14 (RM-c): a relative's name

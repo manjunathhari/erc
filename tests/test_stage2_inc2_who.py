@@ -100,13 +100,13 @@ class Chat:
             if classic_last and i == len(self.steps) - 1:
                 self.out.append(self.classic(sid, st))
             else:
-                self.out.append(self.layer.file(sid, st[2], st[3], "claim", word=st[4]))
+                self.out.append(self.layer.file(sid, st[2], st[3], "claim", word=st[4], **_kind(st)))
             self.after.append(self.snapshot())
         return self
 
     def classic(self, sid, st):
         word = st[4] if st[4] != "other" else "likes"
-        d, rid = KnowledgePipeline(self.m.db).process(Candidate(st[2], word, st[3], (sid,), "", "test", "1"))
+        d, rid = KnowledgePipeline(self.m.db).process(Candidate(st[2], word, st[3], (sid,), "", "test", "1", **_kind(st)))
         return S.Outcome(d.verdict, d.reasons, rid if d.verdict == ACCEPTED else None, rid if d.verdict == UNCERTAIN else None)
 
     def snapshot(self):
@@ -165,8 +165,13 @@ def sv7_store(chat):
 #                                                                  a relation entity's owner and relation when given
 #   (HELD, reason or None)                                         held for review; the reason when the text fixes one
 #   (REFUSED,)                                                     not accepted, nothing stored
-def st(speaker, sentence, subject, obj, word):
-    return (speaker, sentence, subject, obj, word)
+def st(speaker, sentence, subject, obj, word, subject_kind=None):
+    """Increment 5 (P-2): a sixth element, the writer's subject_kind, only when the case gives one."""
+    return (speaker, sentence, subject, obj, word) if subject_kind is None else (speaker, sentence, subject, obj, word, subject_kind)
+
+
+def _kind(step):
+    return {"subject_kind": step[5]} if len(step) > 5 else {}
 
 
 def sis(sp, place="Pune"): return st(sp, f"My sister lives in {place}.", "my sister", place, "lives_in")
@@ -241,7 +246,7 @@ CASES = {
              [("e1", "Ben's mother", B, "mother"), ("e1", None, None, None)]),
     "NP-3": ([st(A, "Caroline's sister lives in Goa.", "Caroline's sister", "Goa", "lives_in")], [(HELD, NOT_A_SPEAKER("Caroline"))]),
     "CT-1": ([st(A, "I live in Pune.", "I", "Pune", "lives_in")], [("e1", "Asha", None, None)]),
-    "CT-2": ([st(A, "Max lives in Goa.", "Max", "Goa", "lives_in")], [("e1", "Max", None, None)]),
+    "CT-2": ([st(A, "Max lives in Goa.", "Max", "Goa", "lives_in", "person")], [("e1", "Max", None, None)]),
     "CT-3": ([st(A, "He lives in Goa.", "he", "Goa", "lives_in")], [(HELD, HE)]),
     "CT-4": ([st(A, "We live in Goa.", "we", "Goa", "lives_in")], [(HELD, WE)]),
     "CT-5": ([st(A, "I love my job at Infosys.", "my job", "Infosys", "works_at")], [("e1", "Asha", None, None)]),
@@ -262,10 +267,10 @@ CASES = {
     "AL-3": ([st(A, "My sister Sara lives in Pune.", "my sister Sara", "Pune", "lives_in"), st(B, "My cousin Sara lives in Delhi.", "my cousin Sara", "Delhi", "lives_in"),
               st(B, "Sara works at Wipro.", "Sara", "Wipro", "works_at")],
              [("e1", "Asha's sister Sara", A, "sister"), ("e2", "Ben's cousin Sara", B, "cousin"), ("e2", None, None, None)]),
-    "AL-4": ([st(A, "Sara lives in Mumbai.", "Sara", "Mumbai", "lives_in"), st(A, "My sister Sara lives in Pune.", "my sister Sara", "Pune", "lives_in"),
+    "AL-4": ([st(A, "Sara lives in Mumbai.", "Sara", "Mumbai", "lives_in", "person"), st(A, "My sister Sara lives in Pune.", "my sister Sara", "Pune", "lives_in"),
               st(B, "Sara lives in Delhi.", "Sara", "Delhi", "lives_in")],
              [("e1", "Sara", None, None), ("e2", "Asha's sister Sara", A, "sister"), ("e1", None, None, None)]),
-    "AL-5": ([st(A, "Sara lives in Mumbai.", "Sara", "Mumbai", "lives_in"), st(A, "My sister Sara lives in Pune.", "my sister Sara", "Pune", "lives_in"),
+    "AL-5": ([st(A, "Sara lives in Mumbai.", "Sara", "Mumbai", "lives_in", "person"), st(A, "My sister Sara lives in Pune.", "my sister Sara", "Pune", "lives_in"),
               st(A, "Sara called me.", "Sara", "called me", "other")],
              [("e1", "Sara", None, None), ("e2", "Asha's sister Sara", A, "sister"), (HELD, AMBIGUOUS)]),
     "AL-6": ([sis(A), st(B, "Asha's sister lives in Pune.", "Asha's sister", "Pune", "lives_in")],
@@ -299,7 +304,7 @@ CASES = {
     # --- 8.3: the interpretations
     "DM-1": ([st(A, "That guy fixed my car.", "that guy", "my car", "other")], [(HELD, DEMONSTRATIVE)]),
     "DM-2": ([st(A, "These friends helped me move.", "these friends", "move", "other")], [(HELD, DEMONSTRATIVE)]),
-    "HN-1": ([sis(A), st(A, "My sister Mia moved to Delhi.", "my sister Mia", "Delhi", "moved_to"), st(A, "Mia called me.", "Mia", "called me", "other")],
+    "HN-1": ([sis(A), st(A, "My sister Mia moved to Delhi.", "my sister Mia", "Delhi", "moved_to"), st(A, "Mia called me.", "Mia", "called me", "other", "person")],
              [("e1", "Asha's sister", A, "sister"), (HELD, ALREADY("sister")), ("e2", "Mia", None, None)]),
     "NS-1": ([st(A, "Sara, my sister, called me.", "my sister", "called me", "other")], [("e1", "Asha's sister", A, "sister")]),
     "NS-2": ([st(A, "my sister sara lives in Pune.", "my sister sara", "Pune", "lives_in")], [("e1", "Asha's sister", A, "sister")]),
@@ -366,7 +371,8 @@ PREPARED = {
 CASES.pop("CT-10")   # it lives in PREPARED
 
 # The controls of Draft 2, section 8.3: today's result and the wanted result are the same apart from naming (G5).
-CONTROLS = ["SV-2", "OP-1", "OP-2", "CH-1", "CH-3", "CT-7", "MD-1", "IN-6", "CT-1", "CT-2", "CT-3", "CT-4", "CT-5", "CT-6", "CT-8", "CH-4"]
+# Increment 5 (his R-3, 22 November 22:12): CT-2 left this list; it now gives subject_kind, so it cannot pass before the build.
+CONTROLS = ["SV-2", "OP-1", "OP-2", "CH-1", "CH-3", "CT-7", "MD-1", "IN-6", "CT-1", "CT-3", "CT-4", "CT-5", "CT-6", "CT-8", "CH-4"]
 
 
 def ids_of(table): return list(table)
@@ -750,22 +756,20 @@ def test_g7_store_schema_is_unchanged(tmp_path):
 
 # ------------------------------------------------------------------ recorded risks and the deferred gap: today's result, pinned
 PINS = {
-    # AN-1, AN-2 (D1-5): "my" + a thing follows today's rules, unscoped
-    "AN-1": ([st(A, "My dog lives with my parents in Mysore.", "my dog", "Mysore", "lives_in")], [("e1", "my dog")]),
-    "AN-2": ([st(A, "My turtles love the sun.", "my turtles", "the sun", "likes")], [("e1", "my turtles")]),
-    # AN-4 [RISK] TF-11, deferred to Increment 5: two speakers' "my dog" are one entity today. A silent change is noticed.
-    "AN-4": ([st(A, "My dog is called Max.", "my dog", "Max", "name"), st(B, "My dog is called Max.", "my dog", "Max", "name")], [("e1", "my dog"), ("e1", "my dog")]),
+    # AN-1, AN-2 and AN-4 moved to ANIMALS below (Increment 5, K-3 and D-2): "my" + an animal is now the speaker's own.
     # JS-1 to JS-3 [RISK] TF-3, D1-9: no wanted result; today's is recorded and fails only if it changes without his word.
-    "JS-1": ([st(A, "My husband and I moved to Pune.", "my husband and I", "Pune", "moved_to")], [("e1", "my husband and I")]),
+    "JS-1": ([st(A, "My husband and I moved to Pune.", "my husband and I", "Pune", "moved_to", "person")], [("e1", "my husband and I")]),
     "JS-2": ([st(A, "My husband and I moved to Pune.", "my husband", "Pune", "moved_to")], [("e1", None)]),
-    "JS-3": ([st(A, "My classmates and I won the cup.", "my classmates and I", "the cup", "other")], [("e1", "my classmates and I")]),
+    "JS-3": ([st(A, "My classmates and I won the cup.", "my classmates and I", "the cup", "other", "person")], [("e1", "my classmates and I")]),
 }
 
 
 @pytest.mark.parametrize("cid", ids_of(PINS))
 def test_pin_recorded_risk_is_as_today(tmp_path, cid):
-    """Pass before and after. JS-2's subject is a plain one-person relation ("my husband"), so its name follows D1-1 and is not
-    pinned; only that it is stored (tests-first report, point TF-4)."""
+    """JS-2 passes before and after the build. JS-1 and JS-3 now give subject_kind="person" (Increment 5, his (c), 22 November
+    18:15 and 18:17), so they fail on the code before the build and are expected to pass after it. JS-2's subject is a plain
+    one-person relation ("my husband"), so its name follows D1-1 and is not pinned; only that it is stored (tests-first report,
+    point TF-4)."""
     steps, wanted = PINS[cid]
     chat = run(tmp_path, steps)
     try:
@@ -775,5 +779,52 @@ def test_pin_recorded_risk_is_as_today(tmp_path, cid):
             ent = chat.subject(out)
             assert labels.setdefault(label, ent.entity_id) == ent.entity_id
             if name is not None: assert ent.canonical_name == name and "relation_of" not in (ent.metadata or {})
+    finally:
+        chat.close()
+
+
+# ------------------------------------------------------------------ Increment 5: the joint subjects with no kind (JS-1, JS-3, his (c))
+JOINT_NO_KIND = {
+    "JS-1": st(A, "My husband and I moved to Pune.", "my husband and I", "Pune", "moved_to"),
+    "JS-3": st(A, "My classmates and I won the cup.", "my classmates and I", "the cup", "other"),
+}
+
+
+@pytest.mark.parametrize("cid", list(JOINT_NO_KIND))
+def test_pin_a_joint_subject_with_no_kind_is_held(tmp_path, cid):
+    """Increment 5, K-10: the same line with no subject_kind is held, and nothing is stored."""
+    step = JOINT_NO_KIND[cid]
+    chat = run(tmp_path, [step])
+    try:
+        out = chat.out[0]
+        assert out.verdict == UNCERTAIN and f"the kind of '{step[2]}' is not known" in out.reasons
+        assert chat.after[0]["entities"] == chat.before[0]["entities"] and chat.after[0]["facts"] == chat.before[0]["facts"]
+    finally:
+        chat.close()
+
+
+# ------------------------------------------------------------------ Increment 5: AN-1, AN-2, AN-4 (K-3, D-2; Draft 5, section 10)
+ANIMALS = {
+    "AN-1": ([st(A, "My dog lives with my parents in Mysore.", "my dog", "Mysore", "lives_in")], [("e1", "Asha's dog", A, "animal")]),
+    "AN-2": ([st(A, "My turtles love the sun.", "my turtles", "the sun", "likes")], [("e1", "Asha's turtles", A, "animal")]),
+    # AN-4, TF-11, resolved by Increment 5: each speaker's "my dog" is their own.
+    "AN-4": ([st(A, "My dog is called Max.", "my dog", "Max", "name"), st(B, "My dog is called Max.", "my dog", "Max", "name")],
+             [("e1", "Asha's dog", A, "animal"), ("e2", "Ben's dog", B, "animal")]),
+}
+
+
+@pytest.mark.parametrize("cid", list(ANIMALS))
+def test_an_my_animal_is_the_speakers_own(tmp_path, cid):
+    steps, wanted = ANIMALS[cid]
+    chat = run(tmp_path, steps)
+    try:
+        labels = {}
+        for out, (label, name, owner, kind) in zip(chat.out, wanted):
+            assert out.verdict == ACCEPTED
+            ent = chat.subject(out)
+            assert labels.setdefault(label, ent.entity_id) == ent.entity_id
+            assert ent.canonical_name == name and ent.entity_type == kind
+            assert ent.metadata["relation_of"] == chat.speaker_entity(owner).entity_id
+        assert len(set(labels.values())) == len(labels)
     finally:
         chat.close()

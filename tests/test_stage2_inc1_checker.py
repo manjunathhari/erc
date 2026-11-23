@@ -448,7 +448,8 @@ def test_general_cue_control_no_other_word_s_cue_list_changes(mem):
 # ------------------------------------------------------------------ G8: the writer's prompt
 EXISTING = "A line may state more than one fact: give each its own entry."
 SENTENCE = 'When a line lists several things, such as "tea, coffee and juice", give each thing its own entry and never put the list in one object.'
-PROMPT_BEFORE = "0591e35e2af87bad8619942c140e29f56948a3dfad4c9a7b5ec78a0e65523eab"   # SHA-256 of WRITER_PROMPT at 4e8fa6e
+PROMPT_BEFORE = "a4d67ce88abd3738a4e779537e1712ed4330aa7948e1b0d21abc2b714da231e1"   # SHA-256 of WRITER_PROMPT at 4e8fa6e with
+# Increment 5's two approved changes (prompt document Draft 3, version B: the "subject_kind" line and its JSON key); was 0591e35e…3eab
 
 
 def test_prompt_the_approved_sentence_follows_the_existing_one(mem):
@@ -457,7 +458,7 @@ def test_prompt_the_approved_sentence_follows_the_existing_one(mem):
 
 
 def test_prompt_nothing_else_in_the_prompt_changed():
-    """Taking the one sentence out again gives the prompt of 4e8fa6e, character for character."""
+    """Taking the one sentence out again gives the prompt of 4e8fa6e, with Increment 5's approved subject_kind changes, character for character."""
     assert SENTENCE in S.WRITER_PROMPT
     without = S.WRITER_PROMPT.replace(" " + SENTENCE, "", 1)
     assert hashlib.sha256(without.encode()).hexdigest() == PROMPT_BEFORE
