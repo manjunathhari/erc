@@ -18,8 +18,11 @@ class KnowledgeRetriever:
         self.router = QueryRouter()
         self.evidence = EvidenceAssembler(self.kb)
 
-    def find_entity(self, question):
-        """A known name or alias named in the question, longest first. Two different people named means no single answer."""
+    def find_entity(self, question, report=False):
+        """A known name or alias named in the question, longest first. Two different people named means no single answer.
+        With report=True (Increment 6, Q10a, P1, P2) the answer is (entity_id, case): "one", "none", "shared_name" (a matched
+        name belongs to more than one entity, the rest to at most one) or "several_named" (two or more different entities,
+        which takes precedence). The default return is unchanged."""
         names = [r[0] for r in self.kb.db.execute("SELECT canonical_name FROM entities").fetchall()] + [r[0] for r in self.kb.db.execute("SELECT alias FROM entity_aliases").fetchall()]
         text = normalize_name(question)
         found, covered = [], []
@@ -28,7 +31,11 @@ class KnowledgeRetriever:
             if m and not any(a <= m.start() < b for a, b in covered):
                 found.append(self.kb.resolve(name)); covered.append(m.span())
         found = list(dict.fromkeys(found))
-        return found[0] if len(found) == 1 else None
+        entity = found[0] if len(found) == 1 else None
+        if not report: return entity
+        known = [f for f in found if f is not None]
+        case = "none" if not found else "several_named" if len(known) >= 2 else "shared_name" if None in found else "one"
+        return (entity if case == "one" else None, case)
 
     def _memory(self, question):
         sids, _ = self.memory.find(question)

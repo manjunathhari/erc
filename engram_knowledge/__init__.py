@@ -5,6 +5,7 @@ P2, learning from sentences: interpreter, learning, candidate and learning_queue
 normalizer, entity_resolver and fact_validator (a helper model's reply to checked facts). P2 uses P1; P1 uses nothing from P2.
 P3 to P5, state over time: temporal, transition, conflict and state_engine (P3 projection, P4 changes and conflicts, P5 settle),
 query_router, evidence_assembler and knowledge_retriever (structured questions beside ordinary memory). They use P1 and P2; neither uses them.
+knowledge_text (Stage 2, Increment 6): knowledge_section, the retriever's answer as text for a model, or the reason there is none. Read-only.
 
 Names load on first use, so importing one storage file does not load the rest.
 """
@@ -19,7 +20,9 @@ _HOME = dict(
     fact_validator=("ACCEPTED", "REJECTED", "UNCERTAIN", "Candidate", "Decision", "FactValidator", "KnowledgePipeline", "SourceLine"),
     # P3 to P5: what is true now and at any past date, changes and conflicts, people's decisions, and answering structured questions
     conflict=("Conflict",), state_engine=("Period", "SlotState", "StateEngine"), evidence_assembler=("EvidenceAssembler",),
-    knowledge_retriever=("KnowledgeRetriever",), query_router=("QueryRouter",))
+    knowledge_retriever=("KnowledgeRetriever",), query_router=("QueryRouter",),
+    # Stage 2, Increment 6: the records as text for a model (P7)
+    knowledge_text=("knowledge_section",))
 _WHERE = {name: module for module, names in _HOME.items() for name in names}
 __all__ = sorted(_WHERE)
 
