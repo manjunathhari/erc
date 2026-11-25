@@ -1,0 +1,47 @@
+[
+ {
+  "id": "syn-1",
+  "title": "Two friends catch up (invented)",
+  "provenance": "synthetic",
+  "consent": {"basis": "invented for testing; no real person"},
+  "source": {"kind": "synthetic", "pointer": "engram_testkit/data/synthetic/conversations.json#syn-1"},
+  "turns": [
+   {"id": "s1:1", "session": 1, "speaker": "Tomas", "role": "user", "date": "2026-03-02", "text": "How is the new flat in Lisbon?"},
+   {"id": "s1:2", "session": 1, "speaker": "Ines", "role": "user", "date": "2026-03-02", "text": "I live in Lisbon near the river now, and I adopted a grey cat called Pepper."},
+   {"id": "s1:3", "session": 1, "speaker": "Tomas", "role": "user", "date": "2026-03-02", "text": "Lovely. I joined a running club on Saturday mornings."},
+   {"id": "s1:4", "session": 2, "speaker": "Ines", "role": "user", "date": "2026-05-10", "text": "Big news: I moved to Porto last week for work, so I live in Porto now."},
+   {"id": "s1:5", "session": 2, "speaker": "Tomas", "role": "user", "date": "2026-05-10", "text": "Congratulations. I ran my first half marathon yesterday."},
+   {"id": "s1:6", "session": 2, "speaker": "Ines", "role": "user", "date": "2026-05-10", "text": "Well done. Pepper hated the train to Porto."}
+  ]
+ },
+ {
+  "id": "syn-2",
+  "title": "A user talks with an assistant (invented)",
+  "provenance": "synthetic",
+  "consent": {"basis": "invented for testing; no real person"},
+  "source": {"kind": "synthetic", "pointer": "engram_testkit/data/synthetic/conversations.json#syn-2"},
+  "turns": [
+   {"id": "s2:1", "session": 1, "speaker": "Rhea", "role": "user", "date": "2026-06-04", "text": "I work as a librarian at the town library."},
+   {"id": "s2:2", "session": 1, "speaker": "Assistant", "role": "assistant", "date": "2026-06-04", "text": "That sounds calm. Would you like ideas for a weekend bake?"},
+   {"id": "s2:3", "session": 1, "speaker": "Rhea", "role": "user", "date": "2026-06-04", "text": "Yes, but I am allergic to peanuts, so nothing with peanuts."},
+   {"id": "s2:4", "session": 1, "speaker": "Assistant", "role": "assistant", "date": "2026-06-04", "text": "A lemon cake would be safe for you."},
+   {"id": "s2:5", "session": 2, "speaker": "Rhea", "role": "user", "date": "2026-08-28", "text": "I left the library. I start my new job as a teacher at the school on Monday."},
+   {"id": "s2:6", "session": 2, "speaker": "Assistant", "role": "assistant", "date": "2026-08-28", "text": "Good luck with the first week of teaching."}
+  ]
+ },
+ {
+  "id": "syn-3",
+  "title": "Planning a trip (invented)",
+  "provenance": "synthetic",
+  "consent": {"basis": "invented for testing; no real person"},
+  "source": {"kind": "synthetic", "pointer": "engram_testkit/data/synthetic/conversations.json#syn-3"},
+  "turns": [
+   {"id": "s3:1", "session": 1, "speaker": "Mara", "role": "user", "date": "2026-06-20", "text": "In October I am travelling to Kyoto to see the temples."},
+   {"id": "s3:2", "session": 1, "speaker": "Kofi", "role": "user", "date": "2026-06-20", "text": "My sister Abena went there last year."},
+   {"id": "s3:3", "session": 1, "speaker": "Kofi", "role": "user", "date": "2026-06-20", "text": "Abena works night shifts as a nurse, so she travels in her time off."},
+   {"id": "s3:4", "session": 2, "speaker": "Mara", "role": "user", "date": "2026-07-15", "text": "Change of plan: in October I am travelling to Seoul instead of Kyoto."},
+   {"id": "s3:5", "session": 2, "speaker": "Mara", "role": "user", "date": "2026-07-15", "text": "I booked the flights to Seoul yesterday."},
+   {"id": "s3:6", "session": 2, "speaker": "Kofi", "role": "user", "date": "2026-07-15", "text": "Seoul in autumn is beautiful."}
+  ]
+ }
+]

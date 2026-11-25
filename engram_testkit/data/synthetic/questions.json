@@ -1,0 +1,15 @@
+[
+ {"id": "q01", "conversation": "syn-1", "category": "single-hop", "question": "What is the name of Ines's cat?", "gold": "Pepper", "evidence": ["s1:2"]},
+ {"id": "q02", "conversation": "syn-1", "category": "changed-fact", "question": "Where does Ines live now?", "gold": "Porto", "evidence": ["s1:2", "s1:4"]},
+ {"id": "q03", "conversation": "syn-1", "category": "temporal", "question": "When did Tomas run his first half marathon?", "gold": "9 May 2026", "evidence": ["s1:5"]},
+ {"id": "q04", "conversation": "syn-1", "category": "adversarial", "question": "What is the name of Tomas's dog?", "gold": "not mentioned", "evidence": []},
+ {"id": "q05", "conversation": "syn-2", "category": "changed-fact", "question": "What is Rhea's job now?", "gold": "teacher", "evidence": ["s2:1", "s2:5"]},
+ {"id": "q06", "conversation": "syn-2", "category": "single-hop", "question": "What is Rhea allergic to?", "gold": "peanuts", "evidence": ["s2:3"]},
+ {"id": "q07", "conversation": "syn-2", "category": "adversarial", "question": "Which city was Rhea born in?", "gold": "not mentioned", "evidence": []},
+ {"id": "q08", "conversation": "syn-2", "category": "temporal", "question": "On what date does Rhea start her job as a teacher?", "gold": "31 August 2026", "evidence": ["s2:5"]},
+ {"id": "q09", "conversation": "syn-3", "category": "changed-fact", "question": "Where is Mara travelling in October?", "gold": "Seoul", "evidence": ["s3:1", "s3:4"]},
+ {"id": "q10", "conversation": "syn-3", "category": "multi-hop", "question": "What is the job of Kofi's sister?", "gold": "nurse", "evidence": ["s3:2", "s3:3"]},
+ {"id": "q11", "conversation": "syn-3", "category": "temporal", "question": "When did Mara book her flights?", "gold": "14 July 2026", "evidence": ["s3:5"]},
+ {"id": "q12", "conversation": "syn-3", "category": "inference", "question": "Which city did Mara plan to visit before she changed her plan?", "gold": "Kyoto", "evidence": ["s3:1", "s3:4"]},
+ {"id": "q13", "conversation": "syn-3", "category": "adversarial", "question": "What is Mara's surname?", "gold": "not mentioned", "evidence": []}
+]
